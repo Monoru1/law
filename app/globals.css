@@ -1,0 +1,82 @@
+@import "tailwindcss";
+@import "../src/styles/tokens.css";
+:root {color-scheme:dark; font-family:var(--font-body),Arial,sans-serif}
+* {box-sizing:border-box}
+html,body {min-height:100%; margin:0; background:var(--law-black); color:var(--law-paper)}
+body {overflow-x:hidden}
+a {color:inherit;text-decoration:none}
+button,input,textarea {font:inherit}
+button {cursor:pointer}
+button:disabled {cursor:not-allowed;opacity:.48}
+:focus-visible {outline:2px solid var(--law-paper);outline-offset:5px}
+::selection {background:var(--law-paper);color:var(--law-black)}
+.serif {font-family:var(--font-display),Georgia,serif;font-weight:400}
+.mono {font-family:var(--font-meta),monospace;font-size:.72rem;letter-spacing:.13em;text-transform:uppercase}
+.shell {min-height:100svh;position:relative;isolation:isolate}
+.home {display:flex;flex-direction:column;justify-content:space-between;max-width:1640px;margin:auto;padding:clamp(24px,4vw,70px);min-height:100svh}
+.site-top {display:flex;justify-content:space-between;align-items:center;gap:20px}
+.wordmark {font-size:.78rem;letter-spacing:.2em}
+.home-body {margin:8vh 0 4vh}
+.home h1 {font-size:clamp(6rem,21vw,24rem);line-height:.75;letter-spacing:-.095em;white-space:nowrap;margin:0 0 4rem}
+.home p {font-size:clamp(1.2rem,2vw,2rem);max-width:34ch}
+.home-actions {display:flex;gap:14px;flex-wrap:wrap;margin-top:3.5rem}
+.law-button {display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:14px 23px;border:1px solid var(--law-gray-100);background:transparent;color:var(--law-paper);font-family:var(--font-meta),monospace;font-size:.75rem;text-transform:uppercase;letter-spacing:.14em;text-align:center;transition:background .2s,color .2s;position:relative;overflow:hidden}
+.law-button:hover:not(:disabled),.law-button.selected {background:var(--law-paper);color:var(--law-black)}
+.law-button.ghost {border-color:var(--law-gray-700)}
+.footerline {display:flex;justify-content:space-between;gap:12px;color:var(--law-gray-300);border-top:1px solid var(--law-gray-700);padding-top:18px}
+.stage {min-height:100svh;display:flex;flex-direction:column;position:relative;padding:clamp(20px,3vw,48px);transition:background .6s ease}
+.stage::after {content:'';pointer-events:none;position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at 50% 25%,transparent 24%,rgba(0,0,0,.55) 90%);opacity:var(--vignette,.5)}
+.room {pointer-events:none;position:absolute;inset:7% 8% 4%;opacity:var(--room-opacity,.6);border:1px solid rgba(233,230,223,.12);transform:perspective(950px) rotateX(2deg) scale(var(--room-scale,1));transition:transform 1s,opacity 1s}
+.room::before {content:'';position:absolute;left:50%;top:0;width:1px;height:70%;background:linear-gradient(var(--law-gray-500),transparent);opacity:.3}
+.room::after {content:'';position:absolute;inset:0;background:radial-gradient(ellipse 28% 30% at 50% 13%,rgba(233,230,223,.12),transparent 100%);}
+.room-floor {position:absolute;left:0;right:0;bottom:0;height:36%;border-top:1px solid rgba(233,230,223,.13);transform:perspective(300px) rotateX(26deg);transform-origin:bottom}
+.grain {position:absolute;inset:0;pointer-events:none;z-index:1;opacity:var(--grain,.03);background-image:url('/grain.svg')}
+.stage.reg-0 {--room-opacity:.72;--grain:.03;--vignette:.25;background-image:linear-gradient(rgba(233,230,223,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(233,230,223,.035) 1px,transparent 1px);background-size:48px 48px}
+.stage.reg-1 {--room-opacity:.55;--grain:.05;--vignette:.4}
+.stage.reg-2 {--room-opacity:.4;--room-scale:1.08;--grain:.07;--vignette:.65}
+.stage.reg-3 {--room-opacity:0;--vignette:0;--grain:.03}
+.player-top,.player-main,.player-bottom {position:relative;z-index:2}
+.player-top {display:flex;justify-content:space-between;align-items:center;min-height:40px}
+.player-main {width:min(850px,100%);margin:auto;display:flex;flex-direction:column;justify-content:center;min-height:68svh;padding:5vh 0}
+.beats {display:flex;flex-direction:column;gap:clamp(8px,1.5vh,24px);min-height:clamp(170px,32vh,400px);justify-content:end}
+.beat {font-size:clamp(2rem,4.2vw,4.15rem);line-height:1.08;letter-spacing:-.035em;max-width:24ch;margin:0;white-space:pre-wrap}
+.beat.meta,.beat.whisper {font-family:var(--font-meta),monospace;font-size:clamp(.75rem,1vw,1rem);letter-spacing:.09em;line-height:1.5;max-width:60ch;color:var(--law-gray-100)}
+.beat.emphasis {font-style:italic}
+.beat.dash {font-size:1.5rem;color:var(--law-gray-300)}
+.beat:last-child {color:var(--law-paper)}
+.choice-area {margin-top:clamp(36px,8vh,92px);max-width:790px}
+.choice-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.choice-grid.three {grid-template-columns:repeat(3,minmax(0,1fr))}
+.choice-grid .law-button {min-height:76px}
+.outcome-actions {margin-top:48px}
+.player-bottom {display:flex;justify-content:space-between;align-items:end;color:var(--law-gray-300);gap:24px}
+.hint {font-size:.7rem;line-height:1.6}
+.hold-progress {position:absolute;left:0;bottom:0;height:4px;background:var(--law-signal);transition:none}
+.field {display:block;width:100%;min-height:96px;background:none;border:0;border-bottom:1px solid var(--law-gray-100);border-radius:0;outline:0;color:var(--law-paper);padding:16px 0;font-family:var(--font-display),serif;font-size:clamp(1.4rem,2.7vw,2.5rem);resize:vertical}
+.field:focus {border-bottom-width:2px}
+.range {width:100%;accent-color:var(--law-paper);margin:25px 0;cursor:pointer}
+.range-value {font-family:var(--font-display),serif;font-size:5rem}
+.glyph-grid {display:flex;justify-content:space-between;gap:30px}
+.glyph-choice {border:1px solid var(--law-gray-700);background:transparent;color:var(--law-paper);display:flex;align-items:center;justify-content:center;gap:8px;min-height:155px;flex:1;cursor:pointer}
+.glyph-choice.selected,.glyph-choice:hover {border-color:var(--law-paper)}
+.overlay {position:fixed;inset:0;background:rgba(11,11,12,.97);z-index:20;display:flex;align-items:center;justify-content:center;padding:24px}
+.overlay-inner {width:min(660px,100%);max-height:90svh;overflow-y:auto}
+.overlay h2,.law-page h1 {font-size:clamp(3.5rem,9vw,8rem);line-height:.88;letter-spacing:-.065em;margin:22px 0 44px}
+.stack {display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.stack .law-button {justify-content:flex-start}
+.settings-row {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 0;border-bottom:1px solid var(--law-gray-700)}
+.law-page {max-width:1050px;margin:auto;padding:clamp(24px,4vw,64px)}
+.law-page section {border-top:1px solid var(--law-gray-700);padding:28px 0 80px}
+.law-page section h2 {margin:0 0 38px}
+.law-page article {padding:22px 0;border-bottom:1px solid var(--law-gray-700)}
+.law-page article p {font-size:clamp(1.3rem,2.5vw,2.3rem);line-height:1.25;max-width:35ch;margin:15px 0}
+.law-page small {color:var(--law-gray-300);line-height:1.6}
+.law-page .revision {text-decoration:line-through;color:var(--law-gray-300);font-size:1.1rem}
+.end-screen {background:var(--law-black);text-align:center;min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:24px;gap:18px}
+.end-screen h1 {font-size:clamp(5rem,14vw,15rem);letter-spacing:-.08em;line-height:.8;margin:0 0 30px}
+.end-screen p {font-size:clamp(1.5rem,3vw,3rem);line-height:1.12;margin:0}
+@media(max-width:650px){.home h1{font-size:20vw;margin-bottom:2.5rem}.home-body{margin:0}.choice-grid,.choice-grid.three{grid-template-columns:1fr}.choice-grid .law-button{min-height:58px}.player-main{min-height:73svh;padding:30px 0}.beats{min-height:27vh}.beat{font-size:clamp(2rem,8vw,3rem)}.glyph-choice{flex-wrap:wrap}.home{padding:25px}.footerline{font-size:.62rem}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+select {background:var(--law-black);color:var(--law-paper);border:1px solid var(--law-gray-300);padding:10px;min-width:115px}
+input[type=checkbox] {width:20px;height:20px;accent-color:var(--law-paper)}
+.stage[data-reduce="true"] * {animation-duration:.01ms!important;transition-duration:.01ms!important}
