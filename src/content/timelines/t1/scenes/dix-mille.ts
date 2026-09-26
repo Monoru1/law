@@ -1,2 +1,51 @@
 import type { Scene } from '../../../../engine';
-export const dixMille: Scene = {id:'t1.dix-mille',version:1,timelineId:'t1',title:'Dix mille',regression:0,contentFlags:['money','guilt'],beats:[{text:'Quelque part, quelqu’un que tu ne rencontreras jamais va perdre son emploi.'},{text:'Si tu acceptes, tu reçois 10 000 €.'},{text:'Personne ne saura que c’était toi.'}],input:{kind:'binary',confirm:'hold',options:[{id:'accepter',label:'Accepter',evidence:[{principleId:'P_ARGENT',weight:-1}]},{id:'refuser',label:'Refuser',evidence:[{principleId:'P_ARGENT',weight:1}]}]},outcomes:[{when:{optionId:'accepter'},beats:[{text:'10 000 € ont été versés.'},{text:'—',pauseMs:1200},{text:'Un homme de cinquante-deux ans vide son bureau.'}],effects:[{setFlag:'took_money'}]},{when:{optionId:'refuser'},beats:[{text:'Tu as refusé.'},{text:'—',pauseMs:1200},{text:'Il ne saura jamais qu’il te doit quelque chose.'}]}]};
+export const dixMille: Scene = {
+  id: 't1.dix-mille',
+  version: 1,
+  timelineId: 't1',
+  title: 'Dix mille',
+  regression: 0,
+  contentFlags: ['money', 'guilt'],
+  beats: [
+    {
+      text: 'Quelque part, quelqu’un que tu ne rencontreras jamais va perdre son emploi.',
+    },
+    { text: 'Si tu acceptes, tu reçois 10 000 €.' },
+    { text: 'Personne ne saura que c’était toi.' },
+  ],
+  input: {
+    kind: 'binary',
+    confirm: 'hold',
+    options: [
+      {
+        id: 'accepter',
+        label: 'Accepter',
+        evidence: [{ principleId: 'P_ARGENT', weight: -1 }],
+      },
+      {
+        id: 'refuser',
+        label: 'Refuser',
+        evidence: [{ principleId: 'P_ARGENT', weight: 1 }],
+      },
+    ],
+  },
+  outcomes: [
+    {
+      when: { optionId: 'accepter' },
+      beats: [
+        { text: '10 000 € ont été versés.' },
+        { text: '—', pauseMs: 1200 },
+        { text: 'Un homme de cinquante-deux ans vide son bureau.' },
+      ],
+      effects: [{ setFlag: 'took_money' }],
+    },
+    {
+      when: { optionId: 'refuser' },
+      beats: [
+        { text: 'Tu as refusé.' },
+        { text: '—', pauseMs: 1200 },
+        { text: 'Il ne saura jamais qu’il te doit quelque chose.' },
+      ],
+    },
+  ],
+};

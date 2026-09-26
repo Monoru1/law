@@ -1,1 +1,10 @@
-export * from './types'; export * from './conditions'; export * from './effects'; export * from './reducer'; export * from './replay'; export * from './flow'; export * from './laws'; export * from './contradictions'; export * from './observations'; export * from './text';
+export * from './types';
+export * from './conditions';
+export * from './effects';
+export * from './reducer';
+export * from './replay';
+export * from './flow';
+export * from './laws';
+export * from './contradictions';
+export * from './observations';
+export * from './text';

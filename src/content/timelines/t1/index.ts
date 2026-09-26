@@ -1,2 +1,28 @@
-import { bouton } from './scenes/bouton'; import { dixMille } from './scenes/dix-mille'; import { septAnnees } from './scenes/sept-annees'; import { pourquoi } from './scenes/pourquoi'; import { levier } from './scenes/levier'; import { combien } from './scenes/combien'; import { chirurgien } from './scenes/chirurgien'; import { confrontation, confrontationUnsigned, pasEncore } from './scenes/confrontation'; import { leRetour } from './scenes/le-retour'; import { coda } from './scenes/coda';
-export const scenes = [bouton,dixMille,septAnnees,pourquoi,levier,combien,chirurgien,confrontation,confrontationUnsigned,pasEncore,leRetour,coda];
+import { bouton } from './scenes/bouton';
+import { dixMille } from './scenes/dix-mille';
+import { septAnnees } from './scenes/sept-annees';
+import { pourquoi } from './scenes/pourquoi';
+import { levier } from './scenes/levier';
+import { combien } from './scenes/combien';
+import { chirurgien } from './scenes/chirurgien';
+import {
+  confrontation,
+  confrontationUnsigned,
+  pasEncore,
+} from './scenes/confrontation';
+import { leRetour } from './scenes/le-retour';
+import { coda } from './scenes/coda';
+export const scenes = [
+  bouton,
+  dixMille,
+  septAnnees,
+  pourquoi,
+  levier,
+  combien,
+  chirurgien,
+  confrontation,
+  confrontationUnsigned,
+  pasEncore,
+  leRetour,
+  coda,
+];

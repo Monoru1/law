@@ -1,2 +1,53 @@
 import type { Scene } from '../../../../engine';
-export const leRetour: Scene = {id:'t1.le-retour',version:1,timelineId:'t1',title:'Le retour',regression:2,contentFlags:['death','sacrifice','guilt'],priority:100,beats:[],variants:[{id:'a-refuse',when:{chose:{sceneId:'t1.sept-annees',optionId:'ne-pas-sauver'}},beats:[{text:'Tu es tombé·e. Tu ne te souviens pas comment.'},{text:'Quelqu’un t’a sauvé la vie.'},{text:'Il y a laissé sept années de la sienne.'},{text:'—',pauseMs:1200},{text:'Tu avais refusé de faire la même chose.'},{text:'Tu écrivais : « {{text:t1.pourquoi|}} »',requires:{answered:'t1.pourquoi'}},{text:'Penses-tu mériter ce qu’il t’a donné ?'}]},{id:'a-sauve',when:{chose:{sceneId:'t1.sept-annees',optionId:'sauver'}},beats:[{text:'L’une des dix personnes que tu as sauvées vient de mourir.'},{text:'D’une chose banale. Trois ans plus tard.'},{text:'Tes sept années lui en ont donné trois.'},{text:'Tu écrivais : « {{text:t1.pourquoi|}} »',requires:{answered:'t1.pourquoi'}},{text:'Recommencerais-tu ?'}]}],input:{kind:'choice',confirm:'tap',options:[{id:'oui',label:'Oui'},{id:'non',label:'Non'},{id:'ne-sais-pas',label:'Je ne sais pas'}]},outcomes:[{when:{any:true},beats:[]}]};
+export const leRetour: Scene = {
+  id: 't1.le-retour',
+  version: 1,
+  timelineId: 't1',
+  title: 'Le retour',
+  regression: 2,
+  contentFlags: ['death', 'sacrifice', 'guilt'],
+  priority: 100,
+  beats: [],
+  variants: [
+    {
+      id: 'a-refuse',
+      when: { chose: { sceneId: 't1.sept-annees', optionId: 'ne-pas-sauver' } },
+      beats: [
+        { text: 'Tu es tombé·e. Tu ne te souviens pas comment.' },
+        { text: 'Quelqu’un t’a sauvé la vie.' },
+        { text: 'Il y a laissé sept années de la sienne.' },
+        { text: '—', pauseMs: 1200 },
+        { text: 'Tu avais refusé de faire la même chose.' },
+        {
+          text: 'Tu écrivais : « {{text:t1.pourquoi|}} »',
+          requires: { answered: 't1.pourquoi' },
+        },
+        { text: 'Penses-tu mériter ce qu’il t’a donné ?' },
+      ],
+    },
+    {
+      id: 'a-sauve',
+      when: { chose: { sceneId: 't1.sept-annees', optionId: 'sauver' } },
+      beats: [
+        { text: 'L’une des dix personnes que tu as sauvées vient de mourir.' },
+        { text: 'D’une chose banale. Trois ans plus tard.' },
+        { text: 'Tes sept années lui en ont donné trois.' },
+        {
+          text: 'Tu écrivais : « {{text:t1.pourquoi|}} »',
+          requires: { answered: 't1.pourquoi' },
+        },
+        { text: 'Recommencerais-tu ?' },
+      ],
+    },
+  ],
+  input: {
+    kind: 'choice',
+    confirm: 'tap',
+    options: [
+      { id: 'oui', label: 'Oui' },
+      { id: 'non', label: 'Non' },
+      { id: 'ne-sais-pas', label: 'Je ne sais pas' },
+    ],
+  },
+  outcomes: [{ when: { any: true }, beats: [] }],
+};

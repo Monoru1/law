@@ -16,12 +16,19 @@ Ouvrir `http://localhost:3000`. L'interface est statique côté serveur et n'uti
 ## Vérifier
 
 ```bash
+pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm validate:content
 pnpm build
 pnpm test:e2e
+```
+
+Le formatage est normalisé par Prettier et vérifié en CI. `pnpm format` corrige tout le dépôt. Le commit de normalisation initiale est listé dans `.git-blame-ignore-revs` ; pour que `git blame` l'ignore en local (GitHub le fait déjà nativement) :
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
 
 Playwright nécessite Chromium pour les tests navigateur (`pnpm exec playwright install chromium`). Les scénarios unitaires couvrent la replayabilité, les conditions, les effets, les lois, les contradictions et la typographie. Le validateur joue 500 parties seedées et exige que chaque scène soit atteinte.

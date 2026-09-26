@@ -1,2 +1,6 @@
-import {defineConfig} from 'vitest/config';
-export default defineConfig({test:{include:['tests/engine/**/*.test.ts','tests/content/**/*.test.ts']}});
+import { defineConfig } from 'vitest/config';
+export default defineConfig({
+  test: {
+    include: ['tests/engine/**/*.test.ts', 'tests/content/**/*.test.ts'],
+  },
+});

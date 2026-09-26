@@ -1,0 +1,3 @@
+# Generated or tool-owned files: reformatting them breaks the owning tool.
+pnpm-lock.yaml
+next-env.d.ts
