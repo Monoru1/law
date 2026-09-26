@@ -14,6 +14,7 @@ export const defaultSettings: Settings = {
 export type SaveGame = {
   schemaVersion: number;
   contentVersion: string;
+  contentIdentity: string;
   runId: string;
   createdAt: number;
   updatedAt: number;
@@ -25,3 +26,8 @@ export interface SaveAdapter {
   save(save: SaveGame): Promise<void>;
   clear(): Promise<void>;
 }
+export type RecoveryCopy = {
+  key: string;
+  createdAt: number;
+  reason: 'corrupt' | 'replaced';
+};

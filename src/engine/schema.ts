@@ -277,6 +277,7 @@ export const saveSchema = z.object({
   schemaVersion: z.number().int(),
   contentVersion: z.string(),
   runId: z.string(),
+  contentIdentity: z.string(),
   createdAt: z.number(),
   updatedAt: z.number(),
   events: z.array(eventSchema),

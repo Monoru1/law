@@ -1,0 +1,1129 @@
+{
+  "version": "1.0.0",
+  "scenes": [
+    {
+      "id": "t1.bouton",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Le bouton",
+      "regression": 0,
+      "contentFlags": [],
+      "beats": [
+        {
+          "text": "Une pièce."
+        },
+        {
+          "text": "Un bouton."
+        },
+        {
+          "text": "Si tu appuies, il ne se passera rien."
+        },
+        {
+          "text": "—",
+          "pauseMs": 1200
+        },
+        {
+          "text": "Probablement."
+        }
+      ],
+      "input": {
+        "kind": "binary",
+        "confirm": "tap",
+        "options": [
+          {
+            "id": "appuyer",
+            "label": "Appuyer"
+          },
+          {
+            "id": "ne-pas-appuyer",
+            "label": "Ne pas appuyer"
+          }
+        ]
+      },
+      "outcomes": [
+        {
+          "when": {
+            "optionId": "appuyer"
+          },
+          "beats": [
+            {
+              "text": "Il ne s’est rien passé."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Cette fois."
+            }
+          ],
+          "effects": [
+            {
+              "setFlag": "pressed_button"
+            }
+          ]
+        },
+        {
+          "when": {
+            "optionId": "ne-pas-appuyer"
+          },
+          "beats": [
+            {
+              "text": "Tu ne sauras jamais."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t1.dix-mille",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Dix mille",
+      "regression": 0,
+      "contentFlags": ["money", "guilt"],
+      "beats": [
+        {
+          "text": "Quelque part, quelqu’un que tu ne rencontreras jamais va perdre son emploi."
+        },
+        {
+          "text": "Si tu acceptes, tu reçois 10 000 €."
+        },
+        {
+          "text": "Personne ne saura que c’était toi."
+        }
+      ],
+      "input": {
+        "kind": "binary",
+        "confirm": "hold",
+        "options": [
+          {
+            "id": "accepter",
+            "label": "Accepter",
+            "evidence": [
+              {
+                "principleId": "P_ARGENT",
+                "weight": -1
+              }
+            ]
+          },
+          {
+            "id": "refuser",
+            "label": "Refuser",
+            "evidence": [
+              {
+                "principleId": "P_ARGENT",
+                "weight": 1
+              }
+            ]
+          }
+        ]
+      },
+      "outcomes": [
+        {
+          "when": {
+            "optionId": "accepter"
+          },
+          "beats": [
+            {
+              "text": "10 000 € ont été versés."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Un homme de cinquante-deux ans vide son bureau."
+            }
+          ],
+          "effects": [
+            {
+              "setFlag": "took_money"
+            }
+          ]
+        },
+        {
+          "when": {
+            "optionId": "refuser"
+          },
+          "beats": [
+            {
+              "text": "Tu as refusé."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Il ne saura jamais qu’il te doit quelque chose."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t1.sept-annees",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Sept années",
+      "regression": 0,
+      "contentFlags": ["death", "sacrifice"],
+      "beats": [
+        {
+          "text": "Dix inconnus mourront ce soir."
+        },
+        {
+          "text": "Tu peux les sauver."
+        },
+        {
+          "text": "Il t’en coûtera sept années de ta propre vie."
+        },
+        {
+          "text": "—",
+          "pauseMs": 1200
+        },
+        {
+          "text": "Tu ne sauras pas lesquelles."
+        }
+      ],
+      "input": {
+        "kind": "binary",
+        "confirm": "hold",
+        "options": [
+          {
+            "id": "sauver",
+            "label": "Les sauver",
+            "evidence": [
+              {
+                "principleId": "P_SACRIFICE_SOI",
+                "weight": 1
+              }
+            ]
+          },
+          {
+            "id": "ne-pas-sauver",
+            "label": "Ne pas les sauver",
+            "evidence": [
+              {
+                "principleId": "P_SACRIFICE_SOI",
+                "weight": -1
+              }
+            ]
+          }
+        ]
+      },
+      "outcomes": [
+        {
+          "when": {
+            "optionId": "sauver"
+          },
+          "beats": [
+            {
+              "text": "Dix personnes rentreront chez elles ce soir."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Il te reste sept ans de moins que ce que tu crois."
+            }
+          ],
+          "effects": [
+            {
+              "incVar": "lifeYearsGiven",
+              "by": 7
+            },
+            {
+              "schedule": {
+                "sceneId": "t1.le-retour",
+                "when": {
+                  "visited": "t1.chirurgien"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "when": {
+            "optionId": "ne-pas-sauver"
+          },
+          "beats": [
+            {
+              "text": "Dix personnes sont mortes ce soir."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Tu as gardé tes sept années."
+            }
+          ],
+          "effects": [
+            {
+              "schedule": {
+                "sceneId": "t1.le-retour",
+                "when": {
+                  "visited": "t1.chirurgien"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "followUps": ["certainty"]
+    },
+    {
+      "id": "t1.pourquoi",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Pourquoi",
+      "regression": 1,
+      "contentFlags": ["guilt"],
+      "beats": [
+        {
+          "text": "Pourquoi ?"
+        }
+      ],
+      "variants": [
+        {
+          "id": "a-sauve",
+          "when": {
+            "chose": {
+              "sceneId": "t1.sept-annees",
+              "optionId": "sauver"
+            }
+          },
+          "beats": [
+            {
+              "text": "Tu as donné sept années."
+            },
+            {
+              "text": "Pourquoi ?"
+            }
+          ]
+        },
+        {
+          "id": "a-garde",
+          "when": {
+            "chose": {
+              "sceneId": "t1.sept-annees",
+              "optionId": "ne-pas-sauver"
+            }
+          },
+          "beats": [
+            {
+              "text": "Tu as gardé tes sept années."
+            },
+            {
+              "text": "Pourquoi ?"
+            }
+          ]
+        }
+      ],
+      "input": {
+        "kind": "freeText",
+        "prompt": "Pourquoi ?",
+        "placeholder": "Écris ce que tu veux. Personne d’autre ne le lira.",
+        "maxLength": 280,
+        "skippable": true
+      },
+      "outcomes": [
+        {
+          "when": {
+            "any": true
+          },
+          "beats": []
+        }
+      ]
+    },
+    {
+      "id": "t1.levier",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Le levier",
+      "regression": 1,
+      "contentFlags": ["death", "sacrifice"],
+      "beats": [
+        {
+          "text": "Un wagon lancé."
+        },
+        {
+          "text": "Cinq personnes sur la voie."
+        },
+        {
+          "text": "Un levier. Sur l’autre voie, une seule personne."
+        },
+        {
+          "text": "Elle ne t’a rien fait."
+        }
+      ],
+      "input": {
+        "kind": "binary",
+        "confirm": "hold",
+        "options": [
+          {
+            "id": "tirer",
+            "label": "Tirer le levier",
+            "evidence": [
+              {
+                "principleId": "P_INNOCENT",
+                "weight": -1
+              },
+              {
+                "principleId": "P_NOMBRE",
+                "weight": 1
+              }
+            ]
+          },
+          {
+            "id": "rien",
+            "label": "Ne rien faire",
+            "evidence": [
+              {
+                "principleId": "P_INNOCENT",
+                "weight": 1
+              },
+              {
+                "principleId": "P_NOMBRE",
+                "weight": -1
+              }
+            ]
+          }
+        ]
+      },
+      "outcomes": [
+        {
+          "when": {
+            "optionId": "tirer"
+          },
+          "beats": [
+            {
+              "text": "Cinq personnes vivent."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Une personne est morte parce que tu as tiré."
+            }
+          ],
+          "effects": [
+            {
+              "proposeLaw": {
+                "principleId": "P_NOMBRE",
+                "statementId": "nombre.default"
+              }
+            }
+          ]
+        },
+        {
+          "when": {
+            "optionId": "rien"
+          },
+          "beats": [
+            {
+              "text": "Une personne vit."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Cinq personnes sont mortes pendant que tu regardais."
+            }
+          ],
+          "effects": [
+            {
+              "proposeLaw": {
+                "principleId": "P_INNOCENT",
+                "statementId": "innocent.default"
+              }
+            }
+          ]
+        }
+      ],
+      "followUps": ["lawProposal"]
+    },
+    {
+      "id": "t1.combien",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Combien",
+      "regression": 1,
+      "contentFlags": ["death", "sacrifice"],
+      "beats": [
+        {
+          "text": "Un enfant que tu ne connais pas va mourir."
+        },
+        {
+          "text": "Tu peux lui donner des années de ta vie. Autant que tu veux."
+        },
+        {
+          "text": "Aucune ne sera perdue. Elles seront toutes à lui."
+        },
+        {
+          "text": "Combien ?"
+        }
+      ],
+      "input": {
+        "kind": "slider",
+        "min": 0,
+        "max": 40,
+        "step": 1,
+        "unit": "ans",
+        "labelTemplate": "Donner {{n}} ans",
+        "zeroLabel": "Ne rien donner",
+        "confirm": "hold"
+      },
+      "outcomes": [
+        {
+          "when": {
+            "range": [0, 0]
+          },
+          "beats": [
+            {
+              "text": "Il n’a rien reçu."
+            }
+          ]
+        },
+        {
+          "when": {
+            "range": [1, 40]
+          },
+          "beats": [
+            {
+              "text": "Il vivra {{value:t1.combien|0}} ans de plus."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Toi, {{value:t1.combien|0}} de moins."
+            }
+          ],
+          "effects": [
+            {
+              "incVar": "lifeYearsGiven",
+              "by": {
+                "fromValueOf": "t1.combien"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t1.chirurgien",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Le chirurgien",
+      "regression": 2,
+      "contentFlags": ["death", "sacrifice"],
+      "beats": [
+        {
+          "text": "Cinq patients mourront cette nuit sans greffe."
+        },
+        {
+          "text": "Dans la salle d’attente, un homme en parfaite santé."
+        },
+        {
+          "text": "Compatible avec les cinq."
+        },
+        {
+          "text": "Il suffit de ton accord."
+        }
+      ],
+      "variants": [
+        {
+          "id": "proche",
+          "when": {
+            "law": {
+              "principleId": "P_INNOCENT",
+              "status": "signed"
+            }
+          },
+          "beats": [
+            {
+              "text": "Cinq patients mourront cette nuit sans greffe."
+            },
+            {
+              "text": "Dans la salle d’attente, un homme en parfaite santé."
+            },
+            {
+              "text": "Compatible avec les cinq."
+            },
+            {
+              "text": "L’un des cinq est quelqu’un que tu aimes."
+            },
+            {
+              "text": "Pense à cette personne."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Maintenant."
+            },
+            {
+              "text": "Il suffit de ton accord."
+            }
+          ]
+        }
+      ],
+      "input": {
+        "kind": "binary",
+        "confirm": "hold",
+        "options": [
+          {
+            "id": "autoriser",
+            "label": "Autoriser",
+            "evidence": [
+              {
+                "principleId": "P_INNOCENT",
+                "weight": -1
+              },
+              {
+                "principleId": "P_NOMBRE",
+                "weight": 1
+              }
+            ]
+          },
+          {
+            "id": "refuser",
+            "label": "Refuser",
+            "evidence": [
+              {
+                "principleId": "P_INNOCENT",
+                "weight": 1
+              },
+              {
+                "principleId": "P_NOMBRE",
+                "weight": -1
+              }
+            ]
+          }
+        ]
+      },
+      "outcomes": [
+        {
+          "when": {
+            "optionId": "autoriser"
+          },
+          "beats": [
+            {
+              "text": "Cinq patients se réveilleront."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "L’homme de la salle d’attente, non."
+            }
+          ]
+        },
+        {
+          "when": {
+            "optionId": "refuser"
+          },
+          "beats": [
+            {
+              "text": "L’homme rentre chez lui. Il ne saura jamais."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Cinq lits se vident."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t1.confrontation",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "La confrontation",
+      "regression": 2,
+      "contentFlags": ["guilt"],
+      "beats": [
+        {
+          "text": "LOI {{law:N.number|01}}",
+          "style": "meta"
+        },
+        {
+          "text": "« {{law:N.statement|}} »"
+        },
+        {
+          "text": "Signée par toi. Il y a {{since:law:N|0}} décisions.",
+          "style": "meta"
+        },
+        {
+          "text": "Tout à l’heure, tu as fait l’inverse."
+        },
+        {
+          "text": "Cette loi s’applique-t-elle toujours ?"
+        }
+      ],
+      "input": {
+        "kind": "confrontation"
+      },
+      "outcomes": [
+        {
+          "when": {
+            "optionId": "maintain"
+          },
+          "beats": [
+            {
+              "text": "Ta loi reste intacte. Ta décision aussi."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Les deux sont à toi."
+            }
+          ]
+        },
+        {
+          "when": {
+            "optionId": "nuance"
+          },
+          "beats": [
+            {
+              "text": "LOI {{law:N.number|01}} a été réécrite. L’ancienne version reste dans ton historique."
+            }
+          ]
+        },
+        {
+          "when": {
+            "optionId": "abandon"
+          },
+          "beats": [
+            {
+              "text": "LOI {{law:N.number|01}} est abrogée."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Elle a existé."
+            }
+          ]
+        },
+        {
+          "when": {
+            "optionId": "silence"
+          },
+          "beats": [
+            {
+              "text": "Le silence est aussi une réponse."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Il est noté."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t1.confrontation-non-signee",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "La loi non signée",
+      "regression": 2,
+      "contentFlags": ["guilt"],
+      "beats": [
+        {
+          "text": "Tu n’as signé aucune loi."
+        },
+        {
+          "text": "Tes décisions en ont écrit une quand même."
+        },
+        {
+          "text": "« {{derived:statement|}} »"
+        },
+        {
+          "text": "La signes-tu, maintenant ?"
+        }
+      ],
+      "input": {
+        "kind": "lawProposal"
+      },
+      "outcomes": [
+        {
+          "when": {
+            "any": true
+          },
+          "beats": []
+        }
+      ]
+    },
+    {
+      "id": "t1.pas-encore",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Pas encore",
+      "regression": 2,
+      "contentFlags": ["guilt"],
+      "beats": [
+        {
+          "text": "Tu n’as pas contredit ta loi."
+        },
+        {
+          "text": "—",
+          "pauseMs": 1200
+        },
+        {
+          "text": "Pas encore."
+        }
+      ],
+      "input": {
+        "kind": "choice",
+        "confirm": "tap",
+        "options": [
+          {
+            "id": "continuer",
+            "label": "Continuer"
+          }
+        ]
+      },
+      "outcomes": [
+        {
+          "when": {
+            "any": true
+          },
+          "beats": []
+        }
+      ]
+    },
+    {
+      "id": "t1.le-retour",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Le retour",
+      "regression": 2,
+      "contentFlags": ["death", "sacrifice", "guilt"],
+      "priority": 100,
+      "beats": [],
+      "variants": [
+        {
+          "id": "a-refuse",
+          "when": {
+            "chose": {
+              "sceneId": "t1.sept-annees",
+              "optionId": "ne-pas-sauver"
+            }
+          },
+          "beats": [
+            {
+              "text": "Tu es tombé·e. Tu ne te souviens pas comment."
+            },
+            {
+              "text": "Quelqu’un t’a sauvé la vie."
+            },
+            {
+              "text": "Il y a laissé sept années de la sienne."
+            },
+            {
+              "text": "—",
+              "pauseMs": 1200
+            },
+            {
+              "text": "Tu avais refusé de faire la même chose."
+            },
+            {
+              "text": "Tu écrivais : « {{text:t1.pourquoi|}} »",
+              "requires": {
+                "answered": "t1.pourquoi"
+              }
+            },
+            {
+              "text": "Penses-tu mériter ce qu’il t’a donné ?"
+            }
+          ]
+        },
+        {
+          "id": "a-sauve",
+          "when": {
+            "chose": {
+              "sceneId": "t1.sept-annees",
+              "optionId": "sauver"
+            }
+          },
+          "beats": [
+            {
+              "text": "L’une des dix personnes que tu as sauvées vient de mourir."
+            },
+            {
+              "text": "D’une chose banale. Trois ans plus tard."
+            },
+            {
+              "text": "Tes sept années lui en ont donné trois."
+            },
+            {
+              "text": "Tu écrivais : « {{text:t1.pourquoi|}} »",
+              "requires": {
+                "answered": "t1.pourquoi"
+              }
+            },
+            {
+              "text": "Recommencerais-tu ?"
+            }
+          ]
+        }
+      ],
+      "input": {
+        "kind": "choice",
+        "confirm": "tap",
+        "options": [
+          {
+            "id": "oui",
+            "label": "Oui"
+          },
+          {
+            "id": "non",
+            "label": "Non"
+          },
+          {
+            "id": "ne-sais-pas",
+            "label": "Je ne sais pas"
+          }
+        ]
+      },
+      "outcomes": [
+        {
+          "when": {
+            "any": true
+          },
+          "beats": []
+        }
+      ]
+    },
+    {
+      "id": "t1.coda",
+      "version": 1,
+      "timelineId": "t1",
+      "title": "Choisis",
+      "regression": 3,
+      "contentFlags": ["death", "sacrifice"],
+      "beats": [
+        {
+          "text": "Choisis."
+        }
+      ],
+      "input": {
+        "kind": "glyph",
+        "confirm": "hold",
+        "options": [
+          {
+            "id": "un",
+            "label": "Sauver une personne",
+            "evidence": [
+              {
+                "principleId": "P_INNOCENT",
+                "weight": 0.5
+              },
+              {
+                "principleId": "P_NOMBRE",
+                "weight": -0.5
+              }
+            ]
+          },
+          {
+            "id": "cinq",
+            "label": "Sauver cinq personnes",
+            "evidence": [
+              {
+                "principleId": "P_NOMBRE",
+                "weight": 0.5
+              },
+              {
+                "principleId": "P_INNOCENT",
+                "weight": -0.5
+              }
+            ]
+          }
+        ]
+      },
+      "outcomes": [
+        {
+          "when": {
+            "any": true
+          },
+          "beats": []
+        }
+      ]
+    }
+  ],
+  "principles": [
+    {
+      "id": "P_INNOCENT",
+      "opposite": "P_NOMBRE",
+      "statements": [
+        {
+          "id": "innocent.default",
+          "text": "Une personne innocente ne doit pas être sacrifiée pour en sauver d’autres.",
+          "isDefault": true
+        },
+        {
+          "id": "innocent.consent",
+          "text": "Une personne innocente ne doit pas être sacrifiée pour en sauver d’autres, sauf si elle y consent."
+        },
+        {
+          "id": "innocent.nombre",
+          "text": "Une personne innocente ne doit pas être sacrifiée pour en sauver d’autres, sauf si le nombre de vies en jeu est bien plus grand."
+        }
+      ]
+    },
+    {
+      "id": "P_NOMBRE",
+      "opposite": "P_INNOCENT",
+      "statements": [
+        {
+          "id": "nombre.default",
+          "text": "Quand je dois choisir, le nombre de vies compte plus que la manière.",
+          "isDefault": true
+        },
+        {
+          "id": "nombre.mains",
+          "text": "Quand je dois choisir, le nombre de vies compte plus que la manière, tant que je n’ai pas à agir de mes propres mains."
+        },
+        {
+          "id": "nombre.proche",
+          "text": "Quand je dois choisir, le nombre de vies compte plus que la manière, sauf quand quelqu’un que j’aime est concerné."
+        }
+      ]
+    },
+    {
+      "id": "P_SACRIFICE_SOI",
+      "statements": [
+        {
+          "id": "sacrifice.default",
+          "text": "Je donnerais une part de ma vie pour sauver celle des autres.",
+          "isDefault": true
+        }
+      ]
+    },
+    {
+      "id": "P_ARGENT",
+      "statements": [
+        {
+          "id": "argent.default",
+          "text": "Aucune somme ne justifie de nuire à quelqu’un.",
+          "isDefault": true
+        }
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "id": "o-sept-vs-enfant",
+      "when": {
+        "all": [
+          {
+            "chose": {
+              "sceneId": "t1.sept-annees",
+              "optionId": "ne-pas-sauver"
+            }
+          },
+          {
+            "value": {
+              "sceneId": "t1.combien",
+              "op": ">=",
+              "value": 7
+            }
+          }
+        ]
+      },
+      "text": "Tu as refusé sept années pour dix inconnus. Tu en as donné {{value:t1.combien|0}} pour un seul enfant."
+    },
+    {
+      "id": "o-distance",
+      "when": {
+        "all": [
+          {
+            "chose": {
+              "sceneId": "t1.levier",
+              "optionId": "tirer"
+            }
+          },
+          {
+            "chose": {
+              "sceneId": "t1.chirurgien",
+              "optionId": "refuser"
+            }
+          }
+        ]
+      },
+      "text": "Tu as accepté de sacrifier quelqu’un avec un levier. Pas quand il fallait donner ton accord, face à lui."
+    },
+    {
+      "id": "o-constance",
+      "when": {
+        "all": [
+          {
+            "chose": {
+              "sceneId": "t1.levier",
+              "optionId": "rien"
+            }
+          },
+          {
+            "chose": {
+              "sceneId": "t1.chirurgien",
+              "optionId": "refuser"
+            }
+          }
+        ]
+      },
+      "text": "Face au sacrifice d’un innocent, tu as fait le même choix deux fois."
+    },
+    {
+      "id": "o-hesitation",
+      "when": {
+        "all": []
+      },
+      "minDecisions": 5,
+      "text": "Ta plus longue hésitation : {{scène}}, {{secondes}} secondes."
+    },
+    {
+      "id": "o-changements",
+      "when": {
+        "flag": "law_changed"
+      },
+      "text": "Tu as modifié une loi après avoir été confronté à ses conséquences."
+    },
+    {
+      "id": "o-don-total",
+      "when": {
+        "var": "lifeYearsGiven",
+        "op": ">",
+        "value": 0
+      },
+      "text": "Au total, tu as donné {{var:lifeYearsGiven|0}} années de ta vie."
+    }
+  ],
+  "order": [
+    "t1.bouton",
+    "t1.dix-mille",
+    "t1.sept-annees",
+    "t1.pourquoi",
+    "t1.levier",
+    "t1.combien",
+    "t1.chirurgien",
+    "t1.coda"
+  ]
+}

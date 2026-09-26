@@ -1,6 +1,8 @@
 import { evaluate } from './conditions';
 import type { Content, GameState, Scene } from './types';
 export function nextScene(state: GameState, content: Content): Scene | null {
+  // Totality of transitions: the final gesture never reopens the room.
+  if (state.completed || state.visited.includes('t1.coda')) return null;
   const available = (id: string) => {
     const scene = content.scenes.find((s) => s.id === id);
     return scene &&
@@ -9,7 +11,8 @@ export function nextScene(state: GameState, content: Content): Scene | null {
       ? scene
       : null;
   };
-  if (state.pendingConfrontations.length) return available('t1.confrontation');
+  if (state.pendingConfrontations.length)
+    return content.scenes.find((s) => s.id === 't1.confrontation') ?? null;
   // A fixed dramatic beat immediately after the surgeon precedes deferred consequences.
   if (state.visited.includes('t1.chirurgien')) {
     const law = state.laws.some((l) => l.status === 'signed');
@@ -21,7 +24,10 @@ export function nextScene(state: GameState, content: Content): Scene | null {
         !state.visited.includes('t1.confrontation-non-signee')
       )
         return scene;
-    } else if (Object.values(state.evidence).some((value) => value >= 1.5)) {
+    } else if (
+      state.laws.length === 0 &&
+      Object.values(state.evidence).some((value) => value >= 1.5)
+    ) {
       const scene = available('t1.confrontation-non-signee');
       if (scene) return scene;
     }

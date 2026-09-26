@@ -18,6 +18,7 @@ export const initialState = (): GameState => ({
   pendingLaws: [],
   schedules: [],
   pendingConfrontations: [],
+  contradictions: [],
   confronted: [],
   evidence: {},
   completed: false,
@@ -38,6 +39,8 @@ export function reduce(
       if (!next.visited.includes(event.sceneId))
         next.visited.push(event.sceneId);
       next.currentSceneId = event.sceneId;
+      if (event.sceneId === 't1.confrontation')
+        delete next.choices[event.sceneId];
       break;
     case 'choice_locked': {
       if (event.sceneId in next.choices) break;
@@ -82,9 +85,17 @@ export function reduce(
             principleId: item.principleId,
             sceneId: event.sceneId,
           };
-          if (
-            !next.pendingConfrontations.some((c) => c.lawNumber === law.number)
-          )
+          const signature = next.events.find(
+            (e) => e.type === 'law_signed' && e.lawNumber === law.number,
+          );
+          if (!signature) continue;
+          next.contradictions.push({
+            ...pending,
+            choiceEventId: event.id,
+            lawEventId: signature.id,
+          });
+          // The coda is final; its evidence remains available in the history.
+          if (event.sceneId !== 't1.coda')
             next.pendingConfrontations.push(pending);
         }
       }
@@ -137,7 +148,11 @@ export function reduce(
           customText: event.customText,
           status: 'signed',
         });
-        if (!next.flags.includes('law_changed')) next.flags.push('law_changed');
+        if (
+          next.pendingConfrontations.some((c) => c.lawNumber === law.number) &&
+          !next.flags.includes('law_changed')
+        )
+          next.flags.push('law_changed');
       }
       break;
     }
@@ -151,19 +166,32 @@ export function reduce(
           customText: law.customText,
           status: 'abandoned',
         });
-        if (!next.flags.includes('law_changed')) next.flags.push('law_changed');
+        if (
+          next.pendingConfrontations.some((c) => c.lawNumber === law.number) &&
+          !next.flags.includes('law_changed')
+        )
+          next.flags.push('law_changed');
       }
       break;
     }
     case 'confrontation_answered': {
-      const pending = next.pendingConfrontations.shift();
-      if (pending)
+      const pending = next.pendingConfrontations[0];
+      if (pending && pending.lawNumber === event.lawNumber) {
+        next.pendingConfrontations.shift();
         next.confronted.push(`${pending.lawNumber}:${pending.sceneId}`);
+        const contradiction = next.contradictions.find(
+          (c) =>
+            c.lawNumber === pending.lawNumber && c.sceneId === pending.sceneId,
+        );
+        if (contradiction) contradiction.answerEventId = event.id;
+      }
       break;
     }
     case 'scene_skipped':
       if (!next.visited.includes(event.sceneId))
         next.visited.push(event.sceneId);
+      if (event.sceneId === 't1.confrontation')
+        next.pendingConfrontations.shift();
       break;
     case 'run_completed':
       next.completed = true;

@@ -182,6 +182,12 @@ export type PendingConfrontation = {
   principleId: string;
   sceneId: string;
 };
+// Historical truth: a contradiction is backed by a choice and a signature.
+export type Contradiction = PendingConfrontation & {
+  choiceEventId: string;
+  lawEventId: string;
+  answerEventId?: string;
+};
 export type GameState = {
   events: GameEvent[];
   flags: string[];
@@ -195,6 +201,7 @@ export type GameState = {
   pendingLaws: { principleId: string; statementId: string }[];
   schedules: { sceneId: string; when?: Condition }[];
   pendingConfrontations: PendingConfrontation[];
+  contradictions: Contradiction[];
   confronted: string[];
   evidence: Record<string, number>;
   completed: boolean;

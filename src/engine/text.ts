@@ -38,12 +38,14 @@ export function renderText(
           : fallback;
       if (source === 'count' && name === 'decisions')
         return String(state.decisions);
-      const n = Number(rest[0] === 'N' ? lawNumber : rest[0]);
+      const [reference, field] = (rest[0] ?? '').split('.');
+      const lawReference = source === 'since' ? rest[1] : reference;
+      const n = Number(lawReference === 'N' ? lawNumber : lawReference);
       const law = state.laws.find((l) => l.number === n);
       if (source === 'law' && law)
-        return rest[1] === 'number'
+        return field === 'number'
           ? String(law.number).padStart(2, '0')
-          : rest[1] === 'statement'
+          : field === 'statement'
             ? lawStatement(law, content)
             : fallback;
       if (source === 'since' && rest[0] === 'law' && law)
@@ -52,4 +54,20 @@ export function renderText(
     })
     .join('');
   return output;
+}
+
+// Simulation validation: checking the whole beat misses empty embedded quotes.
+export function assertRenderedText(
+  template: string,
+  state: GameState,
+  content: Content,
+  lawNumber?: number,
+): void {
+  for (const token of template.match(/\{\{[^{}]+\}\}/g) ?? []) {
+    const resolved = renderText(token, state, content, lawNumber);
+    if (!resolved.trim() || resolved.includes('{{'))
+      throw new Error(`Empty or unresolved template ${token}`);
+  }
+  if (renderText(template, state, content, lawNumber).includes('{{'))
+    throw new Error(`Unresolved template ${template}`);
 }

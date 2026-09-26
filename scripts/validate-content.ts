@@ -10,6 +10,8 @@ import {
   initialState,
   resolveScene,
   renderText,
+  assertRenderedText,
+  validateEvent,
   resolvedBeats,
   type Condition,
   type GameEvent,
@@ -137,18 +139,18 @@ const rand = () => {
 };
 const hits: Record<string, number> = {};
 const variants: Record<string, number> = {};
+const confrontationAnswers = new Set<string>();
 let serial = 0;
 type EventDraft = GameEvent extends infer E
   ? E extends GameEvent
     ? Omit<E, 'id' | 'at'>
     : never
   : never;
-const event = (state: GameState, e: EventDraft): GameState =>
-  reduce(
-    state,
-    { ...e, id: String(++serial), at: serial } as GameEvent,
-    content,
-  );
+const event = (state: GameState, e: EventDraft): GameState => {
+  const next = { ...e, id: String(++serial), at: serial } as GameEvent;
+  validateEvent(next, state, content);
+  return reduce(state, next, content);
+};
 for (let run = 0; run < 500; run++) {
   let state = event(initialState(), {
     type: 'run_started',
@@ -167,12 +169,14 @@ for (let run = 0; run < 500; run++) {
       variants[`${raw.id}:${variant.id}`] =
         (variants[`${raw.id}:${variant.id}`] ?? 0) + 1;
     const scene = resolveScene(raw, state);
+    const lawNumber = state.pendingConfrontations[0]?.lawNumber ?? undefined;
     state = event(state, {
       type: 'scene_entered',
       sceneId: scene.id,
       sceneVersion: scene.version,
     });
     for (const beat of resolvedBeats(scene.beats, state)) {
+      assertRenderedText(beat.text, state, content, lawNumber);
       const text = renderText(
         beat.text,
         state,
@@ -187,10 +191,15 @@ for (let run = 0; run < 500; run++) {
         sceneId: scene.id,
         text: 'Parce que je le voulais.',
       });
+    let confrontationAnswer = 'maintain';
     if (scene.id === 't1.confrontation') {
       const pending = state.pendingConfrontations[0];
       if (pending) {
-        const answer = rand() > 0.5 ? 'nuance' : 'abandon';
+        const answer = (['maintain', 'nuance', 'abandon', 'silence'] as const)[
+          Math.floor(rand() * 4)
+        ]!;
+        confrontationAnswer = answer;
+        confrontationAnswers.add(answer);
         if (answer === 'nuance')
           state = event(state, {
             type: 'law_revised',
@@ -200,7 +209,7 @@ for (let run = 0; run < 500; run++) {
                 ?.statements[1]?.id ?? null,
             customText: undefined,
           });
-        else
+        else if (answer === 'abandon')
           state = event(state, {
             type: 'law_abandoned',
             lawNumber: pending.lawNumber!,
@@ -213,7 +222,7 @@ for (let run = 0; run < 500; run++) {
       }
     }
     if (scene.id === 't1.confrontation-non-signee' && rand() > 0.5) {
-      const p = content.principles.sort(
+      const p = [...content.principles].sort(
         (a, b) => (state.evidence[b.id] ?? 0) - (state.evidence[a.id] ?? 0),
       )[0];
       if (p?.statements[0])
@@ -235,7 +244,8 @@ for (let run = 0; run < 500; run++) {
         scene.input.options[Math.floor(rand() * scene.input.options.length)]!
           .id;
     else if (scene.input.kind === 'freeText') value = 'written';
-    else value = 'maintain';
+    else if (scene.input.kind === 'lawProposal') value = 'no';
+    else value = confrontationAnswer;
     state = event(state, {
       type: 'choice_locked',
       sceneId: scene.id,
@@ -254,13 +264,9 @@ for (let run = 0; run < 500; run++) {
           value >= o.when.range[0] &&
           value <= o.when.range[1]),
     );
-    for (const beat of outcome?.beats ?? []) {
-      const text = renderText(
-        beat.text,
-        state,
-        content,
-        state.pendingConfrontations[0]?.lawNumber ?? undefined,
-      );
+    for (const beat of resolvedBeats(outcome?.beats ?? [], state)) {
+      assertRenderedText(beat.text, state, content, lawNumber);
+      const text = renderText(beat.text, state, content, lawNumber);
       if (text.includes('{{'))
         fail(`Unresolved consequence ${scene.id}: ${text}`);
     }
@@ -281,9 +287,48 @@ for (let run = 0; run < 500; run++) {
     }
   }
   if (steps >= 25) fail(`Non-terminating run ${run}`);
+  if (state.visited.at(-1) !== 't1.coda')
+    fail(`Coda is not final in run ${run}`);
+  if (state.pendingConfrontations.length)
+    fail(`Unprocessed confrontation in run ${run}`);
+  for (const contradiction of state.contradictions) {
+    if (
+      !state.events.some(
+        (e) =>
+          e.id === contradiction.choiceEventId && e.type === 'choice_locked',
+      ) ||
+      !state.events.some(
+        (e) => e.id === contradiction.lawEventId && e.type === 'law_signed',
+      )
+    )
+      fail(`Contradiction without historical evidence in run ${run}`);
+  }
 }
 for (const scene of content.scenes)
   if (!hits[scene.id]) fail(`Unreachable scene ${scene.id}`);
+if (confrontationAnswers.size !== 4)
+  fail('Some confrontation answers were not simulated');
+for (const scene of content.scenes)
+  for (const variant of scene.variants ?? [])
+    if (!variants[`${scene.id}:${variant.id}`])
+      fail(`Unreachable variant ${scene.id}:${variant.id}`);
+// Totality of transitions: leaving every scene must still reach a final gesture.
+let skipped = event(initialState(), {
+  type: 'run_started',
+  contentVersion: content.version,
+});
+for (let step = 0; step < 25; step++) {
+  const scene = nextScene(skipped, content);
+  if (!scene) break;
+  skipped = event(skipped, {
+    type: 'scene_entered',
+    sceneId: scene.id,
+    sceneVersion: scene.version,
+  });
+  skipped = event(skipped, { type: 'scene_skipped', sceneId: scene.id });
+}
+if (nextScene(skipped, content) || skipped.visited.at(-1) !== 't1.coda')
+  fail('Skipping must terminate at the coda');
 console.log(
   `Validated ${content.scenes.length} scenes and 500 seeded runs. Scene coverage:`,
   hits,
