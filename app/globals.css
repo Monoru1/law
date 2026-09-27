@@ -165,6 +165,7 @@ button:disabled {
 }
 .law-button {
   display: inline-flex;
+  user-select: none;
   align-items: center;
   justify-content: center;
   min-height: 54px;
@@ -592,6 +593,7 @@ button:disabled {
   padding-left: clamp(14px, 2vw, 24px);
 }
 .rest-advance {
+  user-select: none;
   min-height: 44px;
   min-width: 44px;
   padding: 10px 2px;

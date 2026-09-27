@@ -247,6 +247,9 @@ test('the way on is focused for the keyboard and never advances twice', async ({
     page.getByRole('button', { name: 'Appuyer', exact: true }),
   ).toBeVisible({ timeout: 15_000 });
   await page.waitForTimeout(1_000);
+  expect(
+    (await page.evaluate(() => window.getSelection()?.toString()))?.trim(),
+  ).toBe('');
   const journal = await events(page);
   expect(journal.filter((e) => e.type === 'choice_locked')).toHaveLength(1);
   expect(
