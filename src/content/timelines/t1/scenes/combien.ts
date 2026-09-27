@@ -23,7 +23,11 @@ export const combien: Scene = {
     confirm: 'hold',
   },
   outcomes: [
-    { when: { range: [0, 0] }, beats: [{ text: 'Il n’a rien reçu.' }] },
+    {
+      when: { range: [0, 0] },
+      beats: [{ text: 'Il n’a rien reçu.' }],
+      fact: 'Tu n’as rien donné à l’enfant.',
+    },
     {
       when: { range: [1, 40] },
       beats: [
@@ -34,6 +38,7 @@ export const combien: Scene = {
       effects: [
         { incVar: 'lifeYearsGiven', by: { fromValueOf: 't1.combien' } },
       ],
+      fact: 'Tu as donné {{value:t1.combien|0}} ans de ta vie à un enfant.',
     },
   ],
 };

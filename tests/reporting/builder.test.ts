@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { content } from '../../src/content';
 import { buildReport } from '../../src/reporting/builder';
-import {
-  contentIdentity,
-  CURRENT_SCHEMA_VERSION,
-} from '../../src/persistence/migrations';
+import { CURRENT_SCHEMA_VERSION } from '../../src/persistence/migrations';
 import {
   defaultSettings,
   type SaveGame,
@@ -26,8 +23,8 @@ function makeSave(
 ): SaveGame {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
+    timelineId: 't1',
     contentVersion: content.version,
-    contentIdentity: contentIdentity(content),
     runId: 'run-test',
     createdAt: 1,
     updatedAt: 1,
@@ -422,5 +419,115 @@ describe('buildReport', () => {
     const report = buildReport(save, content);
     const serialized = JSON.stringify(report);
     expect(serialized).not.toMatch(/brevo|api.key|BREVO/i);
+  });
+});
+
+describe('buildReport — La Maison', () => {
+  it('garde les lois héritées de la pièce, leurs phrases figées et les personnes', async () => {
+    const { contentT2 } = await import('../../src/content/t2');
+    const scene = (id: string) =>
+      contentT2.scenes.find((s) => s.id === id)!.version;
+    const save: SaveGame = {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      timelineId: 't2',
+      contentVersion: contentT2.version,
+      runId: 'house',
+      createdAt: 1,
+      updatedAt: 1,
+      settings: { ...defaultSettings },
+      reportingConsent: true,
+      pseudonym: 'Atlas',
+      events: [
+        event({ type: 'run_started', contentVersion: contentT2.version }),
+        event({
+          type: 'memory_inherited',
+          fromTimelineId: 't1',
+          fromRunId: 'room',
+          memory: {
+            completedAt: 1,
+            decisions: 8,
+            choices: { 't1.chambre-froide': 'dossier-a' },
+            justifications: {},
+            flags: [],
+            vars: {},
+            evidence: {},
+            laws: [
+              {
+                number: 1,
+                principleId: 'P_INNOCENT',
+                statementId: 'innocent.default',
+                statementText: 'La phrase exacte signée dans la pièce.',
+                status: 'signed',
+                revisions: [
+                  {
+                    at: 5,
+                    statementId: 'innocent.default',
+                    status: 'signed',
+                  },
+                ],
+                origin: {
+                  sceneId: 't1.chambre-froide',
+                  text: 'Dans la pièce, tu as transmis le dossier A au bloc.',
+                },
+              },
+            ],
+            declinedLaws: [],
+          },
+        }),
+        event({
+          type: 'scene_entered',
+          sceneId: 't2.mila-confie',
+          sceneVersion: scene('t2.mila-confie'),
+        }),
+        event({
+          type: 'choice_locked',
+          sceneId: 't2.mila-confie',
+          sceneVersion: scene('t2.mila-confie'),
+          input: 'binary',
+          value: 'garder',
+          hesitationMs: 100,
+          selectionChanges: 0,
+        }),
+        event({
+          type: 'scene_entered',
+          sceneId: 't2.confrontation-proche',
+          sceneVersion: scene('t2.confrontation-proche'),
+        }),
+        event({
+          type: 'confrontation_answered',
+          lawNumber: 1,
+          answer: 'maintain',
+        }),
+        event({
+          type: 'choice_locked',
+          sceneId: 't2.confrontation-proche',
+          sceneVersion: scene('t2.confrontation-proche'),
+          input: 'confrontation',
+          value: 'maintain',
+          hesitationMs: 100,
+          selectionChanges: 0,
+        }),
+        event({ type: 'run_completed', timelineId: 't2' }),
+      ],
+    };
+    const report = buildReport(save, contentT2)!;
+    expect(report.timelineId).toBe('t2');
+    expect(report.inheritedFromRunId).toBe('room');
+    expect(report.laws[0]).toMatchObject({
+      number: 1,
+      inheritedFrom: 't1',
+      currentStatement: 'La phrase exacte signée dans la pièce.',
+      status: 'active',
+    });
+    expect(report.decisions[0]!.displayValue).toBe('Garder son secret');
+    expect(report.confrontations[0]!.contradiction).toBe(
+      'Dans l’escalier, tu as gardé le secret de Mila. Elle passera devant quelqu’un.',
+    );
+    expect(report.relations).toEqual([
+      expect.objectContaining({
+        name: 'Mila',
+        events: [expect.objectContaining({ label: 'Promesse faite' })],
+      }),
+    ]);
   });
 });

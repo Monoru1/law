@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { content } from '../../../src/content';
+import { contentT2 } from '../../../src/content/t2';
+import type { Content } from '../../../src/engine';
+import { migrateSave } from '../../../src/persistence/migrations';
 import { buildReport } from '../../../src/reporting/builder';
+import { createSendLimiter } from '../../../src/reporting/sendLimiter';
 import {
   emailSubject,
   renderEmailHtml,
   renderEmailText,
 } from '../../../src/reporting/emailRenderer';
 import type { SaveGame } from '../../../src/persistence/SaveAdapter';
-import { saveSchema } from '../../../src/engine/schema';
 
 const MAX_BODY_BYTES = 512 * 1024; // 512 KB
 
@@ -15,13 +18,24 @@ function err(status: number, message: string): NextResponse {
   return NextResponse.json({ error: message }, { status });
 }
 
-function validatePayload(body: unknown): SaveGame | null {
-  if (typeof body !== 'object' || body === null) return null;
+const timelines: Record<string, Content> = { t1: content, t2: contentT2 };
+const limiter = createSendLimiter();
 
-  // Parse via Zod schema — rejects unknown shapes
-  const result = saveSchema.safeParse(body);
-  if (!result.success) return null;
-  const save = result.data as SaveGame;
+function validatePayload(
+  body: unknown,
+): { save: SaveGame; content: Content } | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const timeline =
+    timelines[String((body as { timelineId?: unknown }).timelineId ?? 't1')];
+  if (!timeline) return null;
+  // The same boundary as a local load: schema, contracts and every event
+  // replayed against the content of its own timeline.
+  let save: SaveGame;
+  try {
+    save = migrateSave(body, timeline);
+  } catch {
+    return null;
+  }
 
   // Strict checks the schema can't express
   if (!save.runId) return null;
@@ -29,7 +43,7 @@ function validatePayload(body: unknown): SaveGame | null {
   if (!save.events.some((e) => e.type === 'run_completed')) return null;
   if (!save.events.some((e) => e.type === 'run_started')) return null;
 
-  return save;
+  return { save, content: timeline };
 }
 
 async function sendViaBrevo(
@@ -99,13 +113,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Validate payload
-  const save = validatePayload(rawBody);
-  if (!save) {
+  const valid = validatePayload(rawBody);
+  if (!valid) {
     return err(400, 'Payload invalide.');
   }
+  const { save } = valid;
+
+  const key = `${save.timelineId}:${save.runId}`;
+  const decision = limiter.check(key);
+  if (decision === 'duplicate')
+    return NextResponse.json({ ok: true, duplicate: true }, { status: 200 });
+  if (decision === 'limited')
+    return err(429, 'Trop de rapports envoyés. Réessaie plus tard.');
 
   // Build report server-side
-  const report = buildReport(save, content);
+  const report = buildReport(save, valid.content);
   if (!report) {
     return err(400, 'Rapport non constructible.');
   }
@@ -133,6 +155,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return err(502, 'Échec de l\u2019envoi du rapport.');
   }
 
+  limiter.delivered(key);
   return NextResponse.json({ ok: true }, { status: 200 });
 }
 

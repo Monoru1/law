@@ -48,6 +48,7 @@ export const chambreFroide: Scene = {
         { text: '\u2014', pauseMs: 1200 },
         { text: 'Le dossier B a \u00e9t\u00e9 referm\u00e9.' },
       ],
+      fact: 'Tu as transmis le dossier A au bloc.',
       effects: [
         { setFlag: 'chose_attente' },
         {
@@ -69,6 +70,7 @@ export const chambreFroide: Scene = {
           style: 'whisper',
         },
       ],
+      fact: 'Tu as transmis le dossier B au bloc.',
       effects: [
         { setFlag: 'chose_probabilite' },
         {

@@ -45,7 +45,7 @@ export const observationRules: ObservationRule[] = [
     id: 'o-hesitation',
     when: { all: [] },
     minDecisions: 5,
-    text: 'Ta plus longue hésitation : {{scène}}, {{secondes}} secondes.',
+    text: 'Ta plus longue hésitation : {{scène}}, {{secondes}}.',
   },
   {
     id: 'o-changements',
@@ -56,5 +56,59 @@ export const observationRules: ObservationRule[] = [
     id: 'o-don-total',
     when: { var: 'lifeYearsGiven', op: '>', value: 0 },
     text: 'Au total, tu as donné {{var:lifeYearsGiven|0}} années de ta vie.',
+  },
+];
+
+// The house: an act in the room beside an act in the house. Nothing more.
+export const observationRulesT2: ObservationRule[] = [
+  {
+    id: 'o2-dix-mille-pret',
+    when: {
+      all: [
+        { chose: { sceneId: 't1.dix-mille', optionId: 'accepter' } },
+        { chose: { sceneId: 't2.la-faveur', optionId: 'preter' } },
+      ],
+    },
+    text: 'Dans la pièce, tu as accepté dix mille euros. Dans le jardin, tu en as prêté dix mille à Sem.',
+  },
+  {
+    id: 'o2-dix-mille-nom',
+    when: {
+      all: [
+        { chose: { sceneId: 't1.dix-mille', optionId: 'refuser' } },
+        { chose: { sceneId: 't2.la-faveur', optionId: 'nom' } },
+      ],
+    },
+    text: 'Dans la pièce, tu as refusé dix mille euros. Dans le jardin, tu as dit à Sem de donner un nom.',
+  },
+  {
+    id: 'o2-protocole-continuer',
+    when: {
+      all: [
+        { chose: { sceneId: 't1.le-protocole', optionId: 'arreter' } },
+        { chose: { sceneId: 't2.omar-histoire', optionId: 'aurais-continue' } },
+      ],
+    },
+    text: 'Dans la pièce, tu as arrêté le protocole. Sur le balcon, tu as dit à Omar que tu aurais continué.',
+  },
+  {
+    id: 'o2-protocole-arreter',
+    when: {
+      all: [
+        { chose: { sceneId: 't1.le-protocole', optionId: 'continuer' } },
+        { chose: { sceneId: 't2.omar-histoire', optionId: 'aurais-arrete' } },
+      ],
+    },
+    text: 'Dans la pièce, tu as continué le protocole. Sur le balcon, tu as dit à Omar que tu aurais arrêté.',
+  },
+  {
+    id: 'o2-sept-annees',
+    when: {
+      all: [
+        { chose: { sceneId: 't1.sept-annees', optionId: 'ne-pas-sauver' } },
+        { chose: { sceneId: 't2.la-promesse', optionId: 'refuser' } },
+      ],
+    },
+    text: 'Tu as gardé tes sept années. Tu as refusé de promettre à Camille.',
   },
 ];

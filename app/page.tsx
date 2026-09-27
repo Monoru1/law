@@ -3,19 +3,38 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '../src/store/gameStore';
+import { useT2GameStore } from '../src/store/gameStoreT2';
 import { content, copy } from '../src/content';
+import { contentT2 } from '../src/content/t2';
 import { replay, getTimelineDoors } from '../src/engine';
 import { Button } from '../src/ui/primitives/Button';
 import { Dialog } from '../src/ui/primitives/Dialog';
 export default function Home() {
   const router = useRouter();
-  const { save, loaded, error, hydrate, start } = useGameStore();
+  const { save, loaded, error, hydrate } = useGameStore();
+  const house = useT2GameStore();
   const [presentingId, setPresentingId] = useState<string | null>(null);
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
+  const hydrateHouse = house.hydrate;
+  useEffect(() => {
+    if (!house.loaded) void hydrateHouse();
+  }, [house.loaded, hydrateHouse]);
   const state = useMemo(() => replay(save?.events ?? [], content), [save]);
-  const doors = useMemo(() => getTimelineDoors(state, content), [state]);
+  const houseState = useMemo(
+    () => replay(house.save?.events ?? [], contentT2),
+    [house.save],
+  );
+  const doors = useMemo(
+    () =>
+      getTimelineDoors({
+        t1: { state, content },
+        t2: { state: houseState, content: contentT2 },
+      }),
+    [state, houseState],
+  );
+  const routes: Record<string, string> = { t1: '/jouer', t2: '/jouer/t2' };
   const presenting = presentingId
     ? (copy.doors.find((d) => d.timelineId === presentingId) ?? null)
     : null;
@@ -32,11 +51,11 @@ export default function Home() {
       <div className="home-body">
         <h1 className="serif">THE LAW</h1>
         <p className="serif">{copy.home.tagline}</p>
-        {error && (
-          <p role="alert" style={{ fontSize: '1rem' }}>
-            {error}
+        {[error, house.error].filter(Boolean).map((message, i) => (
+          <p key={i} role="alert" style={{ fontSize: '1rem' }}>
+            {message}
           </p>
-        )}
+        ))}
         <div className="home-doors">
           {doors.map((door) => {
             const meta = copy.doors.find(
@@ -59,23 +78,20 @@ export default function Home() {
                   >
                     {copy.enter}
                   </Button>
-                ) : loaded ? (
-                  <Button
-                    onClick={async () => {
-                      if (door.status === 'completed') await start();
-                      router.push('/jouer');
-                    }}
-                  >
+                ) : loaded && house.loaded ? (
+                  <Button onClick={() => router.push(routes[door.timelineId]!)}>
                     {door.status === 'in_progress'
                       ? copy.home.resume
-                      : copy.home.start}
+                      : door.status === 'completed'
+                        ? copy.home.summary
+                        : copy.home.start}
                   </Button>
                 ) : null}
               </div>
             );
           })}
         </div>
-        {save && (
+        {(save || house.save) && (
           <div className="home-actions">
             <Link href="/ma-loi" className="law-button ghost">
               {copy.home.laws}
@@ -97,17 +113,10 @@ export default function Home() {
               {para}
             </p>
           ))}
+          {presenting.timelineId === 't2' && (
+            <p className="mono">{copy.threshold.locked}</p>
+          )}
           <div className="stack" style={{ marginTop: '2rem' }}>
-            {presenting.timelineId === 't2' && (
-              <Button
-                onClick={() => {
-                  setPresentingId(null);
-                  router.push('/jouer/t2');
-                }}
-              >
-                {copy.home.start}
-              </Button>
-            )}
             <Button className="ghost" onClick={() => setPresentingId(null)}>
               {copy.back}
             </Button>

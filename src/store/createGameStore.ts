@@ -1,10 +1,13 @@
 'use client';
 import { create } from 'zustand';
-import { replay, validateEvent, type Content, type GameEvent } from '../engine';
 import {
-  contentIdentity,
-  CURRENT_SCHEMA_VERSION,
-} from '../persistence/migrations';
+  replay,
+  validateEvent,
+  type Content,
+  type GameEvent,
+  type Memory,
+} from '../engine';
+import { CURRENT_SCHEMA_VERSION } from '../persistence/migrations';
 import {
   defaultSettings,
   type ReportingStatus,
@@ -33,6 +36,8 @@ export type GameStore = {
     replaceExisting?: true;
     pseudonym?: string;
     reportingConsent?: boolean;
+    // Required when the timeline inherits an earlier one.
+    inherited?: { fromRunId: string; memory: Memory };
   }) => Promise<void>;
   restore: (key: string) => Promise<void>;
   append: (event: EventDraft) => Promise<void>;
@@ -52,127 +57,149 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
 
   const persist = async (save: SaveGame) => adapter.save(save);
 
-  return create<GameStore>((set, get) => ({
-    save: null,
-    loaded: false,
-    error: null,
-    hydrate: () =>
-      enqueue(async () => {
-        try {
-          let save = await adapter.load();
-          if (save && save.reportingStatus === 'sending') {
-            const corrected: SaveGame = { ...save, reportingStatus: 'failed' };
-            try {
-              await persist(corrected);
-            } catch {
-              /* best effort */
-            }
-            save = corrected;
-          }
-          set({ save, loaded: true, error: null });
-        } catch (e) {
-          set({
-            save: null,
-            loaded: true,
-            error: e instanceof Error ? e.message : String(e),
-          });
+  type StartOptions = Parameters<GameStore['start']>[0];
+  return create<GameStore>((set, get) => {
+    async function begin(options: StartOptions) {
+      if (!options?.replaceExisting) {
+        const existing = await adapter.load();
+        if (existing) {
+          set({ save: existing, loaded: true, error: null });
+          return;
         }
-      }),
-    start: (options) =>
-      enqueue(async () => {
-        if (!options?.replaceExisting) {
+      }
+      if (content.inherits && !options?.inherited)
+        throw new Error('Cette partie commence après la précédente.');
+      const now = Date.now();
+      const events: GameEvent[] = [
+        {
+          type: 'run_started',
+          id: crypto.randomUUID(),
+          at: now,
+          contentVersion: content.version,
+        },
+      ];
+      if (content.inherits && options?.inherited)
+        events.push({
+          type: 'memory_inherited',
+          id: crypto.randomUUID(),
+          at: now,
+          fromTimelineId: content.inherits.timelineId,
+          fromRunId: options.inherited.fromRunId,
+          memory: options.inherited.memory,
+        });
+      const pseudonym = options?.pseudonym?.trim().slice(0, 64) || undefined;
+      const save: SaveGame = {
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        timelineId: content.timelineId as SaveGame['timelineId'],
+        contentVersion: content.version,
+        runId: crypto.randomUUID(),
+        createdAt: now,
+        updatedAt: now,
+        events,
+        settings: { ...defaultSettings },
+        ...(pseudonym !== undefined ? { pseudonym } : {}),
+        ...(options?.reportingConsent !== undefined
+          ? { reportingConsent: options.reportingConsent }
+          : {}),
+      };
+      if (options?.replaceExisting) await adapter.replace(save);
+      else await persist(save);
+      set({ save, loaded: true, error: null });
+    }
+    return {
+      save: null,
+      loaded: false,
+      error: null,
+      hydrate: () =>
+        enqueue(async () => {
           try {
-            const existing = await adapter.load();
-            if (existing) {
-              set({ save: existing, loaded: true, error: null });
-              return;
+            let save = await adapter.load();
+            if (save && save.reportingStatus === 'sending') {
+              const corrected: SaveGame = {
+                ...save,
+                reportingStatus: 'failed',
+              };
+              try {
+                await persist(corrected);
+              } catch {
+                /* best effort */
+              }
+              save = corrected;
             }
+            set({ save, loaded: true, error: null });
+          } catch (e) {
+            set({
+              save: null,
+              loaded: true,
+              error: e instanceof Error ? e.message : String(e),
+            });
+          }
+        }),
+      start: (options) =>
+        enqueue(async () => {
+          try {
+            await begin(options);
           } catch (error) {
+            // A refused start must be visible; the original save stays intact.
             set({
               loaded: true,
               error: error instanceof Error ? error.message : String(error),
             });
             throw error;
           }
-        }
-        const now = Date.now();
-        const runId = crypto.randomUUID();
-        const event: GameEvent = {
-          type: 'run_started',
-          id: crypto.randomUUID(),
-          at: now,
-          contentVersion: content.version,
-        };
-        const pseudonym = options?.pseudonym?.trim().slice(0, 64) || undefined;
-        const save: SaveGame = {
-          schemaVersion: CURRENT_SCHEMA_VERSION,
-          contentVersion: content.version,
-          runId,
-          contentIdentity: contentIdentity(content),
-          createdAt: now,
-          updatedAt: now,
-          events: [event],
-          settings: { ...defaultSettings },
-          ...(pseudonym !== undefined ? { pseudonym } : {}),
-          ...(options?.reportingConsent !== undefined
-            ? { reportingConsent: options.reportingConsent }
-            : {}),
-        };
-        if (options?.replaceExisting) await adapter.replace(save);
-        else await persist(save);
-        set({ save, loaded: true, error: null });
-      }),
-    restore: (key) =>
-      enqueue(async () => {
-        const save = await adapter.restore(key);
-        set({ save, loaded: true, error: null });
-      }),
-    append: (partial) =>
-      enqueue(async () => {
-        const save = get().save;
-        if (!save) return;
-        const event = {
-          ...partial,
-          id: crypto.randomUUID(),
-          at: Date.now(),
-        } as GameEvent;
-        validateEvent(event, replay(save.events, content), content);
-        const next = {
-          ...save,
-          updatedAt: event.at,
-          events: [...save.events, event],
-        };
-        await persist(next);
-        set({ save: next });
-      }),
-    settings: (update) =>
-      enqueue(async () => {
-        const save = get().save;
-        if (!save) return;
-        const next = {
-          ...save,
-          settings: { ...save.settings, ...update },
-          updatedAt: Date.now(),
-        };
-        await persist(next);
-        set({ save: next });
-      }),
-    setReportingStatus: (status) =>
-      enqueue(async () => {
-        const save = get().save;
-        if (!save) return;
-        const next: SaveGame = {
-          ...save,
-          reportingStatus: status,
-          updatedAt: Date.now(),
-        };
-        await persist(next);
-        set({ save: next });
-      }),
-    clear: () =>
-      enqueue(async () => {
-        await adapter.clear();
-        set({ save: null, error: null });
-      }),
-  }));
+        }),
+      restore: (key) =>
+        enqueue(async () => {
+          const save = await adapter.restore(key);
+          set({ save, loaded: true, error: null });
+        }),
+      append: (partial) =>
+        enqueue(async () => {
+          const save = get().save;
+          if (!save) return;
+          const event = {
+            ...partial,
+            id: crypto.randomUUID(),
+            at: Date.now(),
+          } as GameEvent;
+          validateEvent(event, replay(save.events, content), content);
+          const next = {
+            ...save,
+            updatedAt: event.at,
+            events: [...save.events, event],
+          };
+          await persist(next);
+          set({ save: next });
+        }),
+      settings: (update) =>
+        enqueue(async () => {
+          const save = get().save;
+          if (!save) return;
+          const next = {
+            ...save,
+            settings: { ...save.settings, ...update },
+            updatedAt: Date.now(),
+          };
+          await persist(next);
+          set({ save: next });
+        }),
+      setReportingStatus: (status) =>
+        enqueue(async () => {
+          const save = get().save;
+          if (!save) return;
+          const next: SaveGame = {
+            ...save,
+            reportingStatus: status,
+            updatedAt: Date.now(),
+          };
+          await persist(next);
+          set({ save: next });
+        }),
+      clear: () =>
+        enqueue(async () => {
+          await adapter.clear();
+          set({ save: null, error: null });
+        }),
+    };
+  });
 }

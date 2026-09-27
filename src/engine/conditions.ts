@@ -36,6 +36,12 @@ export function evaluate(condition: Condition, state: GameState): boolean {
   if ('answered' in condition)
     return condition.answered in state.justifications;
   if ('visited' in condition) return state.visited.includes(condition.visited);
+  if ('relation' in condition)
+    return state.relations.some(
+      (record) =>
+        record.characterId === condition.relation.characterId &&
+        record.events.some((event) => event.kind === condition.relation.kind),
+    );
   if ('contradiction' in condition)
     return condition.contradiction === 'pending'
       ? state.pendingConfrontations.length > 0

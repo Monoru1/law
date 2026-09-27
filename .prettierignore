@@ -1,3 +1,5 @@
 # Generated or tool-owned files: reformatting them breaks the owning tool.
 pnpm-lock.yaml
 next-env.d.ts
+# Exact bytes embedded by historical saves; never reformat.
+tests/fixtures/

@@ -1,57 +1,46 @@
 import type { Scene } from '../../../../engine/types';
 
-// T2 — Scène conditionnelle : CONFRONTATION PROCHE
-// Déclenchée si exception faite pour Sem ET une loi signée.
+// T2 — Scène conditionnelle : CONFRONTATION
+// Une loi, l'acte qui l'a fait naître, l'acte qui la contredit. Rien d'autre.
+// La loi peut venir de la pièce : ses deux actes n'ont pas lieu au même endroit.
 export const confrontationProche: Scene = {
   id: 't2.confrontation-proche',
-  version: 1,
+  version: 2,
   timelineId: 't2',
-  title: 'Confrontation',
+  title: 'La confrontation',
   regression: 2,
   contentFlags: [],
-  when: {
-    all: [
-      { flag: 't2.exception-sem' },
-      {
-        any: [
-          { law: { principleId: 'P_INNOCENT', status: 'signed' } },
-          { law: { principleId: 'P_NOMBRE', status: 'signed' } },
-          { law: { principleId: 'P_SACRIFICE_SOI', status: 'signed' } },
-          { law: { principleId: 'P_ARGENT', status: 'signed' } },
-        ],
-      },
-    ],
-  },
   beats: [
-    { text: 'Ta loi dit une chose.' },
-    { text: 'Ce que tu as fait pour Sem en dit une autre.' },
-    { text: 'Tu le sais.' },
-    {
-      text: "La question n'est pas\u00a0: avais-tu tort\u00a0?",
-      style: 'emphasis',
-    },
-    {
-      text: "La question est\u00a0: qu'est-ce que \u00e7a dit de toi\u00a0?",
-      style: 'emphasis',
-    },
+    { text: 'LOI {{law:N.number|01}}', style: 'meta' },
+    { text: '« {{law:N.statement|}} »' },
+    { text: '{{law:N.origin|—}}' },
+    { text: 'Tu l’as signée.' },
+    { text: '{{confrontation:fact|Tu viens de faire l’inverse.}}' },
+    { text: 'Elle tient toujours ?' },
   ],
-  input: {
-    kind: 'freeText',
-    prompt: 'Ta r\u00e9ponse',
-    placeholder: "Qu'est-ce que \u00e7a dit de toi\u00a0?",
-    maxLength: 300,
-    skippable: true,
-  },
+  input: { kind: 'confrontation' },
   outcomes: [
     {
-      when: { any: true },
+      when: { optionId: 'maintain' },
+      beats: [{ text: 'Ta loi reste écrite. Ce que tu as fait aussi.' }],
+    },
+    {
+      when: { optionId: 'nuance' },
       beats: [
-        {
-          text: "Il n'y a pas de bonne r\u00e9ponse.",
-          style: 'whisper',
-        },
-        { text: 'Il y a la tienne.', style: 'emphasis' },
+        { text: 'LOI {{law:N.number|01}} a été réécrite.' },
+        { text: 'L’ancienne version reste dans ton historique.' },
       ],
+    },
+    {
+      when: { optionId: 'abandon' },
+      beats: [
+        { text: 'LOI {{law:N.number|01}} est abrogée.' },
+        { text: 'Elle a existé.' },
+      ],
+    },
+    {
+      when: { optionId: 'silence' },
+      beats: [{ text: 'Le silence est noté.' }],
     },
   ],
 };

@@ -1,63 +1,58 @@
 import type { Scene } from '../../../../engine/types';
 
 // T2 — Scène conditionnelle : CAMILLE SAIT
-// Déclenchée si la faveur d'Omar acceptée ET Camille protégée.
+// Le mensonge d'une heure du matin ne tient pas jusqu'au jour.
 export const camilleSait: Scene = {
   id: 't2.camille-sait',
-  version: 1,
+  version: 2,
   timelineId: 't2',
   title: 'Camille sait',
-  regression: 1,
+  regression: 2,
   contentFlags: [],
-  when: {
-    all: [
-      { visited: 't2.la-faveur' },
-      { flag: 't2.protege-camille' },
-      { chose: { sceneId: 't2.la-faveur', optionId: 'oui' } },
-    ],
-  },
+  when: { chose: { sceneId: 't2.le-mensonge', optionId: 'mentir' } },
   beats: [
-    { text: 'Camille te prend \u00e0 part.' },
-    { text: 'Elle sait qu\u2019Omar t\u2019a demand\u00e9 quelque chose.' },
+    { text: 'Le matin. Camille est dans l’entrée, entre les cartons.' },
     {
-      text: '\u00ab\u00a0Tu lui as dit oui\u00a0?\u00a0\u00bb',
-      style: 'emphasis',
+      text: 'Elle tient une lettre ouverte. Licenciement. Datée de mars.',
+      requires: { flag: 'took_money' },
+    },
+    {
+      text: 'Sem lui a tout dit, à l’aube.',
+      requires: { not: { flag: 'took_money' } },
+    },
+    { text: 'Elle sait.' },
+    { text: '« Tu savais. »', style: 'emphasis' },
+    {
+      text: '« Je t’avais demandé de l’aide. Tu avais dit oui. »',
+      requires: { relation: { characterId: 'camille', kind: 'promise_made' } },
     },
   ],
   input: {
-    kind: 'binary',
-    confirm: 'tap',
-    options: [
-      { id: 'avouer', label: 'Lui dire la v\u00e9rit\u00e9' },
-      { id: 'taire', label: 'Esquiver' },
-    ],
+    kind: 'freeText',
+    prompt: 'Qu’est-ce que tu lui dis ?',
+    placeholder: 'Ce que tu lui dis. Ou rien.',
+    maxLength: 280,
+    skippable: true,
   },
   outcomes: [
     {
-      when: { optionId: 'avouer' },
+      when: { optionId: 'written' },
       beats: [
-        { text: 'Tu lui dis.' },
-        { text: 'Camille hoche la t\u00eate lentement.' },
-        { text: '\u00ab\u00a0Je comprends.\u00a0\u00bb', style: 'emphasis' },
-        {
-          text: "Elle n'est pas contente. Elle comprend quand m\u00eame.",
-          style: 'whisper',
-        },
+        { text: 'Camille écoute jusqu’au bout.' },
+        { text: 'Puis elle recompte les cartons.' },
       ],
       effects: [
         { relationEvent: { characterId: 'camille', kind: 'lie_revealed' } },
       ],
+      fact: 'Le matin, tu as répondu à Camille, qui savait.',
     },
     {
-      when: { optionId: 'taire' },
-      beats: [
-        { text: 'Tu esquives.' },
-        { text: 'Camille te regarde.' },
-        { text: 'Elle sait.', style: 'whisper' },
-      ],
+      when: { optionId: 'declined' },
+      beats: [{ text: 'Tu ne dis rien.' }, { text: 'Camille non plus.' }],
       effects: [
-        { relationEvent: { characterId: 'camille', kind: 'lie_made' } },
+        { relationEvent: { characterId: 'camille', kind: 'lie_revealed' } },
       ],
+      fact: 'Le matin, tu n’as rien dit à Camille, qui savait.',
     },
   ],
 };

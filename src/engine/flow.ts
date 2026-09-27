@@ -1,31 +1,10 @@
 import { evaluate } from './conditions';
-import type { Content, GameState, Scene } from './types';
-export type TimelineConfig = {
-  /** Scene ID that handles confrontation resolution. Empty string = no confrontation mechanic. */
-  confrontationSceneId: string;
-  /** Scene shown after le-protocole equivalent when a law is signed but confrontation hasn't happened. */
-  pasEncoreSceneId: string;
-  /** Scene shown when evidence is high but no law was signed. */
-  confrontationUnsignedSceneId: string;
-  /** Scene that ends the timeline (visited = no further scenes). */
-  codaSceneId: string;
-};
-export const t1Config: TimelineConfig = {
-  confrontationSceneId: 't1.confrontation',
-  pasEncoreSceneId: 't1.pas-encore',
-  confrontationUnsignedSceneId: 't1.confrontation-non-signee',
-  codaSceneId: 't1.coda',
-};
-export const t2Config: TimelineConfig = {
-  confrontationSceneId: '',
-  pasEncoreSceneId: '',
-  confrontationUnsignedSceneId: '',
-  codaSceneId: 't2.la-maison',
-};
+import type { Content, GameState, Scene, TimelineConfig } from './types';
+export type { TimelineConfig } from './types';
 export function nextScene(
   state: GameState,
   content: Content,
-  config: TimelineConfig = t1Config,
+  config: TimelineConfig = content.flow,
 ): Scene | null {
   // Totality of transitions: the final gesture never reopens the room.
   if (
@@ -45,11 +24,12 @@ export function nextScene(
     return (
       content.scenes.find((s) => s.id === config.confrontationSceneId) ?? null
     );
-  // T1 specific: a fixed dramatic beat after le-protocole precedes deferred consequences.
+  // A fixed dramatic beat after the checkpoint precedes deferred consequences.
   if (
     config.pasEncoreSceneId &&
     config.confrontationUnsignedSceneId &&
-    state.visited.includes('t1.le-protocole')
+    config.checkpointSceneId &&
+    state.visited.includes(config.checkpointSceneId)
   ) {
     const law = state.laws.some((l) => l.status === 'signed');
     if (law) {
@@ -91,4 +71,14 @@ export function resolveScene(scene: Scene, state: GameState): Scene {
         input: { ...scene.input, ...variant.input } as Scene['input'],
       }
     : scene;
+}
+/** Every option a scene can present, across its variants, by ID. */
+export function sceneOptions(scene: Scene) {
+  const options = new Map<string, { id: string; label: string }>();
+  const inputs = [scene.input, ...(scene.variants ?? []).map((v) => v.input)];
+  for (const input of inputs)
+    if (input && 'options' in input && Array.isArray(input.options))
+      for (const option of input.options)
+        if (!options.has(option.id)) options.set(option.id, option);
+  return options;
 }

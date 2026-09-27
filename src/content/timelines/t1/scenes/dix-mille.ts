@@ -38,6 +38,7 @@ export const dixMille: Scene = {
         { text: 'Un homme de cinquante-deux ans vide son bureau.' },
       ],
       effects: [{ setFlag: 'took_money' }],
+      fact: 'Tu as accepté dix mille euros.',
     },
     {
       when: { optionId: 'refuser' },
@@ -46,6 +47,7 @@ export const dixMille: Scene = {
         { text: '—', pauseMs: 1200 },
         { text: 'Il ne saura jamais qu’il te doit quelque chose.' },
       ],
+      fact: 'Tu as refusé dix mille euros.',
     },
   ],
 };

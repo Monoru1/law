@@ -25,6 +25,18 @@ Composants :
 
 `reportingStatus` (`not_sent | sending | sent | failed`) est un champ persisté de `SaveGame`, au même titre que `settings` — il survit au rafraîchissement de page et à la navigation (Ma loi, retour à l'écran final), contrairement à un store en mémoire. Un statut `sending` retrouvé au chargement (session interrompue) est automatiquement rétrogradé en `failed` pour ne jamais bloquer silencieusement le joueur sans option de réessai.
 
+## Deux timelines
+
+Chaque timeline a son propre journal, son propre `runId` et son propre rapport. LA MAISON reprend le pseudonyme et le consentement de LA PIÈCE au seuil ; le seuil le dit explicitement et propose « Entrer sans rapport ». Le rapport de LA MAISON indique `inheritedFromRunId` (le run de LA PIÈCE dont la mémoire a été copiée), marque les lois héritées (« signée dans la pièce ») et ajoute une section factuelle « Personnes » : ce que le joueur a fait envers chacun (promesse faite, tenue ou non tenue, mensonge, secret gardé ou révélé, aidé·e, pas choisi·e), dans l’ordre, sans score. Chaque confrontation indique l’acte réel qu’elle a placé à côté de la loi.
+
+## Validation serveur
+
+L’API relit la sauvegarde exactement comme un chargement local : `migrateSave(body, contenu de sa timeline)` — schéma, contrats de scène et rejeu de chaque événement. Une histoire impossible (décision hors de sa scène, achèvement prématuré, doublon) est refusée en 400 avant toute construction de rapport. Le pseudonyme est débarrassé des caractères de contrôle avant le sujet et le corps.
+
+## Limitation d’envoi
+
+`src/reporting/sendLimiter.ts`, en mémoire par instance serveur : un rapport déjà livré pour le même `timelineId:runId` n’est pas renvoyé (réponse 200 `{ ok: true, duplicate: true }`), et au plus 20 envois par fenêtre de 10 minutes sont acceptés (429 au-delà). Sans base de données, cette garde protège d’un double clic ou d’un rafraîchissement, pas d’un expéditeur déterminé sur plusieurs instances.
+
 ## Events utilisés
 
 - `run_started` — horodatage de début
@@ -36,6 +48,8 @@ Composants :
 - `confrontation_answered` — réponses aux confrontations ; sa scène est retrouvée en associant positionnellement chaque `confrontation_answered` au `choice_locked(input:'confrontation')` qui le suit (aucun lien direct sur l'event)
 - `scene_skipped` — compte dans la synthèse
 - `run_completed` — horodatage de fin, timelineId
+- `memory_inherited` — lois et mémoire héritées de LA PIÈCE (rapport de LA MAISON)
+- effets `relationEvent` des choix, rejoués — section « Personnes »
 
 ## Variables d'environnement
 

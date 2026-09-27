@@ -1,20 +1,32 @@
 import type { Scene } from '../../../../engine/types';
 
-// T2 — Scène 4 : LA PROMESSE
-// Camille demande une promesse explicite. Pas une opinion — un engagement nommé.
+// T2 — Scène 2 : LA PROMESSE
+// Camille demande une promesse à l'aveugle. Ce qu'elle a déjà donné, ou reçu,
+// dans la pièce n'est jamais dit : seulement un soir, ou un souffle court.
 export const laPromesse: Scene = {
   id: 't2.la-promesse',
-  version: 1,
+  version: 2,
   timelineId: 't2',
   title: 'La promesse',
-  regression: 1,
+  regression: 0,
   contentFlags: [],
   beats: [
-    { text: 'Camille veut que tu lui promettes quelque chose.' },
-    { text: "Que si un jour elle te demande de l'aider, tu diras oui." },
+    { text: 'Dans la cuisine, Camille essuie les verres. Un par un.' },
     {
-      text: '\u00ab\u00a0Je ne te demande pas de d\u00e9tails. Juste\u00a0: oui ou non.\u00a0\u00bb',
+      text: 'Il y a trois ans, un soir, elle a failli ne pas rentrer chez elle. Elle n’en parle jamais.',
+      requires: { chose: { sceneId: 't1.sept-annees', optionId: 'sauver' } },
     },
+    {
+      text: 'Elle s’essouffle dans l’escalier, depuis quelques années. Elle dit que c’est l’âge.',
+      requires: {
+        chose: { sceneId: 't1.sept-annees', optionId: 'ne-pas-sauver' },
+      },
+    },
+    { text: '« Promets-moi un truc. »' },
+    {
+      text: '« Si un jour je te demande de l’aide, tu dis oui. Sans demander pourquoi. »',
+    },
+    { text: '« Oui ou non. »', style: 'emphasis' },
   ],
   input: {
     kind: 'binary',
@@ -23,41 +35,35 @@ export const laPromesse: Scene = {
       {
         id: 'promettre',
         label: 'Promettre',
-        evidence: [{ principleId: 'P_PROCHE', weight: 1 }],
+        evidence: [{ principleId: 'P_PAROLE', weight: 1 }],
       },
-      {
-        id: 'refuser',
-        label: "Refuser de promettre à l'aveugle",
-        evidence: [{ principleId: 'P_INNOCENT', weight: 0.5 }],
-      },
+      { id: 'refuser', label: 'Ne pas promettre sans savoir' },
     ],
   },
   outcomes: [
     {
       when: { optionId: 'promettre' },
-      beats: [
-        {
-          text: '\u00ab\u00a0Bien.\u00a0\u00bb Camille dit \u00e7a simplement.',
-        },
-        { text: 'Rien de plus.' },
-        {
-          text: "Tu as promis à quelqu'un que tu aideras sans savoir quoi.",
-          style: 'whisper',
-        },
-      ],
+      beats: [{ text: '« Bien. »' }, { text: 'Elle range le dernier verre.' }],
       effects: [
         { setFlag: 't2.promesse-camille' },
         { relationEvent: { characterId: 'camille', kind: 'promise_made' } },
+        {
+          proposeLaw: {
+            principleId: 'P_PAROLE',
+            statementId: 'parole.default',
+          },
+        },
       ],
+      fact: 'Dans la cuisine, tu as promis à Camille de dire oui.',
     },
     {
       when: { optionId: 'refuser' },
       beats: [
-        { text: 'Camille hoche la tête.' },
-        { text: '\u00ab\u00a0Je comprends.\u00a0\u00bb' },
-        { text: "Ce n'est pas vrai.", style: 'whisper' },
+        { text: '« D’accord. »' },
+        { text: 'Elle recompte les verres qu’elle vient de compter.' },
       ],
+      fact: 'Dans la cuisine, tu as refusé de promettre à Camille.',
     },
   ],
-  followUps: ['certainty'],
+  followUps: ['lawProposal'],
 };

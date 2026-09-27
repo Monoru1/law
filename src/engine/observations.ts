@@ -20,7 +20,9 @@ export function observations(state: GameState, content: Content): string[] {
           )
           .replace(
             '{{secondes}}',
-            String(Math.round((longest?.hesitationMs ?? 0) / 1000)),
+            ((seconds) => `${seconds} seconde${seconds > 1 ? 's' : ''}`)(
+              Math.round((longest?.hesitationMs ?? 0) / 1000),
+            ),
           );
       }
       return renderText(rule.text, state, content);

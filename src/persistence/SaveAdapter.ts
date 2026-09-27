@@ -17,8 +17,9 @@ export const defaultSettings: Settings = {
 export type ReportingStatus = 'not_sent' | 'sending' | 'sent' | 'failed';
 export type SaveGame = {
   schemaVersion: number;
+  timelineId: 't1' | 't2' | 't3' | 't4';
+  // Content release that started the run; informational only.
   contentVersion: string;
-  contentIdentity: string;
   runId: string;
   createdAt: number;
   updatedAt: number;

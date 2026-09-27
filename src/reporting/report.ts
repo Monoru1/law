@@ -21,6 +21,8 @@ export type LawRecord = {
   signedAt: number | null;
   declinedAt?: number;
   revisions: Array<{ text: string; at: number }>;
+  // Set when the law was signed in an earlier timeline.
+  inheritedFrom?: string;
 };
 
 export type ConfrontationRecord = {
@@ -32,6 +34,19 @@ export type ConfrontationRecord = {
   sceneId: string | null;
   sceneTitle: string | null;
   at: number;
+  // The act placed beside the law by the confrontation, when recorded.
+  contradiction?: string;
+};
+
+export type RelationRecordReport = {
+  characterId: string;
+  name: string;
+  events: Array<{
+    kind: string;
+    label: string;
+    sceneTitle: string | null;
+    at: number;
+  }>;
 };
 
 export type PlaytestReport = {
@@ -47,5 +62,7 @@ export type PlaytestReport = {
   decisions: DecisionRecord[];
   laws: LawRecord[];
   confrontations: ConfrontationRecord[];
+  relations: RelationRecordReport[];
+  inheritedFromRunId?: string;
   factualSummary: string[];
 };

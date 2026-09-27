@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, POST } from '../../app/api/report/route';
 import { content } from '../../src/content';
+import { contentT2 } from '../../src/content/t2';
 
 const ENV_KEYS = [
   'BREVO_API_KEY',
@@ -22,26 +23,47 @@ function ev(draft: Record<string, unknown>) {
   return { ...draft, id: `api-test-${++serial}`, at: serial * 100 };
 }
 
-const boutonScene = content.scenes.find((s) => s.id === 't1.bouton')!;
+const version = (sceneId: string) =>
+  content.scenes.find((s) => s.id === sceneId)!.version;
 
+let runs = 0;
 function validSavePayload(
   overrides: Record<string, unknown> = {},
 ): Record<string, unknown> {
   return {
-    schemaVersion: 2,
+    schemaVersion: 4,
+    timelineId: 't1',
     contentVersion: content.version,
-    contentIdentity: 'irrelevant-for-this-endpoint',
-    runId: 'run-api-test',
+    runId: `run-api-test-${++runs}`,
     createdAt: 1,
     updatedAt: 2,
     events: [
       ev({ type: 'run_started', contentVersion: content.version }),
       ev({
+        type: 'scene_entered',
+        sceneId: 't1.bouton',
+        sceneVersion: version('t1.bouton'),
+      }),
+      ev({
         type: 'choice_locked',
         sceneId: 't1.bouton',
-        sceneVersion: boutonScene.version,
+        sceneVersion: version('t1.bouton'),
         input: 'binary',
         value: 'appuyer',
+        hesitationMs: 500,
+        selectionChanges: 0,
+      }),
+      ev({
+        type: 'scene_entered',
+        sceneId: 't1.coda',
+        sceneVersion: version('t1.coda'),
+      }),
+      ev({
+        type: 'choice_locked',
+        sceneId: 't1.coda',
+        sceneVersion: version('t1.coda'),
+        input: 'choice',
+        value: 'sortir',
         hesitationMs: 500,
         selectionChanges: 0,
       }),
@@ -195,5 +217,111 @@ describe('POST /api/report — intégration Brevo (toujours simulée)', () => {
     expect(sentBody.htmlContent).toContain(
       '&lt;script&gt;alert(1)&lt;/script&gt;',
     );
+  });
+});
+
+describe('POST /api/report — frontière de confiance', () => {
+  const okFetch = () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  };
+
+  it('400 pour une histoire impossible, même bien formée', async () => {
+    stubValidEnv();
+    const fetchMock = okFetch();
+    const payload = validSavePayload();
+    // A decision for a scene the player never entered.
+    (payload.events as Record<string, unknown>[]).splice(1, 1);
+    const res = await POST(postRequest(payload));
+    expect(res.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('construit un rapport de La Maison avec le contenu de La Maison', async () => {
+    stubValidEnv();
+    const fetchMock = okFetch();
+    const scene = (id: string) =>
+      contentT2.scenes.find((s) => s.id === id)!.version;
+    const payload = {
+      ...validSavePayload(),
+      timelineId: 't2',
+      contentVersion: contentT2.version,
+      events: [
+        ev({ type: 'run_started', contentVersion: contentT2.version }),
+        ev({
+          type: 'memory_inherited',
+          fromTimelineId: 't1',
+          fromRunId: 'room-run',
+          memory: {
+            completedAt: 1,
+            decisions: 1,
+            choices: { 't1.dix-mille': 'accepter' },
+            justifications: {},
+            flags: ['took_money'],
+            vars: {},
+            evidence: {},
+            laws: [],
+            declinedLaws: [],
+          },
+        }),
+        ev({
+          type: 'scene_entered',
+          sceneId: 't2.la-faveur',
+          sceneVersion: scene('t2.la-faveur'),
+        }),
+        ev({
+          type: 'choice_locked',
+          sceneId: 't2.la-faveur',
+          sceneVersion: scene('t2.la-faveur'),
+          input: 'binary',
+          value: 'preter',
+          hesitationMs: 800,
+          selectionChanges: 0,
+        }),
+        ev({
+          type: 'scene_entered',
+          sceneId: 't2.la-maison',
+          sceneVersion: scene('t2.la-maison'),
+        }),
+        ev({
+          type: 'choice_locked',
+          sceneId: 't2.la-maison',
+          sceneVersion: scene('t2.la-maison'),
+          input: 'choice',
+          value: 'sortir',
+          hesitationMs: 800,
+          selectionChanges: 0,
+        }),
+        ev({ type: 'run_completed', timelineId: 't2' }),
+      ],
+    };
+    const res = await POST(postRequest(payload));
+    expect(res.status).toBe(200);
+    const [, init] = fetchMock.mock.calls[0]!;
+    const sent = JSON.parse((init as RequestInit).body as string) as {
+      textContent: string;
+    };
+    expect(sent.textContent).toContain('Lui prêter l’argent');
+    expect(sent.textContent).toContain('Sem');
+    expect(sent.textContent).toContain('Suite de : room-run');
+  });
+
+  it('n’envoie pas deux fois le même rapport livré, et retire les caractères de contrôle du sujet', async () => {
+    stubValidEnv();
+    const fetchMock = okFetch();
+    const payload = validSavePayload({ pseudonym: 'Atlas\r\nBcc: x' });
+    expect((await POST(postRequest(payload))).status).toBe(200);
+    const again = await POST(postRequest(payload));
+    expect(again.status).toBe(200);
+    expect(await again.json()).toMatchObject({ duplicate: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0]!;
+    const sent = JSON.parse((init as RequestInit).body as string) as {
+      subject: string;
+    };
+    expect(sent.subject).not.toMatch(/[\r\n]/);
   });
 });

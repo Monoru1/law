@@ -1,340 +1,300 @@
 import { content, copy } from '../src/content';
+import { contentT2 } from '../src/content/t2';
+import registry from '../src/content/contracts.json';
 import {
   sceneSchema,
   principleSchema,
   observationSchema,
 } from '../src/engine/schema';
 import {
+  initialState,
   nextScene,
   reduce,
-  initialState,
-  resolveScene,
-  renderText,
-  assertRenderedText,
+  registryDrift,
+  sceneOptions,
   validateEvent,
-  resolvedBeats,
   type Condition,
+  type Content,
+  type Effect,
   type GameEvent,
-  type GameState,
+  type Scene,
 } from '../src/engine';
+import { migrateSave } from '../src/persistence/migrations';
+import { defaultSettings } from '../src/persistence/SaveAdapter';
+import { seeded, simulateJourney } from './simulation';
+
 const fail = (message: string): never => {
   throw new Error(message);
 };
-const sceneIds = new Set<string>();
-const principleIds = new Set(content.principles.map((p) => p.id));
-const statements = new Set(
-  content.principles.flatMap((p) => p.statements.map((s) => s.id)),
+const RUNS = Number(process.env.LAW_RUNS ?? 2000);
+const allScenes = new Map<string, Scene>(
+  [...content.scenes, ...contentT2.scenes].map((scene) => [scene.id, scene]),
 );
-for (const scene of content.scenes) {
-  sceneSchema.parse(scene);
-  if (sceneIds.has(scene.id)) fail(`Duplicate scene ${scene.id}`);
-  sceneIds.add(scene.id);
-}
-for (const principle of content.principles) principleSchema.parse(principle);
-for (const observation of content.observations)
-  observationSchema.parse(observation);
-const checkCondition = (c: Condition): void => {
-  if ('all' in c) c.all.forEach(checkCondition);
-  else if ('any' in c) c.any.forEach(checkCondition);
-  else if ('not' in c) checkCondition(c.not);
-  else if ('chose' in c) {
-    if (!sceneIds.has(c.chose.sceneId))
-      fail(`Unknown scene ${c.chose.sceneId}`);
-    const scene = content.scenes.find((s) => s.id === c.chose.sceneId);
-    if (
-      scene &&
-      (scene.input.kind === 'binary' ||
-        scene.input.kind === 'choice' ||
-        scene.input.kind === 'glyph') &&
-      !scene.input.options.some((o) => o.id === c.chose.optionId)
+const characters = new Set(Object.keys(copy.people));
+
+function validateTimeline(timeline: Content) {
+  const own = new Set<string>();
+  for (const scene of timeline.scenes) {
+    sceneSchema.parse(scene);
+    if (scene.timelineId !== timeline.timelineId)
+      fail(`${scene.id} is not in ${timeline.timelineId}`);
+    if (own.has(scene.id)) fail(`Duplicate scene ${scene.id}`);
+    own.add(scene.id);
+  }
+  const known = new Set([...own, ...(timeline.inherits?.sceneIds ?? [])]);
+  const principleIds = new Set(timeline.principles.map((p) => p.id));
+  const statements = new Set(
+    timeline.principles.flatMap((p) => p.statements.map((s) => s.id)),
+  );
+  for (const principle of timeline.principles) principleSchema.parse(principle);
+  for (const observation of timeline.observations)
+    observationSchema.parse(observation);
+  for (const id of timeline.order)
+    if (!own.has(id)) fail(`Order names unknown scene ${id}`);
+  for (const id of Object.values(timeline.flow))
+    if (id && !own.has(id)) fail(`Flow names unknown scene ${id}`);
+  const checkCondition = (c: Condition): void => {
+    if ('all' in c) c.all.forEach(checkCondition);
+    else if ('any' in c) c.any.forEach(checkCondition);
+    else if ('not' in c) checkCondition(c.not);
+    else if ('chose' in c) {
+      if (!known.has(c.chose.sceneId)) fail(`Unknown scene ${c.chose.sceneId}`);
+      const scene = allScenes.get(c.chose.sceneId);
+      if (
+        scene &&
+        sceneOptions(scene).size &&
+        !sceneOptions(scene).has(c.chose.optionId)
+      )
+        fail(`Unknown option ${c.chose.sceneId}:${c.chose.optionId}`);
+    } else if (
+      'value' in c &&
+      !('var' in c) &&
+      typeof c.value === 'object' &&
+      !known.has(c.value.sceneId)
     )
-      fail(`Unknown option ${c.chose.optionId}`);
-  } else if (
-    'value' in c &&
-    !('var' in c) &&
-    typeof c.value === 'object' &&
-    !sceneIds.has(c.value.sceneId)
-  )
-    fail(`Unknown scene ${c.value.sceneId}`);
-  else if ('visited' in c && !sceneIds.has(c.visited))
-    fail(`Unknown scene ${c.visited}`);
-  else if ('answered' in c && !sceneIds.has(c.answered))
-    fail(`Unknown scene ${c.answered}`);
-  else if ('law' in c && !principleIds.has(c.law.principleId))
-    fail(`Unknown principle ${c.law.principleId}`);
-};
-const templates = (text: string) => {
-  if (/\{\{[^{}]+\}\}/.test(text))
+      fail(`Unknown scene ${c.value.sceneId}`);
+    else if ('visited' in c && !known.has(c.visited))
+      fail(`Unknown scene ${c.visited}`);
+    else if ('answered' in c && !known.has(c.answered))
+      fail(`Unknown scene ${c.answered}`);
+    else if ('law' in c && !principleIds.has(c.law.principleId))
+      fail(`Unknown principle ${c.law.principleId}`);
+    else if ('relation' in c && !characters.has(c.relation.characterId))
+      fail(`Unknown character ${c.relation.characterId}`);
+  };
+  const templates = (text: string) => {
     for (const token of text.match(/\{\{[^{}]+\}\}/g) ?? [])
       if (
         !token.includes('|') &&
-        token !== '{{n}}' &&
-        token !== '{{scène}}' &&
-        token !== '{{secondes}}'
+        !['{{n}}', '{{scène}}', '{{secondes}}'].includes(token)
       )
         fail(`Template has no fallback: ${token}`);
-  if (/"/.test(text)) fail(`Straight quote: ${text}`);
-};
-for (const scene of content.scenes) {
-  if (scene.when) checkCondition(scene.when);
-  for (const v of scene.variants ?? []) {
-    checkCondition(v.when);
-    for (const b of v.beats ?? []) {
+    if (/"/.test(text)) fail(`Straight quote: ${text}`);
+  };
+  const checkEffect = (e: Effect): void => {
+    if ('if' in e) {
+      checkCondition(e.if);
+      e.then.forEach(checkEffect);
+    }
+    if ('schedule' in e) {
+      if (!own.has(e.schedule.sceneId))
+        fail(`Unknown schedule ${e.schedule.sceneId}`);
+      if (e.schedule.when) checkCondition(e.schedule.when);
+    }
+    if (
+      'proposeLaw' in e &&
+      (!principleIds.has(e.proposeLaw.principleId) ||
+        !statements.has(e.proposeLaw.statementId))
+    )
+      fail('Unknown proposed law');
+    if ('relationEvent' in e && !characters.has(e.relationEvent.characterId))
+      fail(`Unknown character ${e.relationEvent.characterId}`);
+  };
+  for (const scene of timeline.scenes) {
+    if (scene.when) checkCondition(scene.when);
+    const options = sceneOptions(scene);
+    for (const v of scene.variants ?? []) {
+      checkCondition(v.when);
+      for (const b of v.beats ?? []) {
+        templates(b.text);
+        if (b.requires) checkCondition(b.requires);
+      }
+    }
+    for (const b of scene.beats) {
       templates(b.text);
       if (b.requires) checkCondition(b.requires);
     }
-  }
-  for (const b of scene.beats) {
-    templates(b.text);
-    if (b.requires) checkCondition(b.requires);
-  }
-  for (const o of scene.outcomes) {
-    if (
-      'optionId' in o.when &&
-      (scene.input.kind === 'binary' ||
-        scene.input.kind === 'choice' ||
-        scene.input.kind === 'glyph') &&
-      !scene.input.options.some(
-        (opt) => opt.id === ('optionId' in o.when ? o.when.optionId : ''),
-      )
-    )
-      fail(`Invalid outcome in ${scene.id}`);
-    o.beats.forEach((b) => templates(b.text));
-    for (const e of o.effects ?? []) {
-      if ('schedule' in e) {
-        if (!content.scenes.some((s) => s.id === e.schedule.sceneId))
-          fail(`Unknown schedule ${e.schedule.sceneId}`);
-        if (e.schedule.when) checkCondition(e.schedule.when);
-      }
-      if (
-        'proposeLaw' in e &&
-        (!principleIds.has(e.proposeLaw.principleId) ||
-          !statements.has(e.proposeLaw.statementId))
-      )
-        fail('Unknown proposed law');
+    for (const o of scene.outcomes) {
+      if ('optionId' in o.when && options.size && !options.has(o.when.optionId))
+        fail(`Invalid outcome ${o.when.optionId} in ${scene.id}`);
+      o.beats.forEach((b) => {
+        templates(b.text);
+        if (b.requires) checkCondition(b.requires);
+      });
+      if (o.fact) templates(o.fact);
+      (o.effects ?? []).forEach(checkEffect);
     }
+    // Every option must lead somewhere a player can read.
+    for (const id of options.keys())
+      if (
+        !scene.outcomes.some(
+          (o) =>
+            'any' in o.when || ('optionId' in o.when && o.when.optionId === id),
+        )
+      )
+        fail(`Option ${scene.id}:${id} has no outcome`);
+    for (const input of [
+      scene.input,
+      ...(scene.variants ?? []).map((v) => v.input),
+    ])
+      if (input && 'options' in input)
+        for (const option of input.options ?? [])
+          for (const evidence of option.evidence ?? []) {
+            if (!principleIds.has(evidence.principleId))
+              fail(`Unknown evidence principle ${evidence.principleId}`);
+            if (evidence.when) checkCondition(evidence.when);
+          }
   }
-  if (
-    scene.input.kind === 'binary' ||
-    scene.input.kind === 'choice' ||
-    scene.input.kind === 'glyph'
-  )
-    for (const option of scene.input.options)
-      for (const evidence of option.evidence ?? [])
-        if (!principleIds.has(evidence.principleId))
-          fail('Unknown evidence principle');
+  for (const rule of timeline.observations) {
+    checkCondition(rule.when);
+    templates(rule.text);
+  }
+  timeline.principles.forEach((p) =>
+    p.statements.forEach((s) => templates(s.text)),
+  );
 }
-for (const rule of content.observations) {
-  checkCondition(rule.when);
-  templates(rule.text);
-}
-content.principles.forEach((p) =>
-  p.statements.forEach((s) => templates(s.text)),
-);
-copy.onboarding.forEach((b) => templates(b.text));
-let seed = 571;
-const rand = () => {
-  seed = (seed * 1664525 + 1013904223) >>> 0;
-  return seed / 4294967296;
-};
+
+validateTimeline(content);
+validateTimeline(contentT2);
+copy.onboarding.forEach((b) => {
+  if (/"/.test(b.text)) fail(`Straight quote: ${b.text}`);
+});
+
+// Append-only scene contracts: rules never change under a recorded version.
+const drift = registryDrift(registry, [content, contentT2]);
+if (drift.changed.length)
+  fail(`Scene contracts changed without a version bump: ${drift.changed}`);
+if (drift.missing.length)
+  fail(
+    `Unregistered scene versions: ${drift.missing} (pnpm contracts --write)`,
+  );
+
 const hits: Record<string, number> = {};
-const variants: Record<string, number> = {};
-const confrontationAnswers = new Set<string>();
-let serial = 0;
-type EventDraft = GameEvent extends infer E
-  ? E extends GameEvent
-    ? Omit<E, 'id' | 'at'>
-    : never
-  : never;
-const event = (state: GameState, e: EventDraft): GameState => {
-  const next = { ...e, id: String(++serial), at: serial } as GameEvent;
-  validateEvent(next, state, content);
-  return reduce(state, next, content);
-};
-for (let run = 0; run < 500; run++) {
-  let state = event(initialState(), {
-    type: 'run_started',
-    contentVersion: content.version,
-  });
-  let steps = 0;
-  while (steps++ < 25) {
-    const raw = nextScene(state, content);
-    if (!raw) break;
-    hits[raw.id] = (hits[raw.id] ?? 0) + 1;
-    const variant = raw.variants?.find((v) => {
-      const temp = resolveScene(raw, state);
-      return temp.beats === v.beats;
+const variantHits: Record<string, number> = {};
+const answers: Record<string, Set<string>> = { t1: new Set(), t2: new Set() };
+const endings = new Set<string>();
+let rendered = 0;
+let confrontationsT2 = 0;
+let inheritedConfrontations = 0;
+const rand = seeded(571);
+const clock = { at: 0 };
+const save = (timelineId: 't1' | 't2', events: GameEvent[]) => ({
+  schemaVersion: 4,
+  timelineId,
+  contentVersion: timelineId === 't1' ? content.version : contentT2.version,
+  runId: `run-${clock.at}`,
+  createdAt: 1,
+  updatedAt: 1,
+  events,
+  settings: defaultSettings,
+});
+for (let run = 0; run < RUNS; run++) {
+  const skipRate = run % 10 === 0 ? 0.35 : 0.04;
+  const { room, house } = simulateJourney(
+    content,
+    contentT2,
+    rand,
+    clock,
+    skipRate,
+  );
+  for (const result of [room, house]) {
+    for (const id of result.visited) hits[id] = (hits[id] ?? 0) + 1;
+    for (const id of result.variants)
+      variantHits[id] = (variantHits[id] ?? 0) + 1;
+    rendered += result.rendered;
+    if (result.state.pendingConfrontations.length)
+      fail(`Unprocessed confrontation in run ${run}`);
+    for (const contradiction of result.state.contradictions)
+      if (
+        !result.events.some((e) => e.id === contradiction.choiceEventId) ||
+        !result.events.some((e) => e.id === contradiction.lawEventId)
+      )
+        fail(`Contradiction without historical evidence in run ${run}`);
+  }
+  room.answers.forEach((a) => answers.t1!.add(a));
+  house.answers.forEach((a) => answers.t2!.add(a));
+  if (room.state.visited.at(-1) !== 't1.coda') fail(`T1 coda not final ${run}`);
+  if (house.state.visited.at(-1) !== 't2.la-maison')
+    fail(`T2 ending not final ${run}`);
+  confrontationsT2 += house.state.contradictions.length;
+  inheritedConfrontations += house.state.contradictions.filter((c) =>
+    house.state.laws.some((l) => l.number === c.lawNumber && l.inheritedFrom),
+  ).length;
+  // A seat always decides who walks the player out, or that nobody does.
+  const seat = house.state.choices['t2.les-nouvelles'];
+  if (seat) endings.add(String(seat));
+  // Persistence accepts exactly what the player flow produces, both journals.
+  migrateSave(save('t1', room.events), content);
+  migrateSave(save('t2', house.events), contentT2);
+}
+for (const scene of [...content.scenes, ...contentT2.scenes])
+  if (!hits[scene.id]) fail(`Unreachable scene ${scene.id}`);
+for (const scene of [...content.scenes, ...contentT2.scenes])
+  for (const variant of scene.variants ?? [])
+    if (!variantHits[`${scene.id}:${variant.id}`])
+      fail(`Unreachable variant ${scene.id}:${variant.id}`);
+for (const [timeline, set] of Object.entries(answers))
+  if (set.size !== 4) fail(`${timeline}: some confrontation answers never ran`);
+if (!inheritedConfrontations)
+  fail('No law signed in the room was ever confronted in the house');
+
+// Totality of transitions: leaving every scene must still reach a final gesture.
+for (const timeline of [content, contentT2]) {
+  let serial = 0;
+  let skipped = initialState();
+  const push = (draft: Record<string, unknown>) => {
+    const event = { ...draft, id: `s${++serial}`, at: serial } as GameEvent;
+    validateEvent(event, skipped, timeline);
+    skipped = reduce(skipped, event, timeline);
+  };
+  push({ type: 'run_started', contentVersion: timeline.version });
+  if (timeline.inherits)
+    push({
+      type: 'memory_inherited',
+      fromTimelineId: timeline.inherits.timelineId,
+      fromRunId: 'skipped',
+      memory: {
+        completedAt: 0,
+        decisions: 0,
+        choices: {},
+        justifications: {},
+        flags: [],
+        vars: {},
+        evidence: {},
+        laws: [],
+        declinedLaws: [],
+      },
     });
-    if (variant)
-      variants[`${raw.id}:${variant.id}`] =
-        (variants[`${raw.id}:${variant.id}`] ?? 0) + 1;
-    const scene = resolveScene(raw, state);
-    const lawNumber = state.pendingConfrontations[0]?.lawNumber ?? undefined;
-    state = event(state, {
+  for (let step = 0; step < 40; step++) {
+    const scene = nextScene(skipped, timeline);
+    if (!scene) break;
+    push({
       type: 'scene_entered',
       sceneId: scene.id,
       sceneVersion: scene.version,
     });
-    for (const beat of resolvedBeats(scene.beats, state)) {
-      assertRenderedText(beat.text, state, content, lawNumber);
-      const text = renderText(
-        beat.text,
-        state,
-        content,
-        state.pendingConfrontations[0]?.lawNumber ?? undefined,
-      );
-      if (text.includes('{{')) fail(`Unresolved template ${scene.id}: ${text}`);
-    }
-    if (scene.id === 't1.pourquoi' && rand() > 0.2)
-      state = event(state, {
-        type: 'justification_given',
-        sceneId: scene.id,
-        text: 'Parce que je le voulais.',
-      });
-    let confrontationAnswer = 'maintain';
-    if (scene.id === 't1.confrontation') {
-      const pending = state.pendingConfrontations[0];
-      if (pending) {
-        const answer = (['maintain', 'nuance', 'abandon', 'silence'] as const)[
-          Math.floor(rand() * 4)
-        ]!;
-        confrontationAnswer = answer;
-        confrontationAnswers.add(answer);
-        if (answer === 'nuance')
-          state = event(state, {
-            type: 'law_revised',
-            lawNumber: pending.lawNumber!,
-            newStatementId:
-              content.principles.find((p) => p.id === pending.principleId)
-                ?.statements[1]?.id ?? null,
-            customText: undefined,
-          });
-        else if (answer === 'abandon')
-          state = event(state, {
-            type: 'law_abandoned',
-            lawNumber: pending.lawNumber!,
-          });
-        state = event(state, {
-          type: 'confrontation_answered',
-          lawNumber: pending.lawNumber,
-          answer,
-        });
-      }
-    }
-    if (scene.id === 't1.confrontation-non-signee' && rand() > 0.5) {
-      const p = [...content.principles].sort(
-        (a, b) => (state.evidence[b.id] ?? 0) - (state.evidence[a.id] ?? 0),
-      )[0];
-      if (p?.statements[0])
-        state = event(state, {
-          type: 'law_signed',
-          lawNumber: 1,
-          principleId: p.id,
-          statementId: p.statements[0].id,
-        });
-    }
-    // A passage is visited and read, then the engine proceeds without
-    // fabricating a player decision or a reporting event.
-    if (scene.input.kind === 'passage') continue;
-    let value: string | number = '';
-    if (scene.input.kind === 'slider') value = Math.floor(rand() * 41);
-    else if (
-      scene.input.kind === 'binary' ||
-      scene.input.kind === 'choice' ||
-      scene.input.kind === 'glyph'
-    )
-      value =
-        scene.input.options[Math.floor(rand() * scene.input.options.length)]!
-          .id;
-    else if (scene.input.kind === 'freeText') value = 'written';
-    else if (scene.input.kind === 'lawProposal') value = 'no';
-    else value = confrontationAnswer;
-    state = event(state, {
-      type: 'choice_locked',
-      sceneId: scene.id,
-      sceneVersion: scene.version,
-      input: scene.input.kind,
-      value,
-      hesitationMs: 1200,
-      selectionChanges: 0,
-    });
-    const outcome = scene.outcomes.find(
-      (o) =>
-        'any' in o.when ||
-        ('optionId' in o.when && o.when.optionId === value) ||
-        ('range' in o.when &&
-          typeof value === 'number' &&
-          value >= o.when.range[0] &&
-          value <= o.when.range[1]),
-    );
-    for (const beat of resolvedBeats(outcome?.beats ?? [], state)) {
-      assertRenderedText(beat.text, state, content, lawNumber);
-      const text = renderText(beat.text, state, content, lawNumber);
-      if (text.includes('{{'))
-        fail(`Unresolved consequence ${scene.id}: ${text}`);
-    }
-    const pending = state.pendingLaws[0];
-    if (pending && scene.id === 't1.chambre-froide') {
-      if (rand() > 0.3)
-        state = event(state, {
-          type: 'law_signed',
-          lawNumber: 1,
-          principleId: pending.principleId,
-          statementId: pending.statementId,
-        });
-      else
-        state = event(state, {
-          type: 'law_declined',
-          principleId: pending.principleId,
-        });
-    }
+    push({ type: 'scene_skipped', sceneId: scene.id });
   }
-  if (steps >= 25) fail(`Non-terminating run ${run}`);
-  if (state.visited.at(-1) !== 't1.coda')
-    fail(`Coda is not final in run ${run}`);
-  if (state.pendingConfrontations.length)
-    fail(`Unprocessed confrontation in run ${run}`);
-  for (const contradiction of state.contradictions) {
-    if (
-      !state.events.some(
-        (e) =>
-          e.id === contradiction.choiceEventId && e.type === 'choice_locked',
-      ) ||
-      !state.events.some(
-        (e) => e.id === contradiction.lawEventId && e.type === 'law_signed',
-      )
-    )
-      fail(`Contradiction without historical evidence in run ${run}`);
-  }
+  if (
+    nextScene(skipped, timeline) ||
+    skipped.visited.at(-1) !== timeline.flow.codaSceneId
+  )
+    fail(`Skipping must terminate at the coda of ${timeline.timelineId}`);
+  push({ type: 'run_completed', timelineId: timeline.timelineId });
 }
-for (const scene of content.scenes)
-  if (!hits[scene.id]) fail(`Unreachable scene ${scene.id}`);
-if (confrontationAnswers.size !== 4)
-  fail('Some confrontation answers were not simulated');
-for (const scene of content.scenes)
-  for (const variant of scene.variants ?? [])
-    if (!variants[`${scene.id}:${variant.id}`])
-      fail(`Unreachable variant ${scene.id}:${variant.id}`);
-// Totality of transitions: leaving every scene must still reach a final gesture.
-let skipped = event(initialState(), {
-  type: 'run_started',
-  contentVersion: content.version,
-});
-for (let step = 0; step < 25; step++) {
-  const scene = nextScene(skipped, content);
-  if (!scene) break;
-  skipped = event(skipped, {
-    type: 'scene_entered',
-    sceneId: scene.id,
-    sceneVersion: scene.version,
-  });
-  skipped = event(skipped, { type: 'scene_skipped', sceneId: scene.id });
-}
-if (nextScene(skipped, content) || skipped.visited.at(-1) !== 't1.coda')
-  fail('Skipping must terminate at the coda');
+
 console.log(
-  `Validated ${content.scenes.length} scenes and 500 seeded runs. Scene coverage:`,
-  hits,
-  'Variant coverage:',
-  variants,
+  `Validated ${content.scenes.length + contentT2.scenes.length} scenes, ${Object.keys(registry).length} registered contracts, ${RUNS} seeded T1→T2 journeys (${rendered} rendered texts, ${confrontationsT2} confrontations in the house, ${inheritedConfrontations} of laws signed in the room).`,
 );
+console.log('Scene coverage:', hits);
+console.log('Variant coverage:', variantHits);

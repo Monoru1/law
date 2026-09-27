@@ -1,11 +1,16 @@
-import { lawStatement } from '../engine/laws';
-import type { Content, GameEvent, Law } from '../engine/types';
+import { copy } from '../content';
+import { sceneOptions } from '../engine/flow';
+import { choiceFact, lawStatement } from '../engine/laws';
+import { replay } from '../engine/replay';
+import { renderText } from '../engine/text';
+import type { Content, GameEvent } from '../engine/types';
 import type { SaveGame } from '../persistence/SaveAdapter';
 import type {
   ConfrontationRecord,
   DecisionRecord,
   LawRecord,
   PlaytestReport,
+  RelationRecordReport,
 } from './report';
 
 const ANONYMOUS = 'Joueur anonyme';
@@ -34,7 +39,8 @@ function resolveDisplayValue(
       input.kind === 'glyph') &&
     typeof rawValue === 'string'
   ) {
-    const option = input.options.find((o) => o.id === rawValue);
+    // Variant options (the house changes what some people ask) count too.
+    const option = sceneOptions(scene).get(rawValue);
     if (option) return option.label;
   }
   if (input.kind === 'slider' && typeof rawValue === 'number') {
@@ -72,7 +78,10 @@ export function buildReport(
   );
   if (!startedEvent) return null;
 
-  const pseudonym = (save.pseudonym ?? '').trim() || ANONYMOUS;
+  // Control characters never reach an email subject or body.
+  const pseudonym =
+    (save.pseudonym ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').trim() ||
+    ANONYMOUS;
 
   // Build decisions
   const decisionEvents = events.filter(
@@ -121,80 +130,42 @@ export function buildReport(
     });
   }
 
-  // Build laws from replay state
-  // We reconstruct from events directly to avoid importing full replay
+  // Laws come from the replayed journal: a house journal carries the laws it
+  // inherited from the room, and every signature keeps its frozen sentence.
+  const state = replay(events, content);
+  const laws: LawRecord[] = state.laws.map((law) => {
+    const revisions = law.revisions
+      .slice(1)
+      .filter((revision) => revision.status === 'signed')
+      .map((revision) => ({
+        text:
+          revision.customText ??
+          revision.statementText ??
+          content.principles
+            .find((p) => p.id === law.principleId)
+            ?.statements.find((s) => s.id === revision.statementId)?.text ??
+          '',
+        at: revision.at,
+      }));
+    return {
+      number: law.number,
+      principleId: law.principleId,
+      currentStatement: lawStatement(law, content),
+      status:
+        law.status === 'abandoned'
+          ? 'abandoned'
+          : revisions.length > 0
+            ? 'revised'
+            : 'active',
+      signedAt: law.revisions[0]?.at ?? null,
+      revisions,
+      ...(law.inheritedFrom ? { inheritedFrom: law.inheritedFrom } : {}),
+    };
+  });
   const lawSignedEvents = events.filter(
     (e): e is Extract<GameEvent, { type: 'law_signed' }> =>
       e.type === 'law_signed',
   );
-  const lawRevisedEvents = events.filter(
-    (e): e is Extract<GameEvent, { type: 'law_revised' }> =>
-      e.type === 'law_revised',
-  );
-  const lawAbandonedEvents = events.filter(
-    (e): e is Extract<GameEvent, { type: 'law_abandoned' }> =>
-      e.type === 'law_abandoned',
-  );
-
-  const laws: LawRecord[] = lawSignedEvents.map((signEv) => {
-    const revisions = lawRevisedEvents
-      .filter((r) => r.lawNumber === signEv.lawNumber)
-      .map((r) => {
-        const principle = content.principles.find(
-          (p) => p.id === signEv.principleId,
-        );
-        const text =
-          r.customText ??
-          principle?.statements.find((s) => s.id === r.newStatementId)?.text ??
-          '';
-        return { text, at: r.at };
-      });
-
-    const isAbandoned = lawAbandonedEvents.some(
-      (a) => a.lawNumber === signEv.lawNumber,
-    );
-
-    // Build a mock Law object to use lawStatement
-    const mockLaw: Law = {
-      number: signEv.lawNumber,
-      principleId: signEv.principleId,
-      statementId: signEv.statementId,
-      status: isAbandoned ? 'abandoned' : 'signed',
-      revisions: revisions.map((r) => ({
-        at: r.at,
-        statementId: null,
-        customText: r.text,
-        status: 'signed' as const,
-      })),
-      signedAtDecision: 0,
-    };
-
-    // Apply last revision
-    const lastRevision = lawRevisedEvents
-      .filter((r) => r.lawNumber === signEv.lawNumber)
-      .at(-1);
-    if (lastRevision) {
-      mockLaw.statementId = lastRevision.newStatementId;
-      mockLaw.customText = lastRevision.customText;
-    }
-
-    const currentStatement = lawStatement(mockLaw, content);
-
-    const status: LawRecord['status'] = isAbandoned
-      ? 'abandoned'
-      : revisions.length > 0
-        ? 'revised'
-        : 'active';
-
-    return {
-      number: signEv.lawNumber,
-      principleId: signEv.principleId,
-      currentStatement,
-      status,
-      signedAt: signEv.at,
-      revisions,
-    };
-  });
 
   // Build declined law propositions (law_declined without a later signature
   // for the same principle). "Signed" supersedes "declined" for a principle
@@ -203,7 +174,10 @@ export function buildReport(
     (e): e is Extract<GameEvent, { type: 'law_declined' }> =>
       e.type === 'law_declined',
   );
-  const signedPrincipleIds = new Set(lawSignedEvents.map((e) => e.principleId));
+  const signedPrincipleIds = new Set([
+    ...lawSignedEvents.map((e) => e.principleId),
+    ...state.laws.map((law) => law.principleId),
+  ]);
   const declinedLaws: LawRecord[] = lawDeclinedEvents
     .filter((d) => !signedPrincipleIds.has(d.principleId))
     .map((d): LawRecord => ({
@@ -241,6 +215,13 @@ export function buildReport(
       const scene = linked
         ? content.scenes.find((s) => s.id === linked.sceneId)
         : undefined;
+      // The act the confrontation placed beside the law, as the player saw it.
+      const contradiction = state.contradictions.find(
+        (c) => c.answerEventId === ev.id,
+      );
+      const fact = contradiction
+        ? choiceFact(contradiction.sceneId, state, content)
+        : null;
       return {
         lawNumber: ev.lawNumber,
         answer: ev.answer,
@@ -248,8 +229,26 @@ export function buildReport(
         sceneId: scene?.id ?? null,
         sceneTitle: scene?.title ?? null,
         at: ev.at,
+        ...(fact ? { contradiction: renderText(fact, state, content) } : {}),
       };
     },
+  );
+
+  // What the player did toward each person, in order. Facts, not a score.
+  const relations: RelationRecordReport[] = state.relations.map((record) => ({
+    characterId: record.characterId,
+    name: copy.people[record.characterId] ?? record.characterId,
+    events: record.events.map((item) => ({
+      kind: item.kind,
+      label: copy.relations[item.kind] ?? item.kind,
+      sceneTitle:
+        content.scenes.find((s) => s.id === item.sceneId)?.title ?? null,
+      at: item.at,
+    })),
+  }));
+  const inherited = events.find(
+    (e): e is Extract<GameEvent, { type: 'memory_inherited' }> =>
+      e.type === 'memory_inherited',
   );
 
   // Factual summary
@@ -273,6 +272,8 @@ export function buildReport(
     decisions,
     laws: allLaws,
     confrontations,
+    relations,
+    ...(inherited ? { inheritedFromRunId: inherited.fromRunId } : {}),
     factualSummary,
   };
 }

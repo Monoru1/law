@@ -1,10 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { content } from '../../src/content';
 import { type GameEvent } from '../../src/engine';
-import {
-  contentIdentity,
-  CURRENT_SCHEMA_VERSION,
-} from '../../src/persistence/migrations';
+import { CURRENT_SCHEMA_VERSION } from '../../src/persistence/migrations';
 import { defaultSettings } from '../../src/persistence/SaveAdapter';
 
 const viewports = [
@@ -18,8 +15,8 @@ async function seed(page: Page, sceneId: string, history: GameEvent[] = []) {
   const scene = content.scenes.find((item) => item.id === sceneId)!;
   const save = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
+    timelineId: 't1',
     contentVersion: content.version,
-    contentIdentity: contentIdentity(content),
     runId: 'ux-synthetic-run',
     createdAt: 1,
     updatedAt: 100,

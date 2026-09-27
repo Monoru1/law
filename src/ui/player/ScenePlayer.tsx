@@ -1,5 +1,12 @@
 'use client';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { content as defaultContent, copy } from '../../content';
@@ -15,7 +22,6 @@ import {
   type Content,
   type Scene,
 } from '../../engine';
-import { t1Config, type TimelineConfig } from '../../engine/flow';
 import { useGameStore } from '../../store/gameStore';
 import type { UseBoundStore, StoreApi } from 'zustand';
 import type { GameStore } from '../../store/createGameStore';
@@ -85,15 +91,37 @@ function useTimeTracker({ reset }: { reset: string }) {
     }),
   };
 }
+const ordinals = ['première', 'deuxième', 'troisième', 'quatrième'];
+function createSingleFlight() {
+  let busy = false;
+  return async (action: () => Promise<void>) => {
+    if (busy) return;
+    busy = true;
+    try {
+      await action();
+    } catch {
+      /* The store keeps the journal intact and exposes the error. */
+    } finally {
+      busy = false;
+    }
+  };
+}
 export function ScenePlayer({
   content = defaultContent,
   useStore = useGameStore as UseBoundStore<StoreApi<GameStore>>,
-  flowConfig = t1Config,
+  threshold,
 }: {
   content?: Content;
   useStore?: UseBoundStore<StoreApi<GameStore>>;
-  flowConfig?: TimelineConfig;
+  // Shown instead of the first onboarding when no run exists yet.
+  threshold?: ReactNode;
 } = {}) {
+  const door =
+    copy.doors.find((d) => d.timelineId === content.timelineId) ??
+    copy.doors[0];
+  const timelineNumber = String(
+    copy.doors.findIndex((d) => d.timelineId === door.timelineId) + 1,
+  ).padStart(2, '0');
   const router = useRouter();
   const save = useStore((s) => s.save);
   const loaded = useStore((s) => s.loaded);
@@ -152,6 +180,8 @@ export function ScenePlayer({
   const [pulse, setPulse] = useState(false);
   const pulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const choiceArea = useRef<HTMLDivElement>(null);
+  // One commit at a time: a double click must not record, or skip, twice.
+  const [singleFlight] = useState(createSingleFlight);
   const reduced = useReduced(save?.settings.reducedMotion ?? 'auto');
   const tracker = useTimeTracker({ reset: `${scene?.id}:${ready}` });
   // Physical acknowledgement: THE LAW registers a committed decision with a
@@ -170,7 +200,7 @@ export function ScenePlayer({
   );
   useEffect(() => {
     if (!loaded || !save || state.completed || state.currentSceneId) return;
-    const first = nextScene(state, content, flowConfig);
+    const first = nextScene(state, content);
     if (first)
       void append({
         type: 'scene_entered',
@@ -180,9 +210,9 @@ export function ScenePlayer({
     else if (state.events.some((e) => e.type === 'scene_entered'))
       void append({
         type: 'run_completed',
-        timelineId: flowConfig.codaSceneId.split('.')[0] ?? 't1',
-      });
-  }, [loaded, save, state, append, content, flowConfig]);
+        timelineId: content.timelineId,
+      }).catch(() => undefined);
+  }, [loaded, save, state, append, content]);
   const sceneId = scene?.id ?? null;
   const visit = state.events.findLast(
     (event) => event.type === 'scene_entered',
@@ -233,7 +263,7 @@ export function ScenePlayer({
   const advance = useCallback(async () => {
     if (!scene) return;
     const latest = replay(useStore.getState().save?.events ?? [], content);
-    const next = nextScene(latest, content, flowConfig);
+    const next = nextScene(latest, content);
     if (next)
       await append({
         type: 'scene_entered',
@@ -243,9 +273,9 @@ export function ScenePlayer({
     else
       await append({
         type: 'run_completed',
-        timelineId: flowConfig.codaSceneId.split('.')[0] ?? 't1',
+        timelineId: content.timelineId,
       });
-  }, [scene, append, content, flowConfig, useStore]);
+  }, [scene, append, content, useStore]);
   const chosen =
     scene && scene.id in state.choices ? state.choices[scene.id] : null;
   const outcome = scene?.outcomes.find(
@@ -262,7 +292,7 @@ export function ScenePlayer({
         state,
       )
     : [];
-  const lock = async (
+  const record = async (
     input: Scene['input']['kind'],
     choice: string | number,
     text?: string,
@@ -290,55 +320,66 @@ export function ScenePlayer({
     setReady(false);
     setPhase('outcome');
   };
-  const afterOutcome = async () => {
-    if (!scene) return;
-    if (
-      scene.followUps?.includes('certainty') &&
-      !(scene.id in state.certainty)
-    ) {
-      setPhase('certainty');
-      return;
-    }
-    if (scene.followUps?.includes('lawProposal') && state.pendingLaws.length) {
-      setPhase('law');
-      return;
-    }
-    await advance();
-  };
-  const skip = async () => {
-    if (!scene) return;
-    await append({ type: 'scene_skipped', sceneId: scene.id });
-    setPause(false);
-    await advance();
-  };
+  const lock = (...args: Parameters<typeof record>) =>
+    singleFlight(() => record(...args));
+  const afterOutcome = () =>
+    singleFlight(async () => {
+      if (!scene) return;
+      if (
+        scene.followUps?.includes('certainty') &&
+        !(scene.id in state.certainty)
+      ) {
+        setPhase('certainty');
+        return;
+      }
+      if (
+        scene.followUps?.includes('lawProposal') &&
+        state.pendingLaws.length
+      ) {
+        setPhase('law');
+        return;
+      }
+      await advance();
+    });
+  const skip = () =>
+    singleFlight(async () => {
+      if (!scene) return;
+      await append({ type: 'scene_skipped', sceneId: scene.id });
+      setPause(false);
+      await advance();
+    });
+  const advanceOnce = () => singleFlight(advance);
   const law = state.pendingLaws[0];
   const principle = law
     ? content.principles.find((p) => p.id === law.principleId)
     : null;
   const unsigned = dominantUnsignedPrinciple(state, content);
-  const signed = async (principleId: string, statementId: string) => {
-    flashLock();
-    const number = nextLawNumber(state);
-    await append({
-      type: 'law_signed',
-      lawNumber: number,
-      principleId,
-      statementId,
-    });
-    if (custom.trim())
+  const signed = (principleId: string, statementId: string) =>
+    singleFlight(async () => {
+      flashLock();
+      const number = nextLawNumber(state);
+      // The exact sentence signed is frozen into the journal, including a
+      // formulation the player wrote: it was signed, not revised later.
+      const statementText =
+        custom.trim() ||
+        content.principles
+          .find((p) => p.id === principleId)
+          ?.statements.find((s) => s.id === statementId)?.text;
       await append({
-        type: 'law_revised',
+        type: 'law_signed',
         lawNumber: number,
-        newStatementId: null,
-        customText: custom.trim(),
+        principleId,
+        statementId,
+        ...(statementText ? { statementText } : {}),
       });
-    if (scene?.input.kind === 'lawProposal') {
-      await lock('lawProposal', 'signed');
-    }
-    setPhase('outcome');
-    await advance();
-  };
+      if (scene?.input.kind === 'lawProposal') {
+        await record('lawProposal', 'signed');
+      }
+      setPhase('outcome');
+      await advance();
+    });
   if (!loaded) return <main className="end-screen mono">THE LAW</main>;
+  if (!save && threshold) return <>{threshold}</>;
   if (!save)
     return (
       <Onboarding
@@ -377,7 +418,7 @@ export function ScenePlayer({
           </Button>
         </div>
       ) : null;
-    return <End state={state} reporting={reporting} />;
+    return <End state={state} content={content} reporting={reporting} />;
   }
   if (!scene) return <main className="end-screen mono">THE LAW</main>;
   const input = scene.input;
@@ -501,20 +542,22 @@ export function ScenePlayer({
             (key) => (
               <Button
                 key={key}
-                onClick={async () => {
-                  if (key === 'nuance') {
-                    setPhase('revision');
-                    return;
-                  }
-                  if (key === 'abandon' && lawNumber)
-                    await append({ type: 'law_abandoned', lawNumber });
-                  await append({
-                    type: 'confrontation_answered',
-                    lawNumber: lawNumber ?? null,
-                    answer: key,
-                  });
-                  await lock('confrontation', key);
-                }}
+                onClick={() =>
+                  singleFlight(async () => {
+                    if (key === 'nuance') {
+                      setPhase('revision');
+                      return;
+                    }
+                    if (key === 'abandon' && lawNumber)
+                      await append({ type: 'law_abandoned', lawNumber });
+                    await append({
+                      type: 'confrontation_answered',
+                      lawNumber: lawNumber ?? null,
+                      answer: key,
+                    });
+                    await record('confrontation', key);
+                  })
+                }
               >
                 {copy.confrontation[key]}
               </Button>
@@ -535,14 +578,16 @@ export function ScenePlayer({
             {copy.confrontation.unsignedSign}
           </Button>
           <Button
-            onClick={async () => {
-              if (unsigned)
-                await append({
-                  type: 'law_declined',
-                  principleId: unsigned.id,
-                });
-              await lock('lawProposal', 'no');
-            }}
+            onClick={() =>
+              singleFlight(async () => {
+                if (unsigned)
+                  await append({
+                    type: 'law_declined',
+                    principleId: unsigned.id,
+                  });
+                await record('lawProposal', 'no');
+              })
+            }
           >
             {copy.confrontation.unsignedNo}
           </Button>
@@ -560,21 +605,26 @@ export function ScenePlayer({
   const revisions =
     content.principles.find((p) => p.id === revisionLaw?.principleId)
       ?.statements ?? [];
-  const saveRevision = async () => {
-    if (!lawNumber || (!variant && !custom.trim())) return;
-    await append({
-      type: 'law_revised',
-      lawNumber,
-      newStatementId: custom.trim() ? null : variant,
-      customText: custom.trim() || undefined,
+  const saveRevision = () =>
+    singleFlight(async () => {
+      if (!lawNumber || (!variant && !custom.trim())) return;
+      const statementText = custom.trim()
+        ? undefined
+        : revisions.find((s) => s.id === variant)?.text;
+      await append({
+        type: 'law_revised',
+        lawNumber,
+        newStatementId: custom.trim() ? null : variant,
+        customText: custom.trim() || undefined,
+        ...(statementText ? { statementText } : {}),
+      });
+      await append({
+        type: 'confrontation_answered',
+        lawNumber,
+        answer: 'nuance',
+      });
+      await record('confrontation', 'nuance');
     });
-    await append({
-      type: 'confrontation_answered',
-      lawNumber,
-      answer: 'nuance',
-    });
-    await lock('confrontation', 'nuance');
-  };
   const textScale =
     save.settings.textSize === 'large'
       ? 1.15
@@ -607,7 +657,9 @@ export function ScenePlayer({
             <p className="law-proposal-mark mono">
               Protocole · Loi {String(nextLawNumber(state)).padStart(2, '0')}
             </p>
-            <p className="mono law-proposal-intro">{copy.lawIntro}</p>
+            <p className="mono law-proposal-intro">
+              {`Ta ${ordinals[nextLawNumber(state) - 1] ?? 'nouvelle'} loi.`}
+            </p>
             <p className="law-statement serif">
               {custom.trim() ||
                 principle?.statements.find(
@@ -665,13 +717,15 @@ export function ScenePlayer({
                   </Button>
                   <Button
                     className="ghost"
-                    onClick={async () => {
-                      await append({
-                        type: 'law_declined',
-                        principleId: principle.id,
-                      });
-                      await advance();
-                    }}
+                    onClick={() =>
+                      singleFlight(async () => {
+                        await append({
+                          type: 'law_declined',
+                          principleId: principle.id,
+                        });
+                        await advance();
+                      })
+                    }
                   >
                     {copy.decline}
                   </Button>
@@ -745,18 +799,20 @@ export function ScenePlayer({
               </div>
               <div className="home-actions">
                 <Button
-                  onClick={async () => {
-                    await append({
-                      type: 'certainty_given',
-                      sceneId: scene.id,
-                      value,
-                    });
-                    await advance();
-                  }}
+                  onClick={() =>
+                    singleFlight(async () => {
+                      await append({
+                        type: 'certainty_given',
+                        sceneId: scene.id,
+                        value,
+                      });
+                      await advance();
+                    })
+                  }
                 >
                   {copy.confirm}
                 </Button>
-                <Button className="ghost" onClick={() => void advance()}>
+                <Button className="ghost" onClick={() => void advanceOnce()}>
                   {copy.skip}
                 </Button>
               </div>
@@ -789,7 +845,7 @@ export function ScenePlayer({
                 phase === 'outcome'
                   ? () => void afterOutcome()
                   : input.kind === 'passage'
-                    ? () => void advance()
+                    ? () => void advanceOnce()
                     : () => setReady(true)
               }
             />
@@ -802,11 +858,13 @@ export function ScenePlayer({
         )}
       </div>
       <footer className="player-bottom mono">
-        <span>{scene.regression < 3 ? 'TIMELINE I / LA PIÈCE' : ''}</span>
+        <span>
+          {scene.regression < 3 ? `TIMELINE ${door.index} / ${door.name}` : ''}
+        </span>
       </footer>
       {pause && (
         <Dialog label={copy.pause} close={() => setPause(false)}>
-          <p className="mono">THE LAW / 01</p>
+          <p className="mono">THE LAW / {timelineNumber}</p>
           <h2 className="serif">{copy.pause}</h2>
           <div className="stack">
             <Button onClick={() => setPause(false)}>{copy.resume}</Button>
@@ -826,7 +884,13 @@ export function ScenePlayer({
           </div>
         </Dialog>
       )}
-      {settings && <Settings close={() => setSettings(false)} />}
+      {settings && (
+        <Settings
+          close={() => setSettings(false)}
+          store={useStore}
+          label={`THE LAW / ${timelineNumber}`}
+        />
+      )}
     </main>
   );
 }

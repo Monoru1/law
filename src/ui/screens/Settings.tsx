@@ -1,16 +1,27 @@
 'use client';
+import type { StoreApi, UseBoundStore } from 'zustand';
 import { useGameStore } from '../../store/gameStore';
+import type { GameStore } from '../../store/createGameStore';
 import { copy } from '../../content';
 import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
-export function Settings({ close }: { close: () => void }) {
-  const save = useGameStore((s) => s.save);
-  const update = useGameStore((s) => s.settings);
+// Settings belong to the journal being played, not always to Timeline I.
+export function Settings({
+  close,
+  store = useGameStore as UseBoundStore<StoreApi<GameStore>>,
+  label = 'THE LAW / 01',
+}: {
+  close: () => void;
+  store?: UseBoundStore<StoreApi<GameStore>>;
+  label?: string;
+}) {
+  const save = store((s) => s.save);
+  const update = store((s) => s.settings);
   const s = save?.settings;
   if (!s) return null;
   return (
     <Dialog label={copy.settings} close={close}>
-      <p className="mono">THE LAW / 01</p>
+      <p className="mono">{label}</p>
       <h2 className="serif">{copy.settings}</h2>
       <label className="settings-row">
         <span>{copy.reduce}</span>

@@ -37,6 +37,7 @@ export const septAnnees: Scene = {
         { text: '—', pauseMs: 1200 },
         { text: 'Il te reste sept ans de moins que ce que tu crois.' },
       ],
+      fact: 'Tu as donné sept années de ta vie pour dix inconnus.',
       effects: [
         { incVar: 'lifeYearsGiven', by: 7 },
         {
@@ -54,6 +55,7 @@ export const septAnnees: Scene = {
         { text: '—', pauseMs: 1200 },
         { text: 'Tu as gardé tes sept années.' },
       ],
+      fact: 'Tu as gardé tes sept années.',
       effects: [
         {
           schedule: {

@@ -1,79 +1,98 @@
 import type { Scene } from '../../../../engine/types';
 
+const tookMoney = { flag: 'took_money' } as const;
+const transplanted = {
+  chose: { sceneId: 't1.chambre-froide', optionId: 'dossier-b' },
+} as const;
+
 // T2 — Scène 1 : LES NOUVELLES
-// Le joueur retrouve Camille, Omar et Mila — trois personnes qu'il connaît depuis LA PIÈCE.
-// Callback T1 : si P_INNOCENT signé → Camille dit qu'elle savait.
+// Le dernier dîner. Chaque personne porte un détail venu de la pièce, jamais
+// expliqué. Le premier choix est aussi léger que le bouton : il revient à la fin.
 export const lesNouvelles: Scene = {
   id: 't2.les-nouvelles',
-  version: 1,
+  version: 2,
   timelineId: 't2',
   title: 'Les nouvelles',
   regression: 0,
   contentFlags: [],
   beats: [
-    { text: 'La pièce est la même.' },
-    { text: 'Mais cette fois, il y a des gens dedans.' },
-    { text: 'Camille, Omar, Mila.' },
+    { text: 'Une maison. Des cartons dans l’entrée.' },
+    { text: 'Une table. Cinq couverts.' },
+    { text: 'Camille recompte les verres. Elle recompte toujours.' },
     {
-      text: 'Tu les connais. Pas bien \u2014 mais assez pour que \u00e7a change quelque chose.',
-    },
-  ],
-  variants: [
-    {
-      id: 'v-innocent-signed',
-      when: { law: { principleId: 'P_INNOCENT', status: 'signed' } },
-      beats: [
-        { text: 'La pièce est la même.' },
-        { text: 'Mais cette fois, il y a des gens dedans.' },
-        { text: 'Camille, Omar, Mila.' },
-        {
-          text: '\u00ab\u00a0Je savais que tu d\u00e9fendais les innocents.\u00a0\u00bb Camille dit \u00e7a en te regardant.',
-          style: 'emphasis',
-        },
-        {
-          text: "Tu ne sais pas encore si c'est un compliment ou une attente.",
-        },
-      ],
+      text: 'Sem est arrivé à midi. Il dit qu’il a posé sa journée.',
+      requires: tookMoney,
     },
     {
-      id: 'v-nombre-signed',
-      when: { law: { principleId: 'P_NOMBRE', status: 'signed' } },
-      beats: [
-        { text: 'La pièce est la même.' },
-        { text: 'Mais cette fois, il y a des gens dedans.' },
-        { text: 'Camille, Omar, Mila.' },
-        {
-          text: '\u00ab\u00a0Tu as sign\u00e9 pour le plus grand nombre.\u00a0\u00bb Camille dit \u00e7a doucement.',
-          style: 'emphasis',
-        },
-        { text: "Comme si elle voulait voir si tu t'en souviens." },
-      ],
+      text: 'Sem arrive en dernier, son téléphone de bureau à la main.',
+      requires: { not: tookMoney },
     },
+    { text: 'Omar sort d’une garde de nuit. Il a oublié d’enlever son badge.' },
+    {
+      text: 'Mila porte un col roulé. Il fait vingt-huit degrés.',
+      requires: transplanted,
+    },
+    {
+      text: 'Mila pose son téléphone au milieu de la table. Sonnerie au maximum.',
+      requires: { not: transplanted },
+    },
+    {
+      text: '« La maison est vendue », dit Camille. « C’est le dernier dîner. »',
+    },
+    { text: 'Où t’assois-tu ?' },
   ],
   input: {
-    kind: 'binary',
+    kind: 'choice',
     confirm: 'tap',
     options: [
-      { id: 'rester', label: 'Rester dans la pièce' },
-      { id: 'sortir', label: 'Demander à parler à Camille seule' },
+      { id: 'camille', label: 'À côté de Camille' },
+      { id: 'sem', label: 'À côté de Sem' },
+      { id: 'omar', label: 'À côté d’Omar' },
+      { id: 'mila', label: 'À côté de Mila' },
     ],
   },
   outcomes: [
     {
-      when: { optionId: 'rester' },
+      when: { optionId: 'camille' },
       beats: [
-        { text: 'Vous restez tous les quatre.' },
-        { text: "C'est plus difficile." },
+        { text: 'Camille décale ton assiette d’un centimètre.' },
+        { text: 'Maintenant, elle est droite.' },
       ],
+      fact: 'Au dîner, tu t’es assis·e à côté de Camille.',
     },
     {
-      when: { optionId: 'sortir' },
+      when: { optionId: 'sem' },
       beats: [
-        { text: 'Camille te suit dans le couloir.' },
-        { text: 'Elle attend.' },
-        { text: "Tu n'avais rien de particulier à dire." },
+        { text: 'Sem te sert avant de se servir.' },
+        { text: 'Il remplit trop ton verre.' },
       ],
-      effects: [{ setFlag: 't2.camille-solo-ouverture' }],
+      fact: 'Au dîner, tu t’es assis·e à côté de Sem.',
+    },
+    {
+      when: { optionId: 'omar' },
+      beats: [
+        { text: 'Omar se pousse sans lever les yeux.' },
+        { text: 'Il sent l’hôpital.' },
+      ],
+      fact: 'Au dîner, tu t’es assis·e à côté d’Omar.',
+    },
+    {
+      when: { optionId: 'mila' },
+      beats: [
+        {
+          text: 'Mila tire sur son col. « Il fait chaud, hein. »',
+          requires: transplanted,
+        },
+        {
+          text: 'Mila retourne son téléphone, écran contre la table.',
+          requires: { not: transplanted },
+        },
+        {
+          text: 'Puis elle le remet à l’endroit.',
+          requires: { not: transplanted },
+        },
+      ],
+      fact: 'Au dîner, tu t’es assis·e à côté de Mila.',
     },
   ],
 };

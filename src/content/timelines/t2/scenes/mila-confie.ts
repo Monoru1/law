@@ -1,52 +1,116 @@
 import type { Scene } from '../../../../engine/types';
 
-// T2 — Scène 3 : MILA SE CONFIE
-// Mila révèle quelque chose de personnel. L'écoute active vs le conseil non demandé.
+// T2 — Scène 4 : MILA SE CONFIE
+// Mila a dix-neuf ans : le dossier B. Qu'elle attende encore ou qu'elle ait été
+// greffée dépend de la chambre froide, et change ce qu'elle confie.
 export const milaConfie: Scene = {
   id: 't2.mila-confie',
-  version: 1,
+  version: 2,
   timelineId: 't2',
   title: 'Mila se confie',
-  regression: 0,
-  contentFlags: [],
+  regression: 1,
+  contentFlags: ['maladie'],
   beats: [
-    { text: 'Mila te parle.' },
-    { text: "Pas de la procédure. Pas du protocole. D'elle." },
     {
-      text: 'Sa sœur est malade. Les traitements sont lourds. Elle hésite à lui dire à quel point.',
+      text: 'Mila est assise dans l’escalier. Son téléphone à côté d’elle, écran vers le haut.',
+    },
+    { text: 'Dix-neuf ans. Sur une liste depuis un an.' },
+    {
+      text: '« L’an dernier, ils ont appelé. Une heure après, ils ont rappelé : finalement, non. »',
     },
     {
-      text: 'Elle te dit ça comme si elle attendait quelque chose \u2014 elle ne sait pas quoi.',
+      text: '« C’est allé à un homme de quarante-trois ans. Trois enfants. On n’est pas censé savoir. »',
+    },
+    {
+      text: '« J’ai arrêté un de mes traitements. Si mes analyses baissent, je passe devant. »',
+    },
+    { text: '« Ne le dis pas à Omar. »', style: 'emphasis' },
+  ],
+  variants: [
+    {
+      id: 'greffee',
+      when: { chose: { sceneId: 't1.chambre-froide', optionId: 'dossier-b' } },
+      beats: [
+        {
+          text: 'Mila est assise dans l’escalier. Elle a enlevé son col roulé.',
+        },
+        { text: 'Une cicatrice descend sous son tee-shirt.' },
+        {
+          text: '« Il y a un an, ils m’ont appelée à trois heures du matin. Quelqu’un avait décidé que ce serait moi. »',
+        },
+        {
+          text: '« L’autre dossier, c’était un homme de quarante-trois ans. Trois enfants. »',
+        },
+        { text: '« Il est mort en novembre. »' },
+        {
+          text: '« Je voudrais écrire à ses enfants. Leur dire que c’est moi qui l’ai eu. »',
+        },
+        { text: '« Tu crois que je dois ? »', style: 'emphasis' },
+      ],
+      input: {
+        kind: 'binary',
+        options: [
+          { id: 'ecrire', label: 'Lui dire d’écrire' },
+          { id: 'se-taire', label: 'Lui dire de garder ça pour elle' },
+        ],
+      },
     },
   ],
   input: {
     kind: 'binary',
     confirm: 'tap',
     options: [
-      { id: 'ecouter', label: "L'écouter sans répondre" },
-      { id: 'conseiller', label: 'Lui dire ce que tu ferais à sa place' },
+      {
+        id: 'garder',
+        label: 'Garder son secret',
+        // Someone else on the list moves back so that Mila moves forward.
+        evidence: [{ principleId: 'P_INNOCENT', weight: -0.5 }],
+      },
+      { id: 'prevenir', label: 'Lui dire que tu vas prévenir Omar' },
     ],
   },
   outcomes: [
     {
-      when: { optionId: 'ecouter' },
+      when: { optionId: 'garder' },
       beats: [
-        { text: 'Tu restes là.' },
+        { text: '« Merci. »' },
         {
-          text: '\u00ab\u00a0Merci de ne pas avoir eu de r\u00e9ponse.\u00a0\u00bb',
-          style: 'emphasis',
+          text: 'Elle monte le son de son téléphone. Il était déjà au maximum.',
         },
       ],
-      effects: [{ relationEvent: { characterId: 'mila', kind: 'protected' } }],
+      effects: [
+        { setFlag: 't2.secret-mila' },
+        { relationEvent: { characterId: 'mila', kind: 'promise_made' } },
+      ],
+      fact: 'Dans l’escalier, tu as gardé le secret de Mila. Elle passera devant quelqu’un.',
     },
     {
-      when: { optionId: 'conseiller' },
+      when: { optionId: 'prevenir' },
       beats: [
-        { text: 'Tu lui dis ce que tu ferais.' },
-        { text: 'Elle écoute.' },
-        { text: '\u00ab\u00a0Ouais.\u00a0\u00bb' },
-        { text: 'Ça ne ressemble pas à un accord.' },
+        { text: 'Mila te regarde longtemps.' },
+        { text: '« Alors je ne t’ai rien dit. »' },
+        { text: 'Elle monte dans sa chambre.' },
       ],
+      effects: [
+        { setFlag: 't2.omar-prevenu' },
+        { relationEvent: { characterId: 'mila', kind: 'secret_told' } },
+      ],
+      fact: 'Dans l’escalier, tu as dit à Mila que tu préviendrais Omar.',
+    },
+    {
+      when: { optionId: 'ecrire' },
+      beats: [
+        { text: 'Mila sort une feuille pliée de sa poche.' },
+        { text: 'Elle l’avait déjà écrite.' },
+        { text: 'Elle voulait juste que quelqu’un le dise.', style: 'whisper' },
+      ],
+      effects: [{ setFlag: 't2.lettre-mila' }],
+      fact: 'Dans l’escalier, tu as dit à Mila d’écrire aux enfants.',
+    },
+    {
+      when: { optionId: 'se-taire' },
+      beats: [{ text: '« Ouais. »' }, { text: 'Elle remet son col roulé.' }],
+      fact: 'Dans l’escalier, tu as dit à Mila de garder ça pour elle.',
     },
   ],
 };

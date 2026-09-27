@@ -9,16 +9,24 @@
 - Unit tests for engine and corrupt saves; Playwright journeys for a complete run, full keyboard play, saved resume, reduced motion, privacy and layouts at 360, 768 and 1440 px.
 - Lighthouse mobile on the production home page: Performance 95, Accessibility 100 (single local run).
 
+- Timeline II — LA MAISON is playable end to end after LA PIÈCE: threshold with inherited memory, 12 scenes (4 conditional), per-person consequences, a law born in the house (`P_PAROLE`), confrontations across timelines and a residue ending. `validate:content` plays 2,000 seeded T1→T2 journeys.
+- Save schema 4: per-scene contract registry, byte-exact historical fixtures (84db105, 17c614d, fd2e163), load-boundary invariants, replay fuzzing.
+
 ## Decisions
 
 - The three possible scene 8 screens are one dramatic slot after the surgeon. A signed law without a contradiction sees `t1.pas-encore`; without a signed law, a strong positive evidence trend can see `t1.confrontation-non-signee`.
 - Narrative text is rendered as a React text node, so free text is escaped by React instead of HTML entity encoding, avoiding double-escaped player input.
 - Local font packages are bundled with `next/font/local`, avoiding runtime requests to third-party font hosts.
 
+- Director pass — the four people of the house are the strangers of the room, recognisable only by detail: Sem is the man of fifty-two (_Dix mille_), Mila is dossier B (_Chambre froide_), Omar's brother Yanis was room 14 (_Le protocole_), Camille is one of the ten, or the stranger who gave seven years (_Sept années_). T1 choices decide their circumstances and change which dilemma each person brings. The ending re-attaches the coda's anonymous fragments to their names and closes on the player's exact words from _Pourquoi_.
+- Director pass — each person carries one kind of dilemma (promise, complicity, secret, truth) plus one scarcity scene; betrayal returns the next morning in the person betrayed (`camille-sait` after a lie, `sem` after revealing his secret, `retour-mila` after keeping hers). The first, lightest choice — where to sit — decides who walks the player to the door.
+- Director pass — a law interrupts the player once per timeline. Four confrontations in one night turned the question into a formality; later contradictions stay on record (`raised: false`, Ma loi, report) and the scenes themselves place the old act beside the new answer.
+
 ## Remaining
 
 - Conduct a human timing check for the 8–12 minute target.
-- Playtest Reporting V1 (pseudo + consent → automatic factual report emailed via Brevo on `run_completed`) is implemented; see `docs/playtest-reporting.md`. A first real local send (with a live Brevo key) has not been performed yet.
+- Playtest Reporting V1 (pseudo + consent → automatic factual report emailed via Brevo on `run_completed`) is implemented for both timelines; see `docs/playtest-reporting.md`. A first real send (with a live Brevo key) has not been performed; automated tests only use mocked `fetch`.
+- A human timing check of LA MAISON (target comparable to LA PIÈCE) and a human read of the French text by a native editor.
 
 ## Deviations and justifications
 
@@ -39,3 +47,10 @@
 - Experience pass — the erase action in "Ma loi" moved from a hold gesture to an explicit two-click confirm (Effacer → Confirmer l'effacement), keeping a safety step for the one irreversible action without reintroducing hold.
 - Experience pass — the Room now projects factual `choice_locked` events into deterministic, neutral incisions and shifts its light axis from the latest decision. Regression levels progressively loosen the architecture and close the perspective without assigning meaning or value to any choice; traces remain visible on mobile and all motion collapses under reduced-motion settings.
 - Experience pass — ordinary choices remain native buttons for keyboard and assistive technology, but their shared presentation is now a numbered spatial threshold instead of a grid of raised cards. Generic functional “Continuer” labels were replaced by the specific actions “Reprendre” and “Consigner”; authored decision text remains untouched.
+- Timeline II — The IncompatibleSaveError seen before this pass was not migration behaviour: the T2 adapter validated every T2 save against T1 content (`migrateSave`'s default argument), so Timeline II could never be started or saved; the UI swallowed the error. `migrateSave` now requires its content and each adapter is bound to its timeline.
+- Timeline II — Save compatibility is decided per scene contract instead of the canonical identity of the whole content. The former rule made every text edit incompatible with every save, and the v2→v3 migration derived the "previous" identity from current content, so it would have broken at the next edit. The frozen `legacy-content-v1.json` had also been rewritten once (3958bfc), silently orphaning earlier saves; those saves are now read through the identity they embed.
+- Timeline II — Scene IDs `t2.*` were restructured at version 2 and `t2.l-exception` removed: no T2 journal could ever have been written before this pass, so no history references them. T1 scene IDs and versions are unchanged; T1 edits in this pass are text only (the coda's two organ lines were attached to the wrong choice and are swapped back).
+- Timeline II — Memory is copied into the house journal (`memory_inherited`) rather than read from the room's save, so the house keeps what the player did even if the room is erased or replaced later.
+- Timeline II — `relation_event` was declared as a journal event but never written or accepted by the schema; relations are derived from `relationEvent` effects of recorded choices, stamped with the choice's own ID and time (the reducer previously called `Date.now()`).
+- Timeline II — Signing a self-written law is recorded as that sentence (`law_signed.statementText`), no longer as "the default sentence, then a revision" the player never made. Journals written before keep their historical form.
+- Timeline II — `--law-space-5` was used by every choice button but never defined, invalidating the padding shorthand at all viewports (the index overlapped the first letter). The token is now defined.

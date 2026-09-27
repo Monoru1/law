@@ -1,4 +1,17 @@
 import { z } from 'zod';
+export const relationKind = z.enum([
+  'promise_made',
+  'promise_kept',
+  'promise_broken',
+  'lie_made',
+  'lie_revealed',
+  'truth_told',
+  'secret_kept',
+  'secret_told',
+  'chose_over',
+  'protected',
+  'sacrificed',
+]);
 const condition: z.ZodType<unknown> = z.lazy(() =>
   z.union([
     z.object({ all: z.array(condition) }),
@@ -29,6 +42,9 @@ const condition: z.ZodType<unknown> = z.lazy(() =>
     }),
     z.object({ contradiction: z.enum(['pending', 'none']) }),
     z.object({ visited: z.string() }),
+    z.object({
+      relation: z.object({ characterId: z.string(), kind: relationKind }),
+    }),
   ]),
 );
 export const beatSchema = z.object({
@@ -40,6 +56,7 @@ export const beatSchema = z.object({
 const evidence = z.object({
   principleId: z.string(),
   weight: z.number().min(-1).max(1),
+  when: condition.optional(),
 });
 const option = z.object({
   id: z.string(),
@@ -84,27 +101,36 @@ export const inputSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('lawProposal') }),
   z.object({ kind: z.literal('confrontation') }),
 ]);
-const effect = z.union([
-  z.object({ setFlag: z.string() }),
-  z.object({
-    setVar: z.string(),
-    value: z.union([z.number(), z.string(), z.boolean()]),
-  }),
-  z.object({
-    incVar: z.string(),
-    by: z.union([z.number(), z.object({ fromValueOf: z.string() })]),
-  }),
-  z.object({
-    schedule: z.object({ sceneId: z.string(), when: condition.optional() }),
-  }),
-  z.object({
-    proposeLaw: z.object({ principleId: z.string(), statementId: z.string() }),
-  }),
-]);
+const effect: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    z.object({ setFlag: z.string() }),
+    z.object({
+      setVar: z.string(),
+      value: z.union([z.number(), z.string(), z.boolean()]),
+    }),
+    z.object({
+      incVar: z.string(),
+      by: z.union([z.number(), z.object({ fromValueOf: z.string() })]),
+    }),
+    z.object({
+      schedule: z.object({ sceneId: z.string(), when: condition.optional() }),
+    }),
+    z.object({
+      proposeLaw: z.object({
+        principleId: z.string(),
+        statementId: z.string(),
+      }),
+    }),
+    z.object({
+      relationEvent: z.object({ characterId: z.string(), kind: relationKind }),
+    }),
+    z.object({ if: condition, then: z.array(effect) }),
+  ]),
+);
 export const sceneSchema = z.object({
-  id: z.string().regex(/^t1\.[a-z-]+$/),
+  id: z.string().regex(/^t[1-4]\.[a-z-]+$/),
   version: z.number().int().positive(),
-  timelineId: z.literal('t1'),
+  timelineId: z.enum(['t1', 't2', 't3', 't4']),
   title: z.string(),
   regression: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
   contentFlags: z.array(z.string()),
@@ -131,6 +157,7 @@ export const sceneSchema = z.object({
       ]),
       beats: z.array(beatSchema),
       effects: z.array(effect).optional(),
+      fact: z.string().optional(),
     }),
   ),
   followUps: z.array(z.enum(['certainty', 'lawProposal'])).optional(),
@@ -159,6 +186,49 @@ export const observationSchema = z.object({
   when: condition,
   text: z.string(),
   minDecisions: z.number().optional(),
+});
+const scalar = z.union([z.number(), z.string().max(64), z.boolean()]);
+const revision = z.object({
+  at: z.number(),
+  statementId: z.string().nullable(),
+  statementText: z.string().max(400).optional(),
+  customText: z.string().max(280).optional(),
+  status: z.enum(['signed', 'abandoned']),
+});
+// Bounded so an inherited memory can never become an unbounded payload.
+const memorySchema = z.object({
+  completedAt: z.number(),
+  decisions: z.number().int().nonnegative(),
+  choices: z
+    .record(z.string().max(64), z.union([z.string().max(64), z.number()]))
+    .refine((value) => Object.keys(value).length <= 40),
+  justifications: z
+    .record(z.string().max(64), z.string().max(280))
+    .refine((value) => Object.keys(value).length <= 40),
+  flags: z.array(z.string().max(64)).max(80),
+  vars: z
+    .record(z.string().max(64), scalar)
+    .refine((value) => Object.keys(value).length <= 40),
+  evidence: z
+    .record(z.string().max(64), z.number())
+    .refine((value) => Object.keys(value).length <= 40),
+  laws: z
+    .array(
+      z.object({
+        number: z.number().int().positive(),
+        principleId: z.string(),
+        statementId: z.string().nullable(),
+        statementText: z.string().max(400),
+        customText: z.string().max(280).optional(),
+        status: z.enum(['signed', 'abandoned']),
+        revisions: z.array(revision).max(40),
+        origin: z
+          .object({ sceneId: z.string(), text: z.string().max(400) })
+          .optional(),
+      }),
+    )
+    .max(20),
+  declinedLaws: z.array(z.string()).max(20),
 });
 export const eventSchema = z.discriminatedUnion('type', [
   z.object({
@@ -227,6 +297,7 @@ export const eventSchema = z.discriminatedUnion('type', [
     lawNumber: z.number(),
     principleId: z.string(),
     statementId: z.string(),
+    statementText: z.string().max(400).optional(),
   }),
   z.object({
     type: z.literal('law_declined'),
@@ -241,6 +312,7 @@ export const eventSchema = z.discriminatedUnion('type', [
     lawNumber: z.number(),
     newStatementId: z.string().nullable(),
     customText: z.string().max(280).optional(),
+    statementText: z.string().max(400).optional(),
   }),
   z.object({
     type: z.literal('law_abandoned'),
@@ -267,6 +339,14 @@ export const eventSchema = z.discriminatedUnion('type', [
     at: z.number(),
     timelineId: z.string(),
   }),
+  z.object({
+    type: z.literal('memory_inherited'),
+    id: z.string(),
+    at: z.number(),
+    fromTimelineId: z.string(),
+    fromRunId: z.string().max(64),
+    memory: memorySchema,
+  }),
 ]);
 export const settingsSchema = z.object({
   simpleConfirmation: z.boolean(),
@@ -274,7 +354,8 @@ export const settingsSchema = z.object({
   textSize: z.enum(['small', 'normal', 'large']),
   sound: z.boolean(),
 });
-export const saveSchema = z.object({
+// Schema 2 and 3: the whole interpreting content was embedded as identity.
+export const legacySaveSchema = z.object({
   schemaVersion: z.number().int(),
   contentVersion: z.string(),
   runId: z.string(),
@@ -282,6 +363,21 @@ export const saveSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
   events: z.array(eventSchema),
+  settings: settingsSchema,
+  pseudonym: z.string().max(64).optional(),
+  reportingConsent: z.boolean().optional(),
+  reportingStatus: z.enum(['not_sent', 'sending', 'sent', 'failed']).optional(),
+});
+// Schema 4: compatibility is carried by each event's scene version, checked
+// against the append-only contract registry.
+export const saveSchema = z.object({
+  schemaVersion: z.number().int(),
+  timelineId: z.enum(['t1', 't2', 't3', 't4']),
+  contentVersion: z.string().max(32),
+  runId: z.string().min(1).max(64),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  events: z.array(eventSchema).max(2000),
   settings: settingsSchema,
   pseudonym: z.string().max(64).optional(),
   reportingConsent: z.boolean().optional(),

@@ -1,5 +1,9 @@
-import { dominantUnsignedPrinciple } from './laws';
-import { lawStatement } from './laws';
+import {
+  choiceFact,
+  dominantUnsignedPrinciple,
+  lawOriginFact,
+  lawStatement,
+} from './laws';
 import type { Content, GameState } from './types';
 export function applyFrenchTypography(text: string): string {
   return text
@@ -38,10 +42,21 @@ export function renderText(
           : fallback;
       if (source === 'count' && name === 'decisions')
         return String(state.decisions);
+      if (source === 'confrontation' && name === 'fact') {
+        const pending = state.pendingConfrontations[0];
+        const fact = pending
+          ? choiceFact(pending.sceneId, state, content)
+          : null;
+        return fact ? renderText(fact, state, content, lawNumber) : fallback;
+      }
       const [reference, field] = (rest[0] ?? '').split('.');
       const lawReference = source === 'since' ? rest[1] : reference;
       const n = Number(lawReference === 'N' ? lawNumber : lawReference);
       const law = state.laws.find((l) => l.number === n);
+      if (source === 'law' && law && field === 'origin') {
+        const fact = lawOriginFact(law, state, content);
+        return fact ? renderText(fact, state, content, lawNumber) : fallback;
+      }
       if (source === 'law' && law)
         return field === 'number'
           ? String(law.number).padStart(2, '0')
@@ -57,6 +72,8 @@ export function renderText(
 }
 
 // Simulation validation: checking the whole beat misses empty embedded quotes.
+// Player text may itself contain braces; it is inserted, never interpreted, so
+// only the authored template is checked for malformed tokens.
 export function assertRenderedText(
   template: string,
   state: GameState,
@@ -65,9 +82,8 @@ export function assertRenderedText(
 ): void {
   for (const token of template.match(/\{\{[^{}]+\}\}/g) ?? []) {
     const resolved = renderText(token, state, content, lawNumber);
-    if (!resolved.trim() || resolved.includes('{{'))
-      throw new Error(`Empty or unresolved template ${token}`);
+    if (!resolved.trim()) throw new Error(`Empty template ${token}`);
   }
-  if (renderText(template, state, content, lawNumber).includes('{{'))
+  if (/\{\{|\}\}/.test(template.replace(/\{\{[^{}]+\}\}/g, '')))
     throw new Error(`Unresolved template ${template}`);
 }

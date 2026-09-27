@@ -21,6 +21,7 @@ function makeReport(overrides: Partial<PlaytestReport> = {}): PlaytestReport {
     decisions: [],
     laws: [],
     confrontations: [],
+    relations: [],
     factualSummary: [],
     ...overrides,
   };

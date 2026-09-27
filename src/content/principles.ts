@@ -59,3 +59,26 @@ export const principles: Principle[] = [
     ],
   },
 ];
+
+// Born in the house: a promise made to someone the player knows.
+export const principlesT2: Principle[] = [
+  ...principles,
+  {
+    id: 'P_PAROLE',
+    statements: [
+      {
+        id: 'parole.default',
+        text: 'Une promesse tient, même quand elle coûte.',
+        isDefault: true,
+      },
+      {
+        id: 'parole.tort',
+        text: 'Une promesse tient, même quand elle coûte, sauf si la tenir fait du tort à quelqu’un.',
+      },
+      {
+        id: 'parole.autre',
+        text: 'Une promesse tient, même quand elle coûte, sauf quand elle en trahit une autre.',
+      },
+    ],
+  },
+];

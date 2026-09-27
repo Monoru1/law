@@ -2,6 +2,15 @@ import { eventSchema } from './schema';
 import { resolveScene } from './flow';
 import type { Content, GameEvent, GameState } from './types';
 
+// Events that can only be recorded while the player is inside that scene.
+const IN_SCENE = new Set<GameEvent['type']>([
+  'choice_locked',
+  'certainty_given',
+  'justification_given',
+  'justification_declined',
+  'scene_skipped',
+]);
+
 // Zod at boundaries: structural validation is followed by content validation.
 export function validateEvent(
   event: GameEvent,
@@ -14,11 +23,50 @@ export function validateEvent(
   };
   if (state.events.some((e) => e.id === event.id)) invalid();
   if (state.completed) invalid();
-  if (
-    event.type === 'run_started' &&
-    (event.contentVersion !== content.version || state.events.length)
-  )
-    invalid();
+  // A journal starts exactly once; nothing is recorded before it starts.
+  if ((event.type === 'run_started') !== (state.events.length === 0)) invalid();
+  // A timeline built on an earlier one records that memory before anything else.
+  if (content.inherits && state.events.length === 1)
+    if (
+      event.type !== 'memory_inherited' ||
+      event.fromTimelineId !== content.inherits.timelineId
+    )
+      invalid();
+  if (event.type === 'memory_inherited') {
+    if (!content.inherits || state.events.length !== 1) invalid();
+    const known = new Set(content.inherits?.sceneIds ?? []);
+    const memory = event.memory;
+    if (
+      Object.keys(memory.choices).some((id) => !known.has(id)) ||
+      Object.keys(memory.justifications).some((id) => !known.has(id))
+    )
+      invalid();
+    for (const law of memory.laws) {
+      const principle = content.principles.find(
+        (p) => p.id === law.principleId,
+      );
+      if (
+        !principle ||
+        (law.statementId !== null &&
+          !principle.statements.some((s) => s.id === law.statementId))
+      )
+        invalid();
+    }
+    if (
+      new Set(memory.laws.map((law) => law.number)).size !== memory.laws.length
+    )
+      invalid();
+  }
+  if (IN_SCENE.has(event.type) && 'sceneId' in event)
+    if (state.currentSceneId !== event.sceneId) invalid();
+  if (event.type === 'run_completed') {
+    // Completion follows the final gesture; it is never inferred earlier.
+    if (
+      event.timelineId !== content.timelineId ||
+      !state.visited.includes(content.flow.codaSceneId)
+    )
+      invalid();
+  }
   if ('sceneId' in event) {
     const raw = content.scenes.find((s) => s.id === event.sceneId);
     if (!raw) return invalid();
@@ -60,6 +108,7 @@ export function validateEvent(
         !['no', 'silence', 'signed'].includes(String(event.value))
       )
         invalid();
+      if (input.kind === 'passage') invalid();
     }
   }
   if ('principleId' in event) {
@@ -97,7 +146,8 @@ export function validateEvent(
   }
   if (
     event.type === 'confrontation_answered' &&
-    (!state.pendingConfrontations.length ||
+    (state.currentSceneId !== content.flow.confrontationSceneId ||
+      !state.pendingConfrontations.length ||
       state.pendingConfrontations[0]?.lawNumber !== event.lawNumber)
   )
     invalid();

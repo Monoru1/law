@@ -97,9 +97,10 @@ export function renderEmailHtml(report: PlaytestReport): string {
             const body = statement
               ? `<p style="margin:0;font-size:16px;line-height:1.4;">${escapeHtml(statement)}</p>`
               : '<p style="margin:0;font-size:14px;color:#666;font-style:italic;">Aucune formulation retenue.</p>';
+            const origin = l.inheritedFrom ? ' · signée dans la pièce' : '';
             return `
     <div style="margin-bottom:16px;padding:12px 14px;border-left:3px solid #000;">
-      <p style="margin:0 0 6px;font-family:monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#666;">${heading} · ${statusLabel}</p>
+      <p style="margin:0 0 6px;font-family:monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#666;">${heading} · ${statusLabel}${origin}</p>
       ${body}
       <p style="margin:8px 0 0;font-family:monospace;font-size:10px;color:#999;">${escapeHtml(l.principleId)}${l.revisions.length > 0 ? ` · ${l.revisions.length} révision(s)` : ''}</p>
     </div>`;
@@ -117,9 +118,30 @@ export function renderEmailHtml(report: PlaytestReport): string {
       ${c.sceneTitle ? `<span style="color:#666;">— ${escapeHtml(c.sceneTitle)}</span>` : ''}
       &nbsp;→&nbsp;
       <strong>${escapeHtml(c.displayAnswer)}</strong>
+      ${c.contradiction ? `<div style="color:#444;margin-top:2px;">${escapeHtml(c.contradiction)}</div>` : ''}
     </div>`,
           )
           .join('');
+
+  const relationsSection =
+    report.relations.length === 0
+      ? ''
+      : `
+  <h2 style="font-family:monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Personnes</h2>
+  <div style="margin-bottom:32px;">${report.relations
+    .map(
+      (r) => `
+    <div style="margin-bottom:12px;font-size:13px;">
+      <p style="margin:0 0 4px;font-family:monospace;font-size:12px;">${escapeHtml(r.name)}</p>
+      ${r.events
+        .map(
+          (e) =>
+            `<p style="margin:0;">${escapeHtml(e.label)}${e.sceneTitle ? ` — ${escapeHtml(e.sceneTitle)}` : ''}</p>`,
+        )
+        .join('')}
+    </div>`,
+    )
+    .join('')}</div>`;
 
   const summarySection = report.factualSummary
     .map(
@@ -167,11 +189,13 @@ export function renderEmailHtml(report: PlaytestReport): string {
   <h2 style="font-family:monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Confrontations</h2>
   <div style="margin-bottom:32px;">${confrontationsSection}</div>
 
+${relationsSection}
   <h2 style="font-family:monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;">Synthèse factuelle</h2>
   <ul style="padding-left:20px;margin-bottom:32px;">${summarySection}</ul>
 
   <div style="border-top:1px solid #ccc;padding-top:16px;font-family:monospace;font-size:11px;color:#666;">
     <p style="margin:0 0 4px;">Run ID : ${escapeHtml(report.runId)}</p>
+    ${report.inheritedFromRunId ? `<p style="margin:0 0 4px;">Suite de : ${escapeHtml(report.inheritedFromRunId)}</p>` : ''}
     <p style="margin:0 0 4px;">Content : v${escapeHtml(report.contentVersion)}</p>
     <p style="margin:0;">Report version : ${escapeHtml(report.reportVersion)}</p>
   </div>
@@ -191,6 +215,8 @@ export function renderEmailText(report: PlaytestReport): string {
   lines.push(`Durée : ${formatMs(report.durationMs)}`);
   lines.push(`Timeline : ${report.timelineId}`);
   lines.push(`Run : ${report.runId}`);
+  if (report.inheritedFromRunId)
+    lines.push(`Suite de : ${report.inheritedFromRunId}`);
   lines.push('');
 
   lines.push('DÉCISIONS');
@@ -217,7 +243,9 @@ export function renderEmailText(report: PlaytestReport): string {
         lines.push(
           `Loi ${String(l.number).padStart(2, '0')} (${statusLabel}) : ${statement}`,
         );
-        lines.push(`   [${l.principleId}]`);
+        lines.push(
+          `   [${l.principleId}]${l.inheritedFrom ? ' (signée dans la pièce)' : ''}`,
+        );
         for (const r of l.revisions) {
           lines.push(`   Révision : ${r.text}`);
         }
@@ -238,9 +266,21 @@ export function renderEmailText(report: PlaytestReport): string {
       lines.push(
         `Loi ${c.lawNumber !== null ? String(c.lawNumber).padStart(2, '0') : '??'}${scene} → ${c.displayAnswer}`,
       );
+      if (c.contradiction) lines.push(`   ${c.contradiction}`);
     }
   }
   lines.push('');
+
+  if (report.relations.length > 0) {
+    lines.push('PERSONNES');
+    lines.push('-'.repeat(20));
+    for (const r of report.relations) {
+      lines.push(r.name);
+      for (const e of r.events)
+        lines.push(`   ${e.label}${e.sceneTitle ? ` — ${e.sceneTitle}` : ''}`);
+    }
+    lines.push('');
+  }
 
   lines.push('SYNTHÈSE FACTUELLE');
   lines.push('-'.repeat(20));

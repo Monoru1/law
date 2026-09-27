@@ -1,64 +1,118 @@
 import type { Scene } from '../../../../engine/types';
 
-// T2 — Scène 9 : LE MENSONGE
-// Mila a menti à Omar sur quelque chose d'important. Elle dit ça au joueur.
+const promised = {
+  relation: { characterId: 'camille', kind: 'promise_made' },
+} as const;
+
+// T2 — Scène 7 : LE MENSONGE
+// Camille demande ce que Sem cache. Si tu lui as promis de dire oui, c'est le
+// moment où la promesse sert.
 export const leMensonge: Scene = {
   id: 't2.le-mensonge',
-  version: 1,
+  version: 2,
   timelineId: 't2',
   title: 'Le mensonge',
   regression: 2,
   contentFlags: [],
   beats: [
-    { text: 'Mila t\u2019avoue quelque chose.' },
-    { text: 'Elle a menti \u00e0 Omar.' },
-    { text: 'Pas un petit mensonge.' },
+    { text: 'Une heure du matin. Camille ne dort pas.' },
+    { text: '« Sem me cache quelque chose. »' },
+    { text: '« Tu sais ce que c’est. Je le vois. »' },
     {
-      text: '\u00ab\u00a0Il ne le sait pas. Je ne sais pas si je dois lui dire.\u00a0\u00bb',
+      text: '« Tu as promis de dire oui. Je te demande de l’aide. »',
       style: 'emphasis',
+      requires: promised,
     },
-    { text: 'Elle te regarde.' },
   ],
   input: {
-    kind: 'binary',
+    kind: 'choice',
     confirm: 'tap',
     options: [
       {
-        id: 'lui-dire',
-        label: 'L\u2019encourager \u00e0 dire la v\u00e9rit\u00e9 \u00e0 Omar',
+        id: 'dire',
+        label: 'Lui dire ce que Sem cache',
+        evidence: [{ principleId: 'P_PAROLE', weight: 1, when: promised }],
       },
       {
-        id: 'garder',
-        label: "Lui dire que c'est sa d\u00e9cision \u00e0 elle",
+        id: 'mentir',
+        label: 'Lui dire que tu ne sais rien',
+        evidence: [{ principleId: 'P_PAROLE', weight: -1, when: promised }],
+      },
+      {
+        id: 'refuser',
+        label: 'Lui dire que ce n’est pas à toi de le dire',
+        evidence: [{ principleId: 'P_PAROLE', weight: -0.5, when: promised }],
       },
     ],
   },
   outcomes: [
     {
-      when: { optionId: 'lui-dire' },
+      when: { optionId: 'dire' },
       beats: [
-        { text: 'Tu lui dis qu\u2019Omar m\u00e9rite de savoir.' },
-        { text: 'Mila reste silencieuse.' },
-        { text: '\u00ab\u00a0Peut-\u00eatre.\u00a0\u00bb', style: 'emphasis' },
-        { text: 'Elle ne dit pas si elle le fera.', style: 'whisper' },
+        {
+          text: 'Tu lui dis : le bureau vidé en mars, les matins à huit heures.',
+          requires: { flag: 'took_money' },
+        },
+        {
+          text: 'Tu lui dis : le nom qu’on lui demande.',
+          requires: { not: { flag: 'took_money' } },
+        },
+        { text: 'Camille ne dit rien.' },
+        { text: 'Elle compte quelque chose, dans sa tête.' },
       ],
       effects: [
-        { setFlag: 't2.pousse-mila-verite' },
-        { relationEvent: { characterId: 'mila', kind: 'lie_revealed' } },
+        { setFlag: 't2.camille-informee' },
+        { relationEvent: { characterId: 'sem', kind: 'secret_told' } },
+        { relationEvent: { characterId: 'camille', kind: 'truth_told' } },
+        {
+          if: promised,
+          then: [
+            { relationEvent: { characterId: 'camille', kind: 'promise_kept' } },
+          ],
+        },
       ],
+      fact: 'À une heure du matin, tu as dit à Camille ce que Sem cachait.',
     },
     {
-      when: { optionId: 'garder' },
+      when: { optionId: 'mentir' },
       beats: [
-        { text: "Tu lui dis que c'est \u00e0 elle de d\u00e9cider." },
-        { text: 'Mila hoche la t\u00eate.' },
-        { text: '\u00ab\u00a0Merci.\u00a0\u00bb', style: 'emphasis' },
-        { text: 'Tu portes quelque chose maintenant.', style: 'whisper' },
+        { text: '« Je ne sais rien. »' },
+        { text: 'Camille te regarde longtemps.' },
+        { text: 'Elle te croit.', style: 'emphasis' },
       ],
       effects: [
-        { setFlag: 't2.garde-secret-mila' },
-        { relationEvent: { characterId: 'mila', kind: 'lie_made' } },
+        { setFlag: 't2.mensonge-camille' },
+        { relationEvent: { characterId: 'camille', kind: 'lie_made' } },
+        { relationEvent: { characterId: 'sem', kind: 'secret_kept' } },
+        {
+          if: promised,
+          then: [
+            {
+              relationEvent: { characterId: 'camille', kind: 'promise_broken' },
+            },
+          ],
+        },
       ],
+      fact: 'À une heure du matin, tu as dit à Camille que tu ne savais rien.',
+    },
+    {
+      when: { optionId: 'refuser' },
+      beats: [
+        { text: '« Donc il y a quelque chose. »' },
+        { text: 'Elle éteint la lumière de la cuisine.' },
+      ],
+      effects: [
+        { relationEvent: { characterId: 'sem', kind: 'secret_kept' } },
+        {
+          if: promised,
+          then: [
+            {
+              relationEvent: { characterId: 'camille', kind: 'promise_broken' },
+            },
+          ],
+        },
+      ],
+      fact: 'À une heure du matin, tu as refusé de répondre à Camille.',
     },
   ],
 };

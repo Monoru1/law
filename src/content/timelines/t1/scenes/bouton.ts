@@ -30,10 +30,12 @@ export const bouton: Scene = {
         { text: 'Cette fois.' },
       ],
       effects: [{ setFlag: 'pressed_button' }],
+      fact: 'Tu as appuyé sur le bouton.',
     },
     {
       when: { optionId: 'ne-pas-appuyer' },
       beats: [{ text: 'Tu ne sauras jamais.' }],
+      fact: 'Tu n’as pas appuyé sur le bouton.',
     },
   ],
 };

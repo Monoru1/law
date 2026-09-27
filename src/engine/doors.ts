@@ -1,14 +1,15 @@
 import type { Content, GameState } from './types';
 
-// Only t1 has an executable flow. Adding content alone must not unlock a door.
+// A timeline is playable only when content provides it; adding scenes alone
+// never unlocks a door. Timeline II also needs a completed Timeline I.
 export const TIMELINE_IDS = ['t1', 't2', 't3', 't4'] as const;
 export type TimelineId = (typeof TIMELINE_IDS)[number];
 export type DoorStatus =
   'available' | 'in_progress' | 'completed' | 'presentation';
 export type DoorEntry =
-  | { kind: 'start'; timelineId: 't1' }
-  | { kind: 'resume'; timelineId: 't1'; sceneId: string | null }
-  | { kind: 'summary'; timelineId: 't1' }
+  | { kind: 'start'; timelineId: TimelineId }
+  | { kind: 'resume'; timelineId: TimelineId; sceneId: string | null }
+  | { kind: 'summary'; timelineId: TimelineId }
   | { kind: 'presentation'; timelineId: TimelineId };
 
 export type RunProgress = {
@@ -21,6 +22,8 @@ export type RunProgress = {
 };
 
 type RecordedRun = Pick<GameState, 'events'>;
+export type TimelineRun = { state: RecordedRun; content: Content };
+export type TimelineRuns = Partial<Record<TimelineId, TimelineRun>>;
 
 /** Derived display data only: every visit and completion carries its source event. */
 export function getRunProgress(
@@ -40,13 +43,16 @@ export function getRunProgress(
       const scene = scenes.get(event.sceneId);
       // Unknown historical content cannot supply an invented title or visit.
       currentScene =
-        scene?.timelineId === 't1'
+        scene?.timelineId === content.timelineId
           ? { sceneId: scene.id, title: scene.title, eventId: event.id }
           : null;
       if (currentScene && !visited.has(event.sceneId)) {
         visited.set(event.sceneId, event.id);
       }
-    } else if (event.type === 'run_completed' && event.timelineId === 't1') {
+    } else if (
+      event.type === 'run_completed' &&
+      event.timelineId === content.timelineId
+    ) {
       completionEventId = event.id;
       currentScene = null;
     }
@@ -63,31 +69,42 @@ export function getRunProgress(
   };
 }
 
+const playable = (timelineId: TimelineId, run: TimelineRun | undefined) =>
+  !!run &&
+  run.content.timelineId === timelineId &&
+  run.content.order.some((id) =>
+    run.content.scenes.some(
+      (scene) => scene.id === id && scene.timelineId === timelineId,
+    ),
+  );
+
 /** Navigation intent only; this function never creates or replaces a saved run. */
 export function resolveDoorEntry(
   timelineId: TimelineId,
-  state: RecordedRun,
-  content: Content,
+  runs: TimelineRuns,
 ): DoorEntry {
-  if (
-    timelineId !== 't1' ||
-    !content.order.some((id) =>
-      content.scenes.some(
-        (scene) => scene.id === id && scene.timelineId === 't1',
-      ),
-    )
-  ) {
+  const run = runs[timelineId];
+  if (!run || !playable(timelineId, run))
     return { kind: 'presentation', timelineId };
-  }
-  const progress = getRunProgress(state, content);
+  const progress = getRunProgress(run.state, run.content);
   if (progress.completionEventId) return { kind: 'summary', timelineId };
   // Even an incomplete legacy journal must not be silently replaced.
-  if (state.events.length) {
+  if (run.state.events.length) {
     return {
       kind: 'resume',
       timelineId,
       sceneId: progress.currentScene?.sceneId ?? null,
     };
+  }
+  // A timeline that inherits another opens once that one is complete.
+  const inherited = run.content.inherits?.timelineId as TimelineId | undefined;
+  if (inherited) {
+    const source = runs[inherited];
+    if (
+      !source ||
+      !getRunProgress(source.state, source.content).completionEventId
+    )
+      return { kind: 'presentation', timelineId };
   }
   return { kind: 'start', timelineId };
 }
@@ -98,10 +115,7 @@ export type TimelineDoor = {
   entry: DoorEntry;
 };
 
-export function getTimelineDoors(
-  state: RecordedRun,
-  content: Content,
-): TimelineDoor[] {
+export function getTimelineDoors(runs: TimelineRuns): TimelineDoor[] {
   const statuses: Record<DoorEntry['kind'], DoorStatus> = {
     start: 'available',
     resume: 'in_progress',
@@ -109,7 +123,7 @@ export function getTimelineDoors(
     presentation: 'presentation',
   };
   return TIMELINE_IDS.map((timelineId) => {
-    const entry = resolveDoorEntry(timelineId, state, content);
+    const entry = resolveDoorEntry(timelineId, runs);
     return { timelineId, status: statuses[entry.kind], entry };
   });
 }

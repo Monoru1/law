@@ -30,11 +30,11 @@ export const coda: Scene = {
     },
     {
       text: 'Un dossier refermé.',
-      requires: { flag: 'chose_probabilite' },
+      requires: { flag: 'chose_attente' },
     },
     {
       text: 'Un homme qui attend encore.',
-      requires: { flag: 'chose_attente' },
+      requires: { flag: 'chose_probabilite' },
     },
     {
       text: 'Un protocole qui continue.',

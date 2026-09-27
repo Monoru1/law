@@ -11,3 +11,5 @@ export * from './text';
 export * from './doors';
 export * from './validation';
 export * from './pacing';
+export * from './contract';
+export * from './memory';

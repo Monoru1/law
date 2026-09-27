@@ -68,6 +68,7 @@ export const leProtocole: Scene = {
         { text: 'La chambre 14 reste occupée.' },
       ],
       effects: [{ setFlag: 'protocole_continue' }],
+      fact: 'Tu as continué le protocole.',
     },
     {
       when: { optionId: 'arreter' },
@@ -80,6 +81,7 @@ export const leProtocole: Scene = {
         { text: 'Trois ans de données sont classées sans suite.' },
       ],
       effects: [{ setFlag: 'protocole_arrete' }],
+      fact: 'Tu as arrêté le protocole.',
     },
   ],
 };

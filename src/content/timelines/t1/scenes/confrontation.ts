@@ -9,8 +9,9 @@ export const confrontation: Scene = {
   beats: [
     { text: 'LOI {{law:N.number|01}}', style: 'meta' },
     { text: '« {{law:N.statement|}} »' },
+    { text: '{{law:N.origin|—}}' },
     { text: 'Tu l’as signée.' },
-    { text: 'Tu viens de faire l’inverse.' },
+    { text: '{{confrontation:fact|Tu viens de faire l’inverse.}}' },
     { text: 'Elle tient toujours ?' },
   ],
   input: { kind: 'confrontation' },
