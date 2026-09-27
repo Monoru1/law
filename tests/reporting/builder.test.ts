@@ -271,6 +271,97 @@ describe('buildReport', () => {
     expect(report!.confrontations[0]!.lawNumber).toBe(1);
   });
 
+  it('confrontation liée à sa scène via le choice_locked qui suit', () => {
+    const confrontationScene = content.scenes.find(
+      (s) => s.id === 't1.confrontation',
+    )!;
+    const events: GameEvent[] = [
+      event({
+        type: 'choice_locked',
+        sceneId: 't1.bouton',
+        sceneVersion: boutonScene.version,
+        input: 'binary',
+        value: 'appuyer',
+        hesitationMs: 100,
+        selectionChanges: 0,
+      }),
+      event({
+        type: 'confrontation_answered',
+        lawNumber: 1,
+        answer: 'maintain',
+      }),
+      event({
+        type: 'choice_locked',
+        sceneId: 't1.confrontation',
+        sceneVersion: confrontationScene.version,
+        input: 'confrontation',
+        value: 'maintain',
+        hesitationMs: 200,
+        selectionChanges: 0,
+      }),
+      event({ type: 'run_completed', timelineId: 't1' }),
+    ];
+    const save = makeSave(events);
+    const report = buildReport(save, content);
+    expect(report!.confrontations[0]!.sceneId).toBe('t1.confrontation');
+    expect(report!.confrontations[0]!.sceneTitle).toBe(
+      confrontationScene.title,
+    );
+    // Le lock 'confrontation' ne doit pas apparaître comme une décision narrative distincte.
+    expect(
+      report!.decisions.some((d) => d.sceneId === 't1.confrontation'),
+    ).toBe(false);
+  });
+
+  it('proposition de loi déclinée apparaît avec number: null et status declined', () => {
+    const principleId = content.principles[0]!.id;
+    const events: GameEvent[] = [
+      event({
+        type: 'choice_locked',
+        sceneId: 't1.bouton',
+        sceneVersion: boutonScene.version,
+        input: 'binary',
+        value: 'appuyer',
+        hesitationMs: 100,
+        selectionChanges: 0,
+      }),
+      event({ type: 'law_declined', principleId }),
+      event({ type: 'run_completed', timelineId: 't1' }),
+    ];
+    const save = makeSave(events);
+    const report = buildReport(save, content);
+    const declined = report!.laws.find((l) => l.status === 'declined');
+    expect(declined).toBeDefined();
+    expect(declined!.number).toBeNull();
+    expect(declined!.principleId).toBe(principleId);
+    expect(report!.factualSummary.some((s) => s.includes('déclinée'))).toBe(
+      true,
+    );
+  });
+
+  it('une loi déclinée puis signée pour le même principe n’apparaît pas comme déclinée', () => {
+    const principleId = content.principles[0]!.id;
+    const statementId = content.principles[0]!.statements[0]!.id;
+    const events: GameEvent[] = [
+      event({
+        type: 'choice_locked',
+        sceneId: 't1.bouton',
+        sceneVersion: boutonScene.version,
+        input: 'binary',
+        value: 'appuyer',
+        hesitationMs: 100,
+        selectionChanges: 0,
+      }),
+      event({ type: 'law_declined', principleId }),
+      event({ type: 'law_signed', lawNumber: 1, principleId, statementId }),
+      event({ type: 'run_completed', timelineId: 't1' }),
+    ];
+    const save = makeSave(events);
+    const report = buildReport(save, content);
+    expect(report!.laws).toHaveLength(1);
+    expect(report!.laws[0]!.status).toBe('active');
+  });
+
   it('factualSummary contient le nombre de décisions', () => {
     const save = makeSave(baseEvents);
     const report = buildReport(save, content);

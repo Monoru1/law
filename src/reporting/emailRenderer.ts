@@ -62,18 +62,22 @@ export function renderEmailHtml(report: PlaytestReport): string {
     report.laws.length === 0
       ? '<p style="color:#666;font-size:13px;">Aucune loi signée.</p>'
       : report.laws
-          .map(
-            (l) => `
+          .map((l) => {
+            const label =
+              l.number !== null
+                ? `Loi ${String(l.number).padStart(2, '0')} — ${escapeHtml(l.principleId)} — ${l.status}`
+                : `Proposition déclinée — ${escapeHtml(l.principleId)}`;
+            return `
     <div style="margin-bottom:16px;padding:12px;border-left:3px solid #000;">
-      <p style="margin:0 0 4px;font-family:monospace;font-size:12px;text-transform:uppercase;">Loi ${String(l.number).padStart(2, '0')} — ${escapeHtml(l.principleId)} — ${l.status}</p>
+      <p style="margin:0 0 4px;font-family:monospace;font-size:12px;text-transform:uppercase;">${label}</p>
       <p style="margin:0;font-size:14px;">${escapeHtml(l.currentStatement)}</p>
       ${
         l.revisions.length > 0
           ? `<p style="margin:8px 0 0;font-family:monospace;font-size:11px;color:#666;">${l.revisions.length} révision(s)</p>`
           : ''
       }
-    </div>`,
-          )
+    </div>`;
+          })
           .join('');
 
   const confrontationsSection =
@@ -84,6 +88,7 @@ export function renderEmailHtml(report: PlaytestReport): string {
             (c) => `
     <div style="margin-bottom:8px;font-size:13px;">
       <span style="font-family:monospace;">Loi ${c.lawNumber !== null ? String(c.lawNumber).padStart(2, '0') : '??'}</span>
+      ${c.sceneTitle ? `<span style="color:#666;">— ${escapeHtml(c.sceneTitle)}</span>` : ''}
       &nbsp;→&nbsp;
       <strong>${escapeHtml(c.displayAnswer)}</strong>
     </div>`,
@@ -179,11 +184,15 @@ export function renderEmailText(report: PlaytestReport): string {
     lines.push('Aucune loi signée.');
   } else {
     for (const l of report.laws) {
-      lines.push(
-        `Loi ${String(l.number).padStart(2, '0')} [${l.status}] : ${l.currentStatement}`,
-      );
-      for (const r of l.revisions) {
-        lines.push(`  Révision : ${r.text}`);
+      if (l.number !== null) {
+        lines.push(
+          `Loi ${String(l.number).padStart(2, '0')} [${l.status}] : ${l.currentStatement}`,
+        );
+        for (const r of l.revisions) {
+          lines.push(`  Révision : ${r.text}`);
+        }
+      } else {
+        lines.push(`Proposition déclinée [${l.principleId}]`);
       }
     }
   }
@@ -195,8 +204,9 @@ export function renderEmailText(report: PlaytestReport): string {
     lines.push('Aucune confrontation.');
   } else {
     for (const c of report.confrontations) {
+      const scene = c.sceneTitle ? ` — ${c.sceneTitle}` : '';
       lines.push(
-        `Loi ${c.lawNumber !== null ? String(c.lawNumber).padStart(2, '0') : '??'} → ${c.displayAnswer}`,
+        `Loi ${c.lawNumber !== null ? String(c.lawNumber).padStart(2, '0') : '??'}${scene} → ${c.displayAnswer}`,
       );
     }
   }

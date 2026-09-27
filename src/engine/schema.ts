@@ -284,4 +284,5 @@ export const saveSchema = z.object({
   settings: settingsSchema,
   pseudonym: z.string().max(64).optional(),
   reportingConsent: z.boolean().optional(),
+  reportingStatus: z.enum(['not_sent', 'sending', 'sent', 'failed']).optional(),
 });

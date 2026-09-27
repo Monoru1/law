@@ -112,7 +112,7 @@ export const copy = {
     pseudoHint: 'Pseudonyme recommandé.',
     consentTitle: 'Ce que nous enregistrons',
     consentBody:
-      "Les décisions de ta partie, le temps de chaque choix et tes justifications écrites seront inclus dans un rapport de playtest transmis au créateur. Aucun diagnostic psychologique n'est produit.",
+      "Le playtest enregistre tes décisions, le temps de réflexion et les changements de sélection, ta certitude quand elle est demandée, tes justifications écrites, ainsi que les lois que tu signes et les confrontations qui s'ensuivent. Un rapport factuel est transmis automatiquement au créateur à la fin de la partie. Aucun diagnostic psychologique n'est produit.",
     consentAccept: 'J\u2019accepte et je commence',
     consentDecline: 'Retour',
   },

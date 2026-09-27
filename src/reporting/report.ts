@@ -12,11 +12,14 @@ export type DecisionRecord = {
 };
 
 export type LawRecord = {
-  number: number;
+  // null for a proposition that was declined before ever being signed —
+  // law numbers are only assigned at signature.
+  number: number | null;
   principleId: string;
   currentStatement: string;
-  status: 'active' | 'revised' | 'abandoned';
-  signedAt: number;
+  status: 'active' | 'revised' | 'abandoned' | 'declined';
+  signedAt: number | null;
+  declinedAt?: number;
   revisions: Array<{ text: string; at: number }>;
 };
 
@@ -24,6 +27,10 @@ export type ConfrontationRecord = {
   lawNumber: number | null;
   answer: 'maintain' | 'nuance' | 'abandon' | 'silence';
   displayAnswer: string;
+  // The decision through which the player answered, when it can be
+  // correlated from the event order. Not stored directly on the event.
+  sceneId: string | null;
+  sceneTitle: string | null;
   at: number;
 };
 

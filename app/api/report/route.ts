@@ -124,8 +124,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       htmlContent,
       textContent,
     );
-  } catch {
-    // Log server-side only — no secret, no stack trace in response
+  } catch (error) {
+    // Log server-side only — the thrown message never contains the API key.
+    console.error(
+      '[api/report] Brevo send failed:',
+      error instanceof Error ? error.message : 'erreur inconnue',
+    );
     return err(502, 'Échec de l\u2019envoi du rapport.');
   }
 

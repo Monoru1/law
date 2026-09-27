@@ -18,6 +18,7 @@
 ## Remaining
 
 - Conduct a human timing check for the 8–12 minute target.
+- Playtest Reporting V1 (pseudo + consent → automatic factual report emailed via Brevo on `run_completed`) is implemented; see `docs/playtest-reporting.md`. A first real local send (with a live Brevo key) has not been performed yet.
 
 ## Deviations and justifications
 
@@ -28,3 +29,7 @@
 - The `t1.pas-encore` interlude has a neutral Continue action so it can be advanced by keyboard and its visit can be recorded.
 - A choice revealed on reload is reconstructed from the event journal; transient intra-beat animation progress is not persisted.
 - The local browser initially crashed between tests with a serverless Chromium flag; removing that flag allowed the full suite to pass.
+- Playtest Reporting V1 — `reportingStatus` (not_sent/sending/sent/failed) is a persisted field on `SaveGame`, not an in-memory store: an ephemeral store cannot satisfy the requirement that a refresh or a navigation to "Ma loi" and back must not cause a duplicate send. A `sending` status found at load time (interrupted session) is downgraded to `failed` rather than left to block silently forever with no retry.
+- Playtest Reporting V1 — there is no server-side idempotency or deduplication by `runId`: the API route has no datastore to check against, and a Brevo idempotency key would have nothing to be checked against without one. If the client's connection drops after the server has received the request but before the response reaches the browser, a retry can produce a genuine duplicate email. This is documented, not hidden, in `docs/playtest-reporting.md`.
+- Playtest Reporting V1 — `confrontation_answered` events carry no `sceneId`. The report correlates each one to its scene by pairing it positionally, in event order, with the `choice_locked(input:'confrontation')` event the player flow always appends immediately after it — not a change to the event schema itself.
+- Playtest Reporting V1 — a `law_declined` event for a principle that is later signed is not reported as a separate "declined" record; only the eventual signature is kept, since it supersedes the earlier decline.

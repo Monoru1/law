@@ -11,6 +11,7 @@ export const defaultSettings: Settings = {
   textSize: 'normal',
   sound: false,
 };
+export type ReportingStatus = 'not_sent' | 'sending' | 'sent' | 'failed';
 export type SaveGame = {
   schemaVersion: number;
   contentVersion: string;
@@ -22,6 +23,7 @@ export type SaveGame = {
   settings: Settings;
   pseudonym?: string;
   reportingConsent?: boolean;
+  reportingStatus?: ReportingStatus;
 };
 export interface SaveAdapter {
   load(): Promise<SaveGame | null>;

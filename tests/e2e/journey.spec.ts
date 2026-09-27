@@ -21,7 +21,11 @@ test('a full run records a signed law, contradicts it and remembers the written 
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Commencer' }).click();
+  await page
+    .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
+    .fill('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).click();
+  await page.getByRole('button', { name: 'J’accepte et je commence' }).click();
   await reveal(page);
   await page.getByRole('button', { name: 'Appuyer', exact: true }).click();
   await reveal(page);
@@ -90,7 +94,11 @@ test('keyboard operation and resume from a saved scene', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Commencer' }).focus();
   await page.keyboard.press('Enter');
+  await page.getByRole('textbox', { name: 'Ton nom ou pseudonyme' }).focus();
+  await page.keyboard.type('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'J’accepte et je commence' }).focus();
   await page.keyboard.press('Enter');
   await reveal(page);
   await page.getByRole('button', { name: 'Ne pas appuyer' }).focus();
@@ -114,7 +122,10 @@ test('the complete story is playable using only the keyboard', async ({
   };
   await page.goto('/');
   await activate('Commencer');
+  await page.getByRole('textbox', { name: 'Ton nom ou pseudonyme' }).focus();
+  await page.keyboard.type('Testeur');
   await activate('Entrer');
+  await activate('J’accepte et je commence');
   await reveal(page);
   await activate('Appuyer');
   await reveal(page);

@@ -15,7 +15,12 @@ import {
   type Scene,
 } from '../../engine';
 import { useGameStore } from '../../store/gameStore';
-import { useReportingStore } from '../../store/reportingStore';
+import {
+  canAutoSend,
+  releaseSend,
+  submitReport,
+  tryClaimSend,
+} from '../../reporting/sendGate';
 import { Button } from '../primitives/Button';
 import { HoldButton } from '../primitives/HoldButton';
 import { Dialog } from '../primitives/Dialog';
@@ -85,40 +90,38 @@ export function ScenePlayer() {
   const hydrate = useGameStore((s) => s.hydrate);
   const append = useGameStore((s) => s.append);
   const start = useGameStore((s) => s.start);
-  const reportingStore = useReportingStore();
+  const setReportingStatus = useGameStore((s) => s.setReportingStatus);
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
   const state = useMemo(() => replay(save?.events ?? [], content), [save]);
 
-  // Mission 8 — envoi automatique après run_completed
+  // Envoi automatique du rapport de playtest après run_completed.
+  // Statut persisté dans la sauvegarde (reportingStatus) : survit au
+  // rafraîchissement de page et à la navigation vers "Ma loi" et retour.
   const completionEvent = save?.events.find((e) => e.type === 'run_completed');
   const completionEventId = completionEvent?.id ?? null;
   useEffect(() => {
     if (!save || !completionEventId) return;
-    if (save.reportingConsent !== true) return;
-    const status = reportingStore.getStatus(save.runId);
-    if (status !== 'not_sent') return;
-    reportingStore.setSending(save.runId);
-    const sendReport = async () => {
-      try {
-        const res = await fetch('/api/report', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(save),
-        });
-        if (res.ok) {
-          reportingStore.setSent(save.runId);
-        } else {
-          reportingStore.setFailed(save.runId);
-        }
-      } catch {
-        reportingStore.setFailed(save.runId);
-      }
-    };
-    void sendReport();
+    if (
+      !canAutoSend({
+        reportingConsent: save.reportingConsent,
+        reportingStatus: save.reportingStatus,
+      })
+    )
+      return;
+    if (!tryClaimSend(save.runId)) return;
+    const runId = save.runId;
+    void submitReport(save, setReportingStatus).finally(() =>
+      releaseSend(runId),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completionEventId, save?.runId, save?.reportingConsent]);
+  }, [
+    completionEventId,
+    save?.runId,
+    save?.reportingConsent,
+    save?.reportingStatus,
+  ]);
 
   const current = content.scenes.find((s) => s.id === state.currentSceneId);
   const scene = current ? resolveScene(current, state) : null;
@@ -300,8 +303,7 @@ export function ScenePlayer() {
       />
     );
   if (state.completed) {
-    const runId = save?.runId ?? '';
-    const reportStatus = runId ? reportingStore.getStatus(runId) : 'not_sent';
+    const reportStatus = save?.reportingStatus ?? 'not_sent';
     const showConsent = save?.reportingConsent === true;
     return (
       <>
@@ -341,17 +343,11 @@ export function ScenePlayer() {
               className="ghost"
               onClick={async () => {
                 if (!save) return;
-                reportingStore.setSending(save.runId);
+                if (!tryClaimSend(save.runId)) return;
                 try {
-                  const res = await fetch('/api/report', {
-                    method: 'POST',
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify(save),
-                  });
-                  if (res.ok) reportingStore.setSent(save.runId);
-                  else reportingStore.setFailed(save.runId);
-                } catch {
-                  reportingStore.setFailed(save.runId);
+                  await submitReport(save, setReportingStatus);
+                } finally {
+                  releaseSend(save.runId);
                 }
               }}
               style={{ fontSize: '0.75rem' }}

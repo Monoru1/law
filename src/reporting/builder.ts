@@ -190,23 +190,66 @@ export function buildReport(
     };
   });
 
-  // Build confrontations
-  const confrontations: ConfrontationRecord[] = events
-    .filter(
-      (e): e is Extract<GameEvent, { type: 'confrontation_answered' }> =>
-        e.type === 'confrontation_answered',
-    )
-    .map((ev) => ({
-      lawNumber: ev.lawNumber,
-      answer: ev.answer,
-      displayAnswer: ANSWER_LABELS[ev.answer] ?? ev.answer,
-      at: ev.at,
+  // Build declined law propositions (law_declined without a later signature
+  // for the same principle). "Signed" supersedes "declined" for a principle
+  // that was ultimately signed after an earlier decline.
+  const lawDeclinedEvents = events.filter(
+    (e): e is Extract<GameEvent, { type: 'law_declined' }> =>
+      e.type === 'law_declined',
+  );
+  const signedPrincipleIds = new Set(lawSignedEvents.map((e) => e.principleId));
+  const declinedLaws: LawRecord[] = lawDeclinedEvents
+    .filter((d) => !signedPrincipleIds.has(d.principleId))
+    .map((d): LawRecord => ({
+      number: null,
+      principleId: d.principleId,
+      currentStatement:
+        content.principles.find((p) => p.id === d.principleId)?.statements[0]
+          ?.text ?? '',
+      status: 'declined',
+      signedAt: null,
+      declinedAt: d.at,
+      revisions: [],
     }));
+
+  const allLaws = [...laws, ...declinedLaws].sort(
+    (a, b) =>
+      (a.signedAt ?? a.declinedAt ?? 0) - (b.signedAt ?? b.declinedAt ?? 0),
+  );
+
+  // Build confrontations. confrontation_answered carries no sceneId, but the
+  // player flow always appends exactly one choice_locked(input:'confrontation')
+  // immediately after each confrontation_answered, in the same order — zip
+  // them positionally to recover which scene the answer belongs to.
+  const confrontationAnsweredEvents = events.filter(
+    (e): e is Extract<GameEvent, { type: 'confrontation_answered' }> =>
+      e.type === 'confrontation_answered',
+  );
+  const confrontationLockEvents = events.filter(
+    (e): e is Extract<GameEvent, { type: 'choice_locked' }> =>
+      e.type === 'choice_locked' && e.input === 'confrontation',
+  );
+  const confrontations: ConfrontationRecord[] = confrontationAnsweredEvents.map(
+    (ev, i) => {
+      const linked = confrontationLockEvents[i];
+      const scene = linked
+        ? content.scenes.find((s) => s.id === linked.sceneId)
+        : undefined;
+      return {
+        lawNumber: ev.lawNumber,
+        answer: ev.answer,
+        displayAnswer: ANSWER_LABELS[ev.answer] ?? ev.answer,
+        sceneId: scene?.id ?? null,
+        sceneTitle: scene?.title ?? null,
+        at: ev.at,
+      };
+    },
+  );
 
   // Factual summary
   const factualSummary = buildFactualSummary(
     decisions,
-    laws,
+    allLaws,
     confrontations,
     events,
   );
@@ -222,7 +265,7 @@ export function buildReport(
     durationMs: completedEvent.at - startedEvent.at,
     timelineId: completedEvent.timelineId,
     decisions,
-    laws,
+    laws: allLaws,
     confrontations,
     factualSummary,
   };
@@ -254,17 +297,23 @@ function buildFactualSummary(
     `${withJustification.length} justification(s) écrite(s) sur ${decisions.length} décision(s).`,
   );
 
-  if (laws.length === 0) {
+  const signedLaws = laws.filter((l) => l.number !== null);
+  if (signedLaws.length === 0) {
     summary.push('Aucune loi signée.');
   } else {
-    summary.push(`${laws.length} loi(s) signée(s).`);
-    const abandoned = laws.filter((l) => l.status === 'abandoned');
+    summary.push(`${signedLaws.length} loi(s) signée(s).`);
+    const abandoned = signedLaws.filter((l) => l.status === 'abandoned');
     if (abandoned.length > 0)
       summary.push(`${abandoned.length} loi(s) abandonnée(s).`);
-    const revised = laws.filter((l) => l.status === 'revised');
+    const revised = signedLaws.filter((l) => l.status === 'revised');
     if (revised.length > 0)
       summary.push(`${revised.length} loi(s) révisée(s).`);
   }
+  const declined = laws.filter((l) => l.status === 'declined');
+  if (declined.length > 0)
+    summary.push(
+      `${declined.length} proposition(s) de loi déclinée(s) sans signature.`,
+    );
 
   if (confrontations.length > 0) {
     summary.push(`${confrontations.length} confrontation(s).`);
