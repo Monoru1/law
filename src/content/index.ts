@@ -106,4 +106,14 @@ export const copy = {
     unsignedSign: 'Signer',
     unsignedNo: 'Non',
   },
+  playtestIntro: {
+    pseudoLabel: 'Ton nom ou pseudonyme',
+    pseudoPlaceholder: 'ex. Atlas, Marie D., un prénom…',
+    pseudoHint: 'Pseudonyme recommandé.',
+    consentTitle: 'Ce que nous enregistrons',
+    consentBody:
+      "Les décisions de ta partie, le temps de chaque choix et tes justifications écrites seront inclus dans un rapport de playtest transmis au créateur. Aucun diagnostic psychologique n'est produit.",
+    consentAccept: 'J\u2019accepte et je commence',
+    consentDecline: 'Retour',
+  },
 } as const;

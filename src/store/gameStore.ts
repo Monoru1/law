@@ -22,7 +22,11 @@ type Store = {
   loaded: boolean;
   error: string | null;
   hydrate: () => Promise<void>;
-  start: (options?: { replaceExisting: true }) => Promise<void>;
+  start: (options?: {
+    replaceExisting?: true;
+    pseudonym?: string;
+    reportingConsent?: boolean;
+  }) => Promise<void>;
   restore: (key: string) => Promise<void>;
   append: (event: EventDraft) => Promise<void>;
   settings: (update: Partial<Settings>) => Promise<void>;
@@ -78,6 +82,7 @@ export const useGameStore = create<Store>((set, get) => ({
         at: now,
         contentVersion: content.version,
       };
+      const pseudonym = options?.pseudonym?.trim().slice(0, 64) || undefined;
       const save: SaveGame = {
         schemaVersion: CURRENT_SCHEMA_VERSION,
         contentVersion: content.version,
@@ -87,6 +92,10 @@ export const useGameStore = create<Store>((set, get) => ({
         updatedAt: now,
         events: [event],
         settings: { ...defaultSettings },
+        ...(pseudonym !== undefined ? { pseudonym } : {}),
+        ...(options?.reportingConsent !== undefined
+          ? { reportingConsent: options.reportingConsent }
+          : {}),
       };
       if (options?.replaceExisting) await localStorageAdapter.replace(save);
       else await persist(save);

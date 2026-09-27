@@ -20,6 +20,8 @@ export type SaveGame = {
   updatedAt: number;
   events: GameEvent[];
   settings: Settings;
+  pseudonym?: string;
+  reportingConsent?: boolean;
 };
 export interface SaveAdapter {
   load(): Promise<SaveGame | null>;

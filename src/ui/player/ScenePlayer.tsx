@@ -15,6 +15,7 @@ import {
   type Scene,
 } from '../../engine';
 import { useGameStore } from '../../store/gameStore';
+import { useReportingStore } from '../../store/reportingStore';
 import { Button } from '../primitives/Button';
 import { HoldButton } from '../primitives/HoldButton';
 import { Dialog } from '../primitives/Dialog';
@@ -84,10 +85,41 @@ export function ScenePlayer() {
   const hydrate = useGameStore((s) => s.hydrate);
   const append = useGameStore((s) => s.append);
   const start = useGameStore((s) => s.start);
+  const reportingStore = useReportingStore();
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
   const state = useMemo(() => replay(save?.events ?? [], content), [save]);
+
+  // Mission 8 — envoi automatique après run_completed
+  const completionEvent = save?.events.find((e) => e.type === 'run_completed');
+  const completionEventId = completionEvent?.id ?? null;
+  useEffect(() => {
+    if (!save || !completionEventId) return;
+    if (save.reportingConsent !== true) return;
+    const status = reportingStore.getStatus(save.runId);
+    if (status !== 'not_sent') return;
+    reportingStore.setSending(save.runId);
+    const sendReport = async () => {
+      try {
+        const res = await fetch('/api/report', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(save),
+        });
+        if (res.ok) {
+          reportingStore.setSent(save.runId);
+        } else {
+          reportingStore.setFailed(save.runId);
+        }
+      } catch {
+        reportingStore.setFailed(save.runId);
+      }
+    };
+    void sendReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completionEventId, save?.runId, save?.reportingConsent]);
+
   const current = content.scenes.find((s) => s.id === state.currentSceneId);
   const scene = current ? resolveScene(current, state) : null;
   const [phase, setPhase] = useState<Phase>('scene');
@@ -258,16 +290,79 @@ export function ScenePlayer() {
     return (
       <Onboarding
         error={error}
-        enter={async () => {
+        enter={async (pseudonym, reportingConsent) => {
           try {
-            await start();
+            await start({ pseudonym, reportingConsent });
           } catch {
             /* The store exposes the recovery error above. */
           }
         }}
       />
     );
-  if (state.completed) return <End state={state} />;
+  if (state.completed) {
+    const runId = save?.runId ?? '';
+    const reportStatus = runId ? reportingStore.getStatus(runId) : 'not_sent';
+    const showConsent = save?.reportingConsent === true;
+    return (
+      <>
+        <End state={state} />
+        {showConsent && reportStatus === 'sent' && (
+          <p
+            className="mono"
+            style={{
+              position: 'fixed',
+              bottom: 60,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              fontSize: '0.75rem',
+              color: 'var(--law-gray-300)',
+              pointerEvents: 'none',
+            }}
+          >
+            Rapport de playtest transmis.
+          </p>
+        )}
+        {showConsent && reportStatus === 'failed' && (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 60,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 12,
+              alignItems: 'center',
+            }}
+          >
+            <p className="mono" style={{ fontSize: '0.75rem', margin: 0 }}>
+              Le rapport n&apos;a pas pu être transmis.
+            </p>
+            <Button
+              className="ghost"
+              onClick={async () => {
+                if (!save) return;
+                reportingStore.setSending(save.runId);
+                try {
+                  const res = await fetch('/api/report', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(save),
+                  });
+                  if (res.ok) reportingStore.setSent(save.runId);
+                  else reportingStore.setFailed(save.runId);
+                } catch {
+                  reportingStore.setFailed(save.runId);
+                }
+              }}
+              style={{ fontSize: '0.75rem' }}
+            >
+              Réessayer
+            </Button>
+          </div>
+        )}
+      </>
+    );
+  }
   if (!scene) return <main className="end-screen mono">THE LAW</main>;
   const input = scene.input;
   const choiceOptions =

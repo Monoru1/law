@@ -282,4 +282,6 @@ export const saveSchema = z.object({
   updatedAt: z.number(),
   events: z.array(eventSchema),
   settings: settingsSchema,
+  pseudonym: z.string().max(64).optional(),
+  reportingConsent: z.boolean().optional(),
 });
