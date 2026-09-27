@@ -8,4 +8,5 @@ export * from './laws';
 export * from './contradictions';
 export * from './observations';
 export * from './text';
+export * from './doors';
 export * from './validation';

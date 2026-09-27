@@ -9,6 +9,7 @@ import { HoldButton } from '../../src/ui/primitives/HoldButton';
 export default function MyLaw() {
   const save = useGameStore((s) => s.save);
   const loaded = useGameStore((s) => s.loaded);
+  const error = useGameStore((s) => s.error);
   const hydrate = useGameStore((s) => s.hydrate);
   const clear = useGameStore((s) => s.clear);
   const [erasing, setErasing] = useState(false);
@@ -35,12 +36,18 @@ export default function MyLaw() {
   return (
     <main className="law-page">
       <header className="site-top mono">
-        <Link href="/">THE LAW</Link>
-        <Link href="/jouer">RETOUR À LA PIÈCE ↗</Link>
+        <Link className="law-button ghost" href="/">
+          THE LAW
+        </Link>
+        <Link className="law-button ghost" href="/jouer">
+          RETOUR À LA PIÈCE ↗
+        </Link>
       </header>
       <h1 className="serif">Ma loi.</h1>
+      {error && <p role="alert">{error}</p>}
       {!save ? (
-        <p className="serif beat">Aucune partie enregistrée.</p>
+        !error &&
+        loaded && <p className="serif beat">Aucune partie enregistrée.</p>
       ) : (
         <>
           <p
@@ -89,26 +96,39 @@ export default function MyLaw() {
                 scene?.input.kind === 'choice' ||
                 scene?.input.kind === 'glyph'
                   ? scene.input.options.find((o) => o.id === event.value)?.label
-                  : String(event.value);
+                  : scene?.input.kind === 'slider'
+                    ? `${event.value} ${scene.input.unit}`
+                    : scene?.input.kind === 'freeText'
+                      ? event.value === 'written'
+                        ? state.justifications[event.sceneId]
+                        : copy.confrontation.silence
+                      : scene?.input.kind === 'confrontation'
+                        ? copy.confrontation[
+                            event.value as
+                              'maintain' | 'nuance' | 'abandon' | 'silence'
+                          ]
+                        : scene?.input.kind === 'lawProposal'
+                          ? event.value === 'signed'
+                            ? copy.signed
+                            : event.value === 'no'
+                              ? copy.confrontation.unsignedNo
+                              : copy.confrontation.silence
+                          : null;
               return (
                 <article key={event.id}>
                   <span className="mono">
-                    {String(i + 1).padStart(2, '0')} /{' '}
-                    {scene?.title ?? event.sceneId}
+                    {String(i + 1).padStart(2, '0')} / {scene?.title}
                   </span>
                   <p className="serif">{chosen}</p>
-                  <small>
-                    Hésitation : {Math.round(event.hesitationMs / 1000)} s ·
-                    Sélection modifiée {event.selectionChanges} fois
-                    {state.certainty[event.sceneId] !== undefined
-                      ? ` · Certitude : ${state.certainty[event.sceneId]} / 100`
-                      : ''}
-                  </small>
-                  {state.justifications[event.sceneId] && (
-                    <blockquote className="serif" style={{ margin: '16px 0' }}>
-                      « {state.justifications[event.sceneId]} »
-                    </blockquote>
-                  )}
+                  {scene?.input.kind !== 'freeText' &&
+                    state.justifications[event.sceneId] && (
+                      <blockquote
+                        className="serif"
+                        style={{ margin: '16px 0' }}
+                      >
+                        « {state.justifications[event.sceneId]} »
+                      </blockquote>
+                    )}
                 </article>
               );
             })}

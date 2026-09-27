@@ -1,4 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
+import { content } from '../../src/content';
+import { lawStatement, replay } from '../../src/engine';
 async function reveal(page: Page) {
   await page.locator('body').press('Space');
 }
@@ -35,27 +37,39 @@ test('a full run records a signed law, contradicts it and remembers the written 
   await page.getByRole('button', { name: 'Passer' }).click();
   await reveal(page);
   await page
-    .getByRole('textbox', { name: 'Pourquoi ?' })
+    .getByRole('textbox', { name: 'Pourquoi ?' })
     .fill('Pour rentrer chez moi.');
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await reveal(page);
-  await hold(page, 'Tirer le levier');
+  await hold(page, 'Dossier B');
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
   await hold(page, 'Signer');
   await reveal(page);
-  await hold(page, 'Ne rien donner');
+  await hold(page, 'Confirmer');
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
   await reveal(page);
-  await hold(page, 'Refuser');
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await reveal(page);
+  await hold(page, 'Arr\u00eater le protocole');
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText('Tu l\u2019as sign\u00e9e.')).toBeVisible();
+  await reveal(page);
+  const recorded = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('thelaw:save')!).events,
+  );
+  const recordedState = replay(recorded, content);
+  const signedLaw = recordedState.laws[0];
+  expect(signedLaw).toBeDefined();
+  if (!signedLaw) throw new Error('Expected a signed law in the saved journey');
+  const statement = lawStatement(signedLaw, content);
+  expect(statement.trim().length).toBeGreaterThan(0);
   await expect(
-    page.getByText('Tout à l’heure, tu as fait l’inverse.'),
+    page.getByText(`\u00ab\u00a0${statement}\u00a0\u00bb`, { exact: true }),
   ).toBeVisible();
-  await reveal(page);
   await page.getByRole('button', { name: 'Abandonner' }).click();
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
@@ -64,14 +78,12 @@ test('a full run records a signed law, contradicts it and remembers the written 
   await page.getByRole('button', { name: 'Oui' }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await reveal(page);
-  await page.getByRole('button', { name: 'Sauver une personne' }).click();
-  await hold(page, 'Confirmer');
-  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Sortir de la pi\u00e8ce' }).click();
   await expect(
-    page.getByText('Elles étaient toutes les tiennes.'),
+    page.getByText('Elles \u00e9taient toutes les tiennes.'),
   ).toBeVisible();
   await page.getByRole('link', { name: 'Lire ma loi' }).click();
-  await expect(page.getByText('Abrogée', { exact: true })).toBeVisible();
+  await expect(page.getByText('Abrog\u00e9e', { exact: true })).toBeVisible();
   expect(leaked).toEqual([]);
 });
 test('keyboard operation and resume from a saved scene', async ({ page }) => {
@@ -90,7 +102,7 @@ test('keyboard operation and resume from a saved scene', async ({ page }) => {
   await page.keyboard.press('Enter');
   await reveal(page);
   await hold(page, 'Refuser');
-  await expect(page.getByText('Tu as refusé.')).toBeVisible();
+  await expect(page.getByText('Tu as refus\u00e9.')).toBeVisible();
 });
 test('the complete story is playable using only the keyboard', async ({
   page,
@@ -117,19 +129,21 @@ test('the complete story is playable using only the keyboard', async ({
   await activate('Continuer');
   await activate('Passer');
   await reveal(page);
-  await activate('Je préfère ne pas répondre');
+  await activate('Je pr\u00e9f\u00e8re ne pas r\u00e9pondre');
   await activate('Continuer');
   await reveal(page);
-  await hold(page, 'Tirer le levier');
+  await hold(page, 'Dossier A');
   await reveal(page);
   await activate('Continuer');
-  await hold(page, 'Signer');
+  await activate('Ne pas signer');
   await reveal(page);
-  await hold(page, 'Ne rien donner');
+  await hold(page, 'Confirmer');
   await reveal(page);
   await activate('Continuer');
   await reveal(page);
-  await hold(page, 'Autoriser');
+  await activate('Continuer');
+  await reveal(page);
+  await hold(page, 'Continuer le protocole');
   await reveal(page);
   await activate('Continuer');
   await reveal(page);
@@ -139,10 +153,8 @@ test('the complete story is playable using only the keyboard', async ({
   await activate('Oui');
   await activate('Continuer');
   await reveal(page);
-  await activate('Sauver cinq personnes');
-  await hold(page, 'Confirmer');
-  await activate('Continuer');
+  await activate('Sortir de la pi\u00e8ce');
   await expect(
-    page.getByText('Elles étaient toutes les tiennes.'),
+    page.getByText('Elles \u00e9taient toutes les tiennes.'),
   ).toBeVisible();
 });

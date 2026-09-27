@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
+import { Button } from '../primitives/Button';
 import {
   renderText,
   type Beat,
@@ -15,6 +16,7 @@ export function BeatRenderer({
   onDone,
   instant = false,
   reduceAnimations = false,
+  paused = false,
 }: {
   beats: Beat[];
   state: GameState;
@@ -23,12 +25,14 @@ export function BeatRenderer({
   onDone: () => void;
   instant?: boolean;
   reduceAnimations?: boolean;
+  paused?: boolean;
 }) {
   const reduced = useReducedMotion();
   const [shown, setShown] = useState(
     instant || reduced || reduceAnimations ? beats.length : 0,
   );
   useEffect(() => {
+    if (paused) return;
     if (shown >= beats.length) {
       onDone();
       return;
@@ -38,11 +42,12 @@ export function BeatRenderer({
       shown === 0 ? 450 : Math.max(1100, beats[shown - 1]?.pauseMs ?? 0),
     );
     return () => clearTimeout(t);
-  }, [shown, beats, onDone]);
+  }, [shown, beats, onDone, paused]);
   useEffect(() => {
     const advance = (e: KeyboardEvent) => {
       if (
         e.code === 'Space' &&
+        !paused &&
         e.target === document.body &&
         shown < beats.length
       ) {
@@ -52,15 +57,9 @@ export function BeatRenderer({
     };
     window.addEventListener('keydown', advance);
     return () => window.removeEventListener('keydown', advance);
-  }, [shown, beats.length]);
+  }, [shown, beats.length, paused]);
   return (
-    <div
-      className="beats"
-      aria-live="polite"
-      onClick={() => {
-        if (shown < beats.length) setShown(beats.length);
-      }}
-    >
+    <div className="beats" aria-live="polite">
       {beats.slice(0, shown).map((beat, i) => (
         <motion.p
           key={`${i}-${beat.text}`}
@@ -72,6 +71,11 @@ export function BeatRenderer({
           {renderText(beat.text, state, content, lawNumber)}
         </motion.p>
       ))}
+      {shown < beats.length && (
+        <Button className="ghost" onClick={() => setShown(beats.length)}>
+          Afficher la suite
+        </Button>
+      )}
     </div>
   );
 }

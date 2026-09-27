@@ -8,13 +8,10 @@ export const confrontation: Scene = {
   contentFlags: ['guilt'],
   beats: [
     { text: 'LOI {{law:N.number|01}}', style: 'meta' },
-    { text: '« {{law:N.statement|}} »' },
-    {
-      text: 'Signée par toi. Il y a {{since:law:N|0}} décisions.',
-      style: 'meta',
-    },
-    { text: 'Tout à l’heure, tu as fait l’inverse.' },
-    { text: 'Cette loi s’applique-t-elle toujours ?' },
+    { text: '« {{law:N.statement|}} »' },
+    { text: 'Tu l’as signée.' },
+    { text: 'Tu viens de faire l’inverse.' },
+    { text: 'Elle tient toujours ?' },
   ],
   input: { kind: 'confrontation' },
   outcomes: [

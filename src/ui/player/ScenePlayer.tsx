@@ -17,6 +17,7 @@ import {
 import { useGameStore } from '../../store/gameStore';
 import { Button } from '../primitives/Button';
 import { HoldButton } from '../primitives/HoldButton';
+import { Dialog } from '../primitives/Dialog';
 import { BeatRenderer } from './BeatRenderer';
 import { GlyphInput } from './inputs/GlyphInput';
 import { Room } from '../stage/Room';
@@ -79,6 +80,7 @@ export function ScenePlayer() {
   const router = useRouter();
   const save = useGameStore((s) => s.save);
   const loaded = useGameStore((s) => s.loaded);
+  const error = useGameStore((s) => s.error);
   const hydrate = useGameStore((s) => s.hydrate);
   const append = useGameStore((s) => s.append);
   const start = useGameStore((s) => s.start);
@@ -89,7 +91,7 @@ export function ScenePlayer() {
   const current = content.scenes.find((s) => s.id === state.currentSceneId);
   const scene = current ? resolveScene(current, state) : null;
   const [phase, setPhase] = useState<Phase>('scene');
-  const [previousSceneId, setPreviousSceneId] = useState<string | null>(null);
+  const [previousVisitId, setPreviousVisitId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [outcomeReady, setOutcomeReady] = useState(false);
   const [selected, setSelected] = useState<string>('');
@@ -115,8 +117,12 @@ export function ScenePlayer() {
       void append({ type: 'run_completed', timelineId: 't1' });
   }, [loaded, save, state, append]);
   const sceneId = scene?.id ?? null;
-  if (sceneId !== previousSceneId) {
-    setPreviousSceneId(sceneId);
+  const visit = state.events.findLast(
+    (event) => event.type === 'scene_entered',
+  );
+  const visitId = visit?.id ?? null;
+  if (visitId !== previousVisitId) {
+    setPreviousVisitId(visitId);
     setReady(false);
     setOutcomeReady(false);
     setSelected('');
@@ -124,7 +130,15 @@ export function ScenePlayer() {
     setAnswer('');
     setVariant('');
     setCustom('');
-    setPhase(sceneId && sceneId in state.choices ? 'outcome' : 'scene');
+    const answered = state.events
+      .slice(
+        state.events.findLastIndex((event) => event.type === 'scene_entered') +
+          1,
+      )
+      .some(
+        (event) => event.type === 'choice_locked' && event.sceneId === sceneId,
+      );
+    setPhase(answered ? 'outcome' : 'scene');
   }
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -138,7 +152,8 @@ export function ScenePlayer() {
   }, []);
   const advance = useCallback(async () => {
     if (!scene) return;
-    const next = nextScene(state, content);
+    const latest = replay(useGameStore.getState().save?.events ?? [], content);
+    const next = nextScene(latest, content);
     if (next)
       await append({
         type: 'scene_entered',
@@ -146,7 +161,7 @@ export function ScenePlayer() {
         sceneVersion: next.version,
       });
     else await append({ type: 'run_completed', timelineId: 't1' });
-  }, [scene, state, append]);
+  }, [scene, append]);
   const chosen =
     scene && scene.id in state.choices ? state.choices[scene.id] : null;
   const outcome = scene?.outcomes.find(
@@ -231,6 +246,9 @@ export function ScenePlayer() {
         newStatementId: null,
         customText: custom.trim(),
       });
+    if (scene?.input.kind === 'lawProposal') {
+      await lock('lawProposal', 'signed');
+    }
     setPhase('outcome');
     setOutcomeReady(true);
     await advance();
@@ -239,8 +257,13 @@ export function ScenePlayer() {
   if (!save)
     return (
       <Onboarding
+        error={error}
         enter={async () => {
-          await start();
+          try {
+            await start();
+          } catch {
+            /* The store exposes the recovery error above. */
+          }
         }}
       />
     );
@@ -407,7 +430,16 @@ export function ScenePlayer() {
           >
             {copy.confrontation.unsignedSign}
           </HoldButton>
-          <Button onClick={() => void lock('lawProposal', 'no')}>
+          <Button
+            onClick={async () => {
+              if (unsigned)
+                await append({
+                  type: 'law_declined',
+                  principleId: unsigned.id,
+                });
+              await lock('lawProposal', 'no');
+            }}
+          >
             {copy.confrontation.unsignedNo}
           </Button>
           <Button
@@ -453,13 +485,7 @@ export function ScenePlayer() {
     >
       <Room />
       <header className="player-top">
-        <span
-          className="mono"
-          style={{ visibility: scene.regression === 0 ? 'visible' : 'hidden' }}
-        >
-          SCÈNE {String(content.order.indexOf(scene.id) + 1).padStart(2, '0')} /
-          10 · PROTOCOLE T1
-        </span>
+        <span className="mono">{scene.title}</span>
         <Button className="ghost" onClick={() => setPause(true)}>
           {copy.quit}
         </Button>
@@ -576,7 +602,7 @@ export function ScenePlayer() {
                 {copy.confirm}
               </HoldButton>
               <Button className="ghost" onClick={() => setPhase('scene')}>
-                {copy.back}
+                Retour à la confrontation
               </Button>
             </div>
           </>
@@ -620,12 +646,13 @@ export function ScenePlayer() {
         ) : (
           <>
             <BeatRenderer
-              key={`${scene.id}:${phase}`}
+              key={`${visitId}:${phase}`}
               beats={beats}
               state={state}
               content={content}
               lawNumber={lawNumber}
               reduceAnimations={reduced}
+              paused={pause || settings}
               instant={Boolean(
                 phase === 'outcome' &&
                 chosen !== null &&
@@ -655,38 +682,28 @@ export function ScenePlayer() {
       </div>
       <footer className="player-bottom mono">
         <span>{scene.regression < 3 ? 'TIMELINE I / LA PIÈCE' : ''}</span>
-        <span className="hint">
-          {phase === 'scene' && !ready ? 'ESPACE POUR CONTINUER' : ''}
-        </span>
       </footer>
       {pause && (
-        <div
-          className="overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label={copy.pause}
-        >
-          <div className="overlay-inner">
-            <p className="mono">THE LAW / 01</p>
-            <h2 className="serif">{copy.pause}</h2>
-            <div className="stack">
-              <Button onClick={() => setPause(false)}>{copy.continue}</Button>
-              <Button onClick={() => void skip()}>Passer cette scène</Button>
-              <Link className="law-button" href="/ma-loi">
-                {copy.home.laws}
-              </Link>
-              <Button
-                onClick={() => {
-                  setPause(false);
-                  setSettings(true);
-                }}
-              >
-                {copy.settings}
-              </Button>
-              <Button onClick={() => router.push('/')}>{copy.back}</Button>
-            </div>
+        <Dialog label={copy.pause} close={() => setPause(false)}>
+          <p className="mono">THE LAW / 01</p>
+          <h2 className="serif">{copy.pause}</h2>
+          <div className="stack">
+            <Button onClick={() => setPause(false)}>{copy.continue}</Button>
+            <Button onClick={() => void skip()}>Passer cette scène</Button>
+            <Link className="law-button" href="/ma-loi">
+              {copy.home.laws}
+            </Link>
+            <Button
+              onClick={() => {
+                setPause(false);
+                setSettings(true);
+              }}
+            >
+              {copy.settings}
+            </Button>
+            <Button onClick={() => router.push('/')}>{copy.back}</Button>
           </div>
-        </div>
+        </Dialog>
       )}
       {settings && <Settings close={() => setSettings(false)} />}
     </main>

@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { copy } from '../../content';
 import { Button } from './Button';
 type Props = {
   children: React.ReactNode;
@@ -15,76 +16,123 @@ export function HoldButton({
   disabled,
   className = '',
 }: Props) {
+  const hintId = useId();
   const [progress, setProgress] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  const [interrupted, setInterrupted] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const started = useRef(0);
   const active = useRef(false);
+  const completed = useRef(false);
   const cancel = () => {
     if (timer.current) clearInterval(timer.current);
     timer.current = null;
+    if (active.current) setInterrupted(true);
     active.current = false;
     setProgress(0);
   };
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const interrupt = () => {
+      cancel();
+      setConfirming(false);
+    };
+    window.addEventListener('blur', interrupt);
+    document.addEventListener('visibilitychange', interrupt);
+    return () => {
       if (timer.current) clearInterval(timer.current);
-    },
-    [],
-  );
+      window.removeEventListener('blur', interrupt);
+      document.removeEventListener('visibilitychange', interrupt);
+    };
+  }, []);
   const start = () => {
-    if (simple || disabled) return;
-    if (active.current) return;
+    if (simple || disabled || active.current || completed.current) return;
     active.current = true;
-    started.current = performance.now();
+    setInterrupted(false);
+    const started = performance.now();
     timer.current = setInterval(() => {
-      const ratio = Math.min(1, (performance.now() - started.current) / 1200);
+      const ratio = Math.min(1, (performance.now() - started) / 1200);
       setProgress(ratio);
       if (ratio >= 1) {
+        active.current = false;
         cancel();
+        completed.current = true;
         onConfirm();
       }
     }, 16);
   };
-  const click = () => {
-    if (simple) {
-      if (confirming) {
-        setConfirming(false);
-        onConfirm();
-      } else setConfirming(true);
-    }
-  };
   return (
-    <Button
-      className={className}
-      disabled={disabled}
-      onPointerDown={(e) => {
-        if (e.pointerType !== 'mouse' || e.button === 0) start();
-      }}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onPointerCancel={cancel}
-      onKeyDown={(e) => {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          start();
-        }
-      }}
-      onKeyUp={(e) => {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
+    <div className="hold-control">
+      <Button
+        className={className}
+        disabled={disabled}
+        aria-describedby={hintId}
+        aria-pressed={simple ? confirming : undefined}
+        onBlur={() => {
           cancel();
-        }
-      }}
-      onClick={click}
-      aria-label={typeof children === 'string' ? children : undefined}
-    >
-      {confirming ? 'Confirmer' : children}
-      <span
-        className="hold-progress"
-        style={{ width: `${progress * 100}%` }}
-        aria-hidden="true"
-      />
-    </Button>
+          setConfirming(false);
+        }}
+        onPointerDown={(e) => {
+          if (e.pointerType !== 'mouse' || e.button === 0) {
+            e.currentTarget.focus();
+            start();
+          }
+        }}
+        onPointerUp={cancel}
+        onPointerLeave={cancel}
+        onPointerCancel={cancel}
+        onKeyDown={(e) => {
+          if (!simple && (e.key === ' ' || e.key === 'Enter')) {
+            e.preventDefault();
+            start();
+          }
+          if (e.key === 'Escape') {
+            cancel();
+            setConfirming(false);
+          }
+        }}
+        onKeyUp={(e) => {
+          if (!simple && (e.key === ' ' || e.key === 'Enter')) {
+            e.preventDefault();
+            cancel();
+          }
+        }}
+        onClick={() => {
+          if (completed.current) return;
+          if (!simple) {
+            setInterrupted(true);
+            return;
+          }
+          if (confirming) {
+            completed.current = true;
+            setConfirming(false);
+            onConfirm();
+          } else setConfirming(true);
+        }}
+      >
+        {confirming ? (
+          <>
+            {copy.confirm} : {children}
+          </>
+        ) : (
+          children
+        )}
+      </Button>
+      {!simple && (
+        <progress
+          className="hold-meter"
+          max={1}
+          value={progress}
+          aria-hidden="true"
+        />
+      )}
+      <p id={hintId} className="hold-hint mono" role="status">
+        {simple
+          ? confirming
+            ? 'Appuie à nouveau pour confirmer ce choix.'
+            : 'Deux appuis pour confirmer.'
+          : interrupted
+            ? 'Maintien interrompu. Maintiens pour confirmer.'
+            : 'Maintenir pour confirmer. Relâcher pour annuler.'}
+      </p>
+    </div>
   );
 }

@@ -271,7 +271,7 @@ for (let run = 0; run < 500; run++) {
         fail(`Unresolved consequence ${scene.id}: ${text}`);
     }
     const pending = state.pendingLaws[0];
-    if (pending && scene.id === 't1.levier') {
+    if (pending && scene.id === 't1.chambre-froide') {
       if (rand() > 0.3)
         state = event(state, {
           type: 'law_signed',

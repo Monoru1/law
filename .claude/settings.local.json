@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(C:/Users/sakry/Desktop/law/scripts/paperclip-issue-update.sh:*)",
+      "Bash(C:/Users/sakry/Desktop/law/scripts/paperclip:*)",
+      "Bash(curl:*)",
+      "Bash(env)",
+      "Bash(env:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(node -e ':*)",
+      "Bash(node:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx tsx -e ':*)",
+      "Bash(npx tsx:*)",
+      "mcp__plugin_claude-mem_mcp-search__smart_outline",
+      "mcp__plugin_claude-mem_mcp-search__get_observations",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(git stash:*)",
+      "Bash(pnpm exec tsx -e ':*)",
+      "Bash(pnpm validate:content)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm format:check)",
+      "Bash(npx prettier:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm typecheck:*)"
+    ],
+    "defaultMode": "default",
+    "additionalDirectories": [
+      "C:\\Users\\sakry\\.paperclip\\instances\\default\\companies\\d712a173-4387-4f6c-afa7-94cbd093cd6a",
+      "C:\\Users\\sakry\\.paperclip\\instances\\default\\companies\\d712a173-4387-4f6c-afa7-94cbd093cd6a\\acp-engine\\agents\\a6a55279-e87c-4f2b-9bf9-e265ef37b99f",
+      "C:\\Users\\sakry\\.paperclip\\instances\\default\\companies\\d712a173-4387-4f6c-afa7-94cbd093cd6a\\acp-engine\\agents\\e06abbe2-ee40-45f2-9b46-8754f7d9eef2",
+      "C:\\Users\\sakry\\.paperclip\\instances\\default\\companies\\d712a173-4387-4f6c-afa7-94cbd093cd6a\\acp-engine\\agents\\f5a18fc7-c86d-4374-96e9-a15af4febb9b",
+      "C:\\Users\\sakry\\.paperclip\\instances\\default\\workspaces\\a6a55279-e87c-4f2b-9bf9-e265ef37b99f",
+      "C:\\Users\\sakry\\.paperclip\\instances\\default\\workspaces\\e06abbe2-ee40-45f2-9b46-8754f7d9eef2",
+      "C:\\Users\\sakry\\.paperclip\\instances\\default\\workspaces\\f5a18fc7-c86d-4374-96e9-a15af4febb9b"
+    ]
+  }
+}

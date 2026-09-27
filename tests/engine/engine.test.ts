@@ -128,7 +128,7 @@ describe('pure narrative engine', () => {
     const s = replay(
       [
         ...played('t1.sept-annees', 'sauver'),
-        ...played('t1.chirurgien', 'autoriser'),
+        ...played('t1.le-protocole', 'continuer'),
       ],
       content,
     );
@@ -136,7 +136,7 @@ describe('pure narrative engine', () => {
     s.pendingConfrontations.push({
       lawNumber: 1,
       principleId: 'P_NOMBRE',
-      sceneId: 't1.chirurgien',
+      sceneId: 't1.le-protocole',
     });
     expect(nextScene(s, content)?.id).toBe('t1.confrontation');
     s.pendingConfrontations = [];
@@ -146,13 +146,13 @@ describe('pure narrative engine', () => {
   it('confronts signed laws after contradictory choices and preserves revisions', () => {
     let events = [
       event('run_started', { contentVersion: content.version }),
-      ...played('t1.levier', 'tirer'),
+      ...played('t1.chambre-froide', 'dossier-b'),
       event('law_signed', {
         lawNumber: 1,
         principleId: 'P_NOMBRE',
         statementId: 'nombre.default',
       }),
-      ...played('t1.chirurgien', 'refuser'),
+      ...played('t1.le-protocole', 'arreter'),
     ];
     let s = replay(events, content);
     expect(s.pendingConfrontations[0]?.lawNumber).toBe(1);

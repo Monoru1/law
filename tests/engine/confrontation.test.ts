@@ -26,10 +26,10 @@ describe('historical truth and finality', () => {
   it('resolves dotted law tokens and elapsed decisions with a dynamic or numeric reference', () => {
     const state = replay(
       [
-        choice('t1.levier', 'tirer'),
+        choice('t1.chambre-froide', 'dossier-b'),
         signature(),
         choice('t1.combien', 7),
-        choice('t1.chirurgien', 'refuser'),
+        choice('t1.le-protocole', 'arreter'),
       ],
       content,
     );
@@ -73,67 +73,58 @@ describe('historical truth and finality', () => {
     ).not.toThrow();
   });
 
-  it('preserves a second contradiction in the coda without reopening the room', () => {
+  it('preserves contradiction after coda and does not reopen the room', () => {
     const signed = signature();
-    const first = choice('t1.chirurgien', 'refuser');
+    const first = choice('t1.le-protocole', 'arreter');
     const answer = event({
       type: 'confrontation_answered',
       lawNumber: 1,
       answer: 'maintain',
     });
-    const final = choice('t1.coda', 'un');
     const events = [
-      choice('t1.levier', 'tirer'),
+      choice('t1.chambre-froide', 'dossier-b'),
       signed,
       first,
       entered('t1.confrontation'),
       answer,
       choice('t1.confrontation', 'maintain'),
       entered('t1.coda'),
-      final,
+      choice('t1.coda', 'sortir'),
     ];
     const state = replay(events, content);
-    expect(state.contradictions).toEqual([
-      {
-        lawNumber: 1,
-        principleId: 'P_NOMBRE',
-        sceneId: 't1.chirurgien',
-        choiceEventId: first.id,
-        lawEventId: signed.id,
-        answerEventId: answer.id,
-      },
-      {
-        lawNumber: 1,
-        principleId: 'P_NOMBRE',
-        sceneId: 't1.coda',
-        choiceEventId: final.id,
-        lawEventId: signed.id,
-      },
-    ]);
+    // La coda ne génère plus de contradiction — elle est narrative.
+    // La contradiction du protocole doit être préservée.
+    expect(state.contradictions).toHaveLength(1);
+    expect(state.contradictions[0]).toMatchObject({
+      lawNumber: 1,
+      principleId: 'P_NOMBRE',
+      sceneId: 't1.le-protocole',
+      answerEventId: answer.id,
+    });
     expect(state.pendingConfrontations).toEqual([]);
     expect(nextScene(state, content)).toBeNull();
     expect(replay(events, content)).toEqual(state);
-    expect(replay([first, final], content).contradictions).toEqual([]);
   });
 
-  it('keeps coda final for a coherent surgeon choice followed by a contradictory coda', () => {
+  it('keeps coda final after a coherent protocol choice', () => {
     const state = replay(
       [
         signature(),
-        choice('t1.chirurgien', 'autoriser'),
+        choice('t1.le-protocole', 'continuer'),
         entered('t1.coda'),
-        choice('t1.coda', 'un'),
+        choice('t1.coda', 'sortir'),
       ],
       content,
     );
-    expect(state.contradictions).toHaveLength(1);
+    // continuer est cohérent avec P_NOMBRE — pas de contradiction attendue
+    expect(state.contradictions).toHaveLength(0);
     expect(nextScene(state, content)).toBeNull();
   });
 
   it('drains multiple confrontations before the coda and allows each repeated scene to be answered or skipped', () => {
     // A bounded fixture exercises a queue longer than the current authored content produces.
     const expanded = structuredClone(content);
-    const surgeon = expanded.scenes.find((s) => s.id === 't1.chirurgien')!;
+    const surgeon = expanded.scenes.find((s) => s.id === 't1.le-protocole')!;
     if (surgeon.input.kind !== 'binary')
       throw new Error('Expected binary input');
     surgeon.input.options[1].evidence!.push({
@@ -148,7 +139,7 @@ describe('historical truth and finality', () => {
         principleId: 'P_ARGENT',
         statementId: 'argent.default',
       }),
-      choice('t1.chirurgien', 'refuser'),
+      choice('t1.le-protocole', 'arreter'),
     ];
     let state = replay(events, expanded);
     expect(state.pendingConfrontations).toHaveLength(2);
@@ -178,7 +169,7 @@ describe('historical truth and finality', () => {
 
   it('does not consume a different law or mutate earlier states', () => {
     const state = replay(
-      [signature(), choice('t1.chirurgien', 'refuser')],
+      [signature(), choice('t1.le-protocole', 'arreter')],
       content,
     );
     const original = structuredClone(state);

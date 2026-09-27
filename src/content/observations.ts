@@ -1,4 +1,5 @@
 import type { ObservationRule } from '../engine';
+
 export const observationRules: ObservationRule[] = [
   {
     id: 'o-sept-vs-enfant',
@@ -11,21 +12,31 @@ export const observationRules: ObservationRule[] = [
     text: 'Tu as refusé sept années pour dix inconnus. Tu en as donné {{value:t1.combien|0}} pour un seul enfant.',
   },
   {
+    id: 'o-dossiers',
+    when: {
+      all: [
+        { chose: { sceneId: 't1.chambre-froide', optionId: 'dossier-b' } },
+        { chose: { sceneId: 't1.le-protocole', optionId: 'arreter' } },
+      ],
+    },
+    text: 'Face aux chiffres, tu as choisi la personne présente. Deux fois.',
+  },
+  {
     id: 'o-distance',
     when: {
       all: [
-        { chose: { sceneId: 't1.levier', optionId: 'tirer' } },
-        { chose: { sceneId: 't1.chirurgien', optionId: 'refuser' } },
+        { chose: { sceneId: 't1.chambre-froide', optionId: 'dossier-b' } },
+        { chose: { sceneId: 't1.le-protocole', optionId: 'continuer' } },
       ],
     },
-    text: 'Tu as accepté de sacrifier quelqu’un avec un levier. Pas quand il fallait donner ton accord, face à lui.',
+    text: 'Un dossier optimisé. Un participant maintenu dans le protocole. Le calcul n’a pas toujours le même nom.',
   },
   {
     id: 'o-constance',
     when: {
       all: [
-        { chose: { sceneId: 't1.levier', optionId: 'rien' } },
-        { chose: { sceneId: 't1.chirurgien', optionId: 'refuser' } },
+        { chose: { sceneId: 't1.chambre-froide', optionId: 'dossier-a' } },
+        { chose: { sceneId: 't1.le-protocole', optionId: 'arreter' } },
       ],
     },
     text: 'Face au sacrifice d’un innocent, tu as fait le même choix deux fois.',
@@ -34,7 +45,7 @@ export const observationRules: ObservationRule[] = [
     id: 'o-hesitation',
     when: { all: [] },
     minDecisions: 5,
-    text: 'Ta plus longue hésitation : {{scène}}, {{secondes}} secondes.',
+    text: 'Ta plus longue hésitation : {{scène}}, {{secondes}} secondes.',
   },
   {
     id: 'o-changements',

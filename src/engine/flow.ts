@@ -14,7 +14,7 @@ export function nextScene(state: GameState, content: Content): Scene | null {
   if (state.pendingConfrontations.length)
     return content.scenes.find((s) => s.id === 't1.confrontation') ?? null;
   // A fixed dramatic beat immediately after the surgeon precedes deferred consequences.
-  if (state.visited.includes('t1.chirurgien')) {
+  if (state.visited.includes('t1.le-protocole')) {
     const law = state.laws.some((l) => l.status === 'signed');
     if (law) {
       const scene = available('t1.pas-encore');

@@ -17,6 +17,39 @@ export const copy = {
     resume: 'Reprendre',
     laws: 'Ma loi',
   },
+  doors: [
+    {
+      timelineId: 't1' as const,
+      index: 'I',
+      name: 'LA PIÈCE',
+      promise: 'Des inconnus. Des principes. Un bilan.',
+      presentation: null as null,
+    },
+    {
+      timelineId: 't2' as const,
+      index: 'II',
+      name: 'LA MAISON',
+      promise: 'Les personnes que tu connais ne sont pas des abstractions.',
+      presentation:
+        'Ici, les choix ont un visage.\n\nLes mêmes questions — adressées cette fois à ceux que tu reconnais.',
+    },
+    {
+      timelineId: 't3' as const,
+      index: 'III',
+      name: 'LA VILLE',
+      promise: 'Tes décisions ont une échelle.',
+      presentation:
+        'Ce que tu as décidé seul prend une autre dimension quand d\u2019autres en portent les conséquences.',
+    },
+    {
+      timelineId: 't4' as const,
+      index: 'IV',
+      name: 'LE TRIBUNAL',
+      promise: 'Tu plaides devant toi-même.',
+      presentation:
+        'L\u2019odeur de l\u2019information revient ici.\n\nUne confrontation avec l\u2019ensemble de tes décisions — et avec ce que tu en fais aujourd\u2019hui.',
+    },
+  ] as const,
   onboarding: [
     { text: 'Ceci n’est pas un test.' },
     { text: 'Il n’y a pas de bonne réponse.' },

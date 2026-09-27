@@ -60,17 +60,15 @@ it('serializes simultaneous starts and appends, and rejects invalid choices befo
   expect(useGameStore.getState().save?.events).toHaveLength(3);
   const raw = localStorage.getItem(SAVE_KEY);
   await expect(
-    useGameStore
-      .getState()
-      .append({
-        type: 'choice_locked',
-        sceneId: 't1.bouton',
-        sceneVersion: 1,
-        input: 'binary',
-        value: 'invented',
-        hesitationMs: 0,
-        selectionChanges: 0,
-      }),
+    useGameStore.getState().append({
+      type: 'choice_locked',
+      sceneId: 't1.bouton',
+      sceneVersion: 1,
+      input: 'binary',
+      value: 'invented',
+      hesitationMs: 0,
+      selectionChanges: 0,
+    }),
   ).rejects.toThrow();
   expect(localStorage.getItem(SAVE_KEY)).toBe(raw);
 });

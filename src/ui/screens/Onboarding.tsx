@@ -1,7 +1,14 @@
 'use client';
 import { copy } from '../../content';
 import { Button } from '../primitives/Button';
-export function Onboarding({ enter }: { enter: () => void }) {
+import Link from 'next/link';
+export function Onboarding({
+  enter,
+  error,
+}: {
+  enter: () => void;
+  error?: string | null;
+}) {
   return (
     <div className="home" role="main">
       <div className="site-top mono">
@@ -27,8 +34,12 @@ export function Onboarding({ enter }: { enter: () => void }) {
             {line.text}
           </p>
         ))}
-        <div style={{ marginTop: 50 }}>
+        {error && <p role="alert">{error}</p>}
+        <div className="home-actions" style={{ marginTop: 50 }}>
           <Button onClick={enter}>{copy.enter}</Button>
+          <Link className="law-button ghost" href="/">
+            {copy.back}
+          </Link>
         </div>
       </div>
       <div className="footerline mono">

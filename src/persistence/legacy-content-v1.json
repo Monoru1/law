@@ -238,7 +238,7 @@
               "schedule": {
                 "sceneId": "t1.le-retour",
                 "when": {
-                  "visited": "t1.chirurgien"
+                  "visited": "t1.le-protocole"
                 }
               }
             }
@@ -265,7 +265,7 @@
               "schedule": {
                 "sceneId": "t1.le-retour",
                 "when": {
-                  "visited": "t1.chirurgien"
+                  "visited": "t1.le-protocole"
                 }
               }
             }
@@ -339,24 +339,27 @@
       ]
     },
     {
-      "id": "t1.levier",
+      "id": "t1.chambre-froide",
       "version": 1,
       "timelineId": "t1",
-      "title": "Le levier",
+      "title": "Chambre froide",
       "regression": 1,
       "contentFlags": ["death", "sacrifice"],
       "beats": [
         {
-          "text": "Un wagon lancé."
+          "text": "Deux dossiers ouverts sur la table."
         },
         {
-          "text": "Cinq personnes sur la voie."
+          "text": "Un seul organe disponible ce soir."
         },
         {
-          "text": "Un levier. Sur l’autre voie, une seule personne."
+          "text": "Dossier A : quarante-trois ans. Trois enfants. En attente depuis dix-huit mois."
         },
         {
-          "text": "Elle ne t’a rien fait."
+          "text": "Dossier B : dix-neuf ans. Compatible à 94 %. Probabilité de survie à cinq ans : 81 %."
+        },
+        {
+          "text": "Le protocole ne prévoit pas ce cas."
         }
       ],
       "input": {
@@ -364,30 +367,30 @@
         "confirm": "hold",
         "options": [
           {
-            "id": "tirer",
-            "label": "Tirer le levier",
+            "id": "dossier-a",
+            "label": "Dossier A",
             "evidence": [
               {
                 "principleId": "P_INNOCENT",
-                "weight": -1
+                "weight": 0.5
               },
               {
                 "principleId": "P_NOMBRE",
-                "weight": 1
+                "weight": -0.5
               }
             ]
           },
           {
-            "id": "rien",
-            "label": "Ne rien faire",
+            "id": "dossier-b",
+            "label": "Dossier B",
             "evidence": [
               {
-                "principleId": "P_INNOCENT",
-                "weight": 1
+                "principleId": "P_NOMBRE",
+                "weight": 0.5
               },
               {
-                "principleId": "P_NOMBRE",
-                "weight": -1
+                "principleId": "P_INNOCENT",
+                "weight": -0.5
               }
             ]
           }
@@ -396,50 +399,60 @@
       "outcomes": [
         {
           "when": {
-            "optionId": "tirer"
+            "optionId": "dossier-a"
           },
           "beats": [
             {
-              "text": "Cinq personnes vivent."
+              "text": "Le dossier A a été transmis au bloc."
             },
             {
               "text": "—",
               "pauseMs": 1200
             },
             {
-              "text": "Une personne est morte parce que tu as tiré."
+              "text": "Le dossier B a été refermé."
             }
           ],
           "effects": [
             {
+              "setFlag": "chose_attente"
+            },
+            {
               "proposeLaw": {
-                "principleId": "P_NOMBRE",
-                "statementId": "nombre.default"
+                "principleId": "P_INNOCENT",
+                "statementId": "innocent.default"
               }
             }
           ]
         },
         {
           "when": {
-            "optionId": "rien"
+            "optionId": "dossier-b"
           },
           "beats": [
             {
-              "text": "Une personne vit."
+              "text": "Le dossier B a été transmis au bloc."
             },
             {
               "text": "—",
               "pauseMs": 1200
             },
             {
-              "text": "Cinq personnes sont mortes pendant que tu regardais."
+              "text": "Le dossier A attendra."
+            },
+            {
+              "text": "Il n’y aura peut-être pas d’autre organe disponible avant la fin de l’année.",
+              "style": "whisper"
             }
           ],
           "effects": [
             {
+              "setFlag": "chose_probabilite"
+            },
+            {
               "proposeLaw": {
-                "principleId": "P_INNOCENT",
-                "statementId": "innocent.default"
+                "principleId": "P_NOMBRE",
+                "statementId": "nombre.default"
               }
             }
           ]
@@ -517,24 +530,30 @@
       ]
     },
     {
-      "id": "t1.chirurgien",
+      "id": "t1.le-protocole",
       "version": 1,
       "timelineId": "t1",
-      "title": "Le chirurgien",
+      "title": "Le protocole",
       "regression": 2,
       "contentFlags": ["death", "sacrifice"],
       "beats": [
         {
-          "text": "Cinq patients mourront cette nuit sans greffe."
+          "text": "L’essai clinique dure depuis trois ans."
         },
         {
-          "text": "Dans la salle d’attente, un homme en parfaite santé."
+          "text": "Un participant développe des symptômes que le protocole n’avait pas anticipés."
         },
         {
-          "text": "Compatible avec les cinq."
+          "text": "Il est dans la chambre 14. Il sait ce qu’il a signé."
         },
         {
-          "text": "Il suffit de ton accord."
+          "text": "Continuer : les données restent intactes. Le traitement, s’il fonctionne, pourrait concerner soixante mille personnes."
+        },
+        {
+          "text": "Arrêter : le participant de la chambre 14 reçoit un traitement conventionnel."
+        },
+        {
+          "text": "Les données de trois ans deviennent inutilisables."
         }
       ],
       "variants": [
@@ -548,29 +567,29 @@
           },
           "beats": [
             {
-              "text": "Cinq patients mourront cette nuit sans greffe."
+              "text": "L’essai clinique dure depuis trois ans."
             },
             {
-              "text": "Dans la salle d’attente, un homme en parfaite santé."
+              "text": "Un participant développe des symptômes que le protocole n’avait pas anticipés."
             },
             {
-              "text": "Compatible avec les cinq."
+              "text": "Il est dans la chambre 14. Il sait ce qu’il a signé."
             },
             {
-              "text": "L’un des cinq est quelqu’un que tu aimes."
-            },
-            {
-              "text": "Pense à cette personne."
+              "text": "Il a l’âge que tu avais quand tu as signé ta première chose importante."
             },
             {
               "text": "—",
-              "pauseMs": 1200
+              "pauseMs": 1000
             },
             {
-              "text": "Maintenant."
+              "text": "Continuer : les données restent intactes. Le traitement, s’il fonctionne, pourrait concerner soixante mille personnes."
             },
             {
-              "text": "Il suffit de ton accord."
+              "text": "Arrêter : le participant de la chambre 14 reçoit un traitement conventionnel."
+            },
+            {
+              "text": "Les données de trois ans deviennent inutilisables."
             }
           ]
         }
@@ -580,8 +599,8 @@
         "confirm": "hold",
         "options": [
           {
-            "id": "autoriser",
-            "label": "Autoriser",
+            "id": "continuer",
+            "label": "Continuer le protocole",
             "evidence": [
               {
                 "principleId": "P_INNOCENT",
@@ -594,8 +613,8 @@
             ]
           },
           {
-            "id": "refuser",
-            "label": "Refuser",
+            "id": "arreter",
+            "label": "Arrêter le protocole",
             "evidence": [
               {
                 "principleId": "P_INNOCENT",
@@ -612,35 +631,48 @@
       "outcomes": [
         {
           "when": {
-            "optionId": "autoriser"
+            "optionId": "continuer"
           },
           "beats": [
             {
-              "text": "Cinq patients se réveilleront."
+              "text": "Le protocole continue."
             },
             {
               "text": "—",
               "pauseMs": 1200
             },
             {
-              "text": "L’homme de la salle d’attente, non."
+              "text": "La chambre 14 reste occupée."
+            }
+          ],
+          "effects": [
+            {
+              "setFlag": "protocole_continue"
             }
           ]
         },
         {
           "when": {
-            "optionId": "refuser"
+            "optionId": "arreter"
           },
           "beats": [
             {
-              "text": "L’homme rentre chez lui. Il ne saura jamais."
+              "text": "Le protocole est arrêté."
+            },
+            {
+              "text": "Le participant de la chambre 14 reçoit le traitement conventionnel."
             },
             {
               "text": "—",
               "pauseMs": 1200
             },
             {
-              "text": "Cinq lits se vident."
+              "text": "Trois ans de données sont classées sans suite."
+            }
+          ],
+          "effects": [
+            {
+              "setFlag": "protocole_arrete"
             }
           ]
         }
@@ -659,17 +691,16 @@
           "style": "meta"
         },
         {
-          "text": "« {{law:N.statement|}} »"
+          "text": "« {{law:N.statement|}} »"
         },
         {
-          "text": "Signée par toi. Il y a {{since:law:N|0}} décisions.",
-          "style": "meta"
+          "text": "Tu l’as signée."
         },
         {
-          "text": "Tout à l’heure, tu as fait l’inverse."
+          "text": "Tu viens de faire l’inverse."
         },
         {
-          "text": "Cette loi s’applique-t-elle toujours ?"
+          "text": "Elle tient toujours ?"
         }
       ],
       "input": {
@@ -915,47 +946,94 @@
     },
     {
       "id": "t1.coda",
-      "version": 1,
+      "version": 2,
       "timelineId": "t1",
-      "title": "Choisis",
+      "title": "La pièce",
       "regression": 3,
-      "contentFlags": ["death", "sacrifice"],
+      "contentFlags": ["death"],
       "beats": [
         {
-          "text": "Choisis."
+          "text": "Un bouton que tu as pressé.",
+          "requires": {
+            "flag": "pressed_button"
+          }
+        },
+        {
+          "text": "Un bouton que tu n’as pas pressé.",
+          "requires": {
+            "not": {
+              "flag": "pressed_button"
+            }
+          }
+        },
+        {
+          "text": "Dix mille euros.",
+          "requires": {
+            "flag": "took_money"
+          }
+        },
+        {
+          "text": "Un homme de cinquante-deux ans qui a gardé son poste.",
+          "requires": {
+            "not": {
+              "flag": "took_money"
+            }
+          }
+        },
+        {
+          "text": "Des années données.",
+          "requires": {
+            "var": "lifeYearsGiven",
+            "op": ">",
+            "value": 0
+          }
+        },
+        {
+          "text": "Un dossier refermé.",
+          "requires": {
+            "flag": "chose_probabilite"
+          }
+        },
+        {
+          "text": "Un homme qui attend encore.",
+          "requires": {
+            "flag": "chose_attente"
+          }
+        },
+        {
+          "text": "Un protocole qui continue.",
+          "requires": {
+            "flag": "protocole_continue"
+          }
+        },
+        {
+          "text": "Une chambre 14 vide.",
+          "requires": {
+            "flag": "protocole_arrete"
+          }
+        },
+        {
+          "text": "—",
+          "pauseMs": 2000
+        },
+        {
+          "text": "Ils n’avaient pas de nom."
+        },
+        {
+          "text": "—",
+          "pauseMs": 2400
+        },
+        {
+          "text": "Les prochains en auront."
         }
       ],
       "input": {
-        "kind": "glyph",
-        "confirm": "hold",
+        "kind": "choice",
+        "confirm": "tap",
         "options": [
           {
-            "id": "un",
-            "label": "Sauver une personne",
-            "evidence": [
-              {
-                "principleId": "P_INNOCENT",
-                "weight": 0.5
-              },
-              {
-                "principleId": "P_NOMBRE",
-                "weight": -0.5
-              }
-            ]
-          },
-          {
-            "id": "cinq",
-            "label": "Sauver cinq personnes",
-            "evidence": [
-              {
-                "principleId": "P_NOMBRE",
-                "weight": 0.5
-              },
-              {
-                "principleId": "P_INNOCENT",
-                "weight": -0.5
-              }
-            ]
+            "id": "sortir",
+            "label": "Sortir de la pièce"
           }
         ]
       },
@@ -1052,24 +1130,44 @@
       "text": "Tu as refusé sept années pour dix inconnus. Tu en as donné {{value:t1.combien|0}} pour un seul enfant."
     },
     {
+      "id": "o-dossiers",
+      "when": {
+        "all": [
+          {
+            "chose": {
+              "sceneId": "t1.chambre-froide",
+              "optionId": "dossier-b"
+            }
+          },
+          {
+            "chose": {
+              "sceneId": "t1.le-protocole",
+              "optionId": "arreter"
+            }
+          }
+        ]
+      },
+      "text": "Face aux chiffres, tu as choisi la personne présente. Deux fois."
+    },
+    {
       "id": "o-distance",
       "when": {
         "all": [
           {
             "chose": {
-              "sceneId": "t1.levier",
-              "optionId": "tirer"
+              "sceneId": "t1.chambre-froide",
+              "optionId": "dossier-b"
             }
           },
           {
             "chose": {
-              "sceneId": "t1.chirurgien",
-              "optionId": "refuser"
+              "sceneId": "t1.le-protocole",
+              "optionId": "continuer"
             }
           }
         ]
       },
-      "text": "Tu as accepté de sacrifier quelqu’un avec un levier. Pas quand il fallait donner ton accord, face à lui."
+      "text": "Un dossier optimisé. Un participant maintenu dans le protocole. Le calcul n’a pas toujours le même nom."
     },
     {
       "id": "o-constance",
@@ -1077,14 +1175,14 @@
         "all": [
           {
             "chose": {
-              "sceneId": "t1.levier",
-              "optionId": "rien"
+              "sceneId": "t1.chambre-froide",
+              "optionId": "dossier-a"
             }
           },
           {
             "chose": {
-              "sceneId": "t1.chirurgien",
-              "optionId": "refuser"
+              "sceneId": "t1.le-protocole",
+              "optionId": "arreter"
             }
           }
         ]
@@ -1097,7 +1195,7 @@
         "all": []
       },
       "minDecisions": 5,
-      "text": "Ta plus longue hésitation : {{scène}}, {{secondes}} secondes."
+      "text": "Ta plus longue hésitation : {{scène}}, {{secondes}} secondes."
     },
     {
       "id": "o-changements",
@@ -1121,9 +1219,9 @@
     "t1.dix-mille",
     "t1.sept-annees",
     "t1.pourquoi",
-    "t1.levier",
+    "t1.chambre-froide",
     "t1.combien",
-    "t1.chirurgien",
+    "t1.le-protocole",
     "t1.coda"
   ]
 }

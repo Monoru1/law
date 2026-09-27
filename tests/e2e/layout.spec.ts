@@ -1,14 +1,20 @@
 import { test, expect } from '@playwright/test';
-for (const width of [360, 768, 1440])
-  test(`home and first scene fit ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 850 });
+const viewports: readonly [width: number, height: number][] = [
+  [1440, 900],
+  [768, 1024],
+  [390, 844],
+  [360, 640],
+];
+for (const [width, height] of viewports)
+  test(`home and first scene fit ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height });
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'THE LAW' })).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBeLessThanOrEqual(width);
     await page.screenshot({
-      path: `/tmp/law-home-${width}.png`,
+      path: testInfo.outputPath(`law-home-${width}.png`),
       fullPage: true,
     });
     await page.getByRole('button', { name: 'Commencer' }).click();
@@ -21,7 +27,7 @@ for (const width of [360, 768, 1440])
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBeLessThanOrEqual(width);
     await page.screenshot({
-      path: `/tmp/law-scene-${width}.png`,
+      path: testInfo.outputPath(`law-scene-${width}.png`),
       fullPage: true,
     });
   });

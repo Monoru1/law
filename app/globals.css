@@ -95,6 +95,45 @@ button:disabled {
   flex-wrap: wrap;
   margin-top: 3.5rem;
 }
+.home-doors {
+  display: grid;
+  gap: 0;
+  margin: 3rem 0 2rem;
+}
+.door-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 2rem;
+  row-gap: var(--law-space-3);
+  align-items: start;
+  padding: var(--law-space-6) 0;
+  border-top: 1px solid var(--law-gray-500);
+}
+.door-card[data-status='presentation'] {
+  color: var(--law-gray-300);
+}
+.door-card[data-status='presentation'] .door-promise {
+  color: var(--law-gray-300);
+}
+.door-index {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 0.7rem;
+  letter-spacing: var(--law-tracking-meta);
+}
+.door-promise {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  font-size: clamp(0.95rem, 1.4vw, 1.25rem);
+  max-width: 42ch;
+}
+.door-card .law-button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+}
 .law-button {
   display: inline-flex;
   align-items: center;
@@ -310,13 +349,94 @@ button:disabled {
   font-size: 0.7rem;
   line-height: 1.6;
 }
+.hold-control {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  gap: var(--law-space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+.hold-control .law-button {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--law-control-min);
+  padding: var(--law-space-4) var(--law-space-6);
+  line-height: var(--law-leading-help);
+  overflow-wrap: anywhere;
+  white-space: normal;
+  background: var(--law-control-surface);
+  border-color: var(--law-gray-100);
+  touch-action: manipulation;
+  user-select: none;
+  transition: none;
+}
+.hold-control .law-button:hover:not(:disabled) {
+  background: var(--law-control-surface);
+  color: var(--law-paper);
+  border-color: var(--law-paper);
+}
+.hold-control .law-button:active:not(:disabled),
+.hold-control .law-button[data-holding='true'],
+.hold-control[data-holding='true'] .law-button,
+.hold-control .law-button[aria-pressed='true'] {
+  background: var(--law-control-active);
+  color: var(--law-control-ink);
+  border-color: var(--law-control-active);
+}
+.hold-hint {
+  margin: 0;
+  max-width: 48ch;
+  color: var(--law-gray-300);
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: var(--law-type-help);
+  line-height: var(--law-leading-help);
+  letter-spacing: normal;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+.hold-meter,
 .hold-progress {
   position: absolute;
   left: 0;
   bottom: 0;
-  height: 4px;
-  background: var(--law-signal);
+  height: var(--law-meter-height);
+  border: 0;
+  border-radius: var(--radius);
+  pointer-events: none;
   transition: none;
+}
+.hold-meter {
+  position: static;
+  display: block;
+  width: 100%;
+  appearance: none;
+  background: var(--law-control-track);
+  color: var(--law-paper);
+  accent-color: var(--law-paper);
+}
+.hold-meter::-webkit-progress-bar {
+  background: var(--law-control-track);
+}
+.hold-meter::-webkit-progress-value {
+  background: var(--law-paper);
+}
+.hold-meter::-moz-progress-bar {
+  background: var(--law-paper);
+}
+.hold-progress {
+  background: var(--law-paper);
+  transform-origin: left;
+}
+.law-page .site-top {
+  flex-wrap: wrap;
+  gap: var(--law-space-3);
+}
+.law-page .site-top .law-button {
+  min-height: var(--law-target-min);
+  max-width: 100%;
+  line-height: var(--law-leading-help);
+  overflow-wrap: anywhere;
 }
 .field {
   display: block;

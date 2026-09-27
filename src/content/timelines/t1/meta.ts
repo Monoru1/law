@@ -6,9 +6,9 @@ export const timeline = {
     't1.dix-mille',
     't1.sept-annees',
     't1.pourquoi',
-    't1.levier',
+    't1.chambre-froide',
     't1.combien',
-    't1.chirurgien',
+    't1.le-protocole',
     't1.coda',
   ],
 } as const;

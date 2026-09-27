@@ -42,7 +42,7 @@ export const septAnnees: Scene = {
         {
           schedule: {
             sceneId: 't1.le-retour',
-            when: { visited: 't1.chirurgien' },
+            when: { visited: 't1.le-protocole' },
           },
         },
       ],
@@ -58,7 +58,7 @@ export const septAnnees: Scene = {
         {
           schedule: {
             sceneId: 't1.le-retour',
-            when: { visited: 't1.chirurgien' },
+            when: { visited: 't1.le-protocole' },
           },
         },
       ],
