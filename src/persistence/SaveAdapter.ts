@@ -1,5 +1,8 @@
 import type { GameEvent } from '../engine';
 export type Settings = {
+  // Deprecated: the hold-to-confirm interaction was removed in favour of a
+  // single deliberate click. Retained in the schema so existing saves keep
+  // migrating cleanly; no longer read by the UI.
   simpleConfirmation: boolean;
   reducedMotion: 'auto' | 'on' | 'off';
   textSize: 'small' | 'normal' | 'large';

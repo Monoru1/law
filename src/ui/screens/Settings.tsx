@@ -13,14 +13,6 @@ export function Settings({ close }: { close: () => void }) {
       <p className="mono">THE LAW / 01</p>
       <h2 className="serif">{copy.settings}</h2>
       <label className="settings-row">
-        <span>{copy.simple}</span>
-        <input
-          type="checkbox"
-          checked={s.simpleConfirmation}
-          onChange={(e) => update({ simpleConfirmation: e.target.checked })}
-        />
-      </label>
-      <label className="settings-row">
         <span>{copy.reduce}</span>
         <select
           value={s.reducedMotion}
