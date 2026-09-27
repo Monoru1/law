@@ -106,6 +106,7 @@ export const copy = {
   toHouse: 'Entrer dans la maison',
   confirm: 'Confirmer',
   resume: 'Reprendre',
+  reload: 'Recharger la partie',
   recordConfirm: 'Consigner',
   enter: 'Entrer',
   quit: 'Quitter',

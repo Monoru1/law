@@ -132,3 +132,107 @@ it('refuses to open the house without the room, and says so', async () => {
   expect(localStorage.getItem(SAVE_KEY_T2)).toBeNull();
   expect(() => buildMemory(replay([], content), content, 'x')).toThrow();
 });
+
+it('opens the house from a room finished before this version, keeping its words', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { migrateSave } = await import('../../src/persistence/migrations');
+  const identity = readFileSync(
+    new URL('../fixtures/identity-17c614d.json', import.meta.url),
+    'utf8',
+  );
+  let n = 0;
+  const e = (draft: Record<string, unknown>) =>
+    ({ ...draft, id: `p-${++n}`, at: n }) as never;
+  const legacy = {
+    schemaVersion: 2,
+    contentVersion: '1.0.0',
+    contentIdentity: identity,
+    runId: 'production-player',
+    createdAt: 1,
+    updatedAt: 1,
+    settings: {
+      simpleConfirmation: false,
+      reducedMotion: 'auto',
+      textSize: 'normal',
+      sound: false,
+    },
+    events: [
+      e({ type: 'run_started', contentVersion: '1.0.0' }),
+      e({ type: 'scene_entered', sceneId: 't1.pourquoi', sceneVersion: 1 }),
+      e({
+        type: 'justification_given',
+        sceneId: 't1.pourquoi',
+        text: 'Mes mots.',
+      }),
+      e({
+        type: 'choice_locked',
+        sceneId: 't1.pourquoi',
+        sceneVersion: 1,
+        input: 'freeText',
+        value: 'written',
+        hesitationMs: 1,
+        selectionChanges: 0,
+      }),
+      e({
+        type: 'scene_entered',
+        sceneId: 't1.chambre-froide',
+        sceneVersion: 1,
+      }),
+      e({
+        type: 'choice_locked',
+        sceneId: 't1.chambre-froide',
+        sceneVersion: 1,
+        input: 'binary',
+        value: 'dossier-b',
+        hesitationMs: 1,
+        selectionChanges: 0,
+      }),
+      e({
+        type: 'law_signed',
+        lawNumber: 1,
+        principleId: 'P_NOMBRE',
+        statementId: 'nombre.default',
+      }),
+      e({ type: 'scene_entered', sceneId: 't1.pas-encore', sceneVersion: 1 }),
+      e({
+        type: 'choice_locked',
+        sceneId: 't1.pas-encore',
+        sceneVersion: 1,
+        input: 'choice',
+        value: 'continuer',
+        hesitationMs: 1,
+        selectionChanges: 0,
+      }),
+      e({ type: 'scene_entered', sceneId: 't1.coda', sceneVersion: 2 }),
+      e({
+        type: 'choice_locked',
+        sceneId: 't1.coda',
+        sceneVersion: 2,
+        input: 'choice',
+        value: 'sortir',
+        hesitationMs: 1,
+        selectionChanges: 0,
+      }),
+      e({ type: 'run_completed', timelineId: 't1' }),
+    ],
+  };
+  const room = migrateSave(legacy, content);
+  const memory = buildMemory(
+    replay(room.events, content),
+    content,
+    'Dans la pièce',
+  );
+  expect(memory.justifications['t1.pourquoi']).toBe('Mes mots.');
+  expect(memory.laws[0]).toMatchObject({
+    statementText:
+      'Quand je dois choisir, le nombre de vies compte plus que la manière.',
+    origin: { text: 'Dans la pièce, tu as transmis le dossier B au bloc.' },
+  });
+  await useT2GameStore
+    .getState()
+    .start({ inherited: { fromRunId: room.runId, memory } });
+  expect(useT2GameStore.getState().save?.events[1]).toMatchObject({
+    type: 'memory_inherited',
+    fromRunId: 'production-player',
+  });
+});

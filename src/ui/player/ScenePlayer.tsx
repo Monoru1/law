@@ -133,6 +133,14 @@ export function ScenePlayer({
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
+  // Another tab may have played on: follow the stored journal, never fork it.
+  useEffect(() => {
+    const follow = (event: StorageEvent) => {
+      if (event.key?.startsWith('thelaw:save')) void hydrate();
+    };
+    window.addEventListener('storage', follow);
+    return () => window.removeEventListener('storage', follow);
+  }, [hydrate]);
   const state = useMemo(
     () => replay(save?.events ?? [], content),
     [save, content],
@@ -651,6 +659,14 @@ export function ScenePlayer({
           {copy.quit}
         </Button>
       </header>
+      {error && (
+        <div className="player-alert" role="alert">
+          <p className="mono">{error}</p>
+          <Button className="ghost" onClick={() => void hydrate()}>
+            {copy.reload}
+          </Button>
+        </div>
+      )}
       <div className="player-main" key={`${visitId}:${phase}`}>
         {phase === 'law' ? (
           <div className="law-proposal">

@@ -21,3 +21,21 @@ export function completionDelay(
   if (!last) return 120;
   return clamp(1200 + Math.max(0, last.text.length - 40) * 12, 1200, 2600);
 }
+
+/**
+ * Hold before an automatic transition. When every beat appears at once
+ * (reduced motion), the hold keeps the reading time the staggered reveal
+ * would have given: reduced motion removes movement, not reading time.
+ */
+export function transitionHold(
+  beats: Pick<Beat, 'text' | 'pauseMs'>[],
+  mode: BeatSequenceMode,
+  revealedAtOnce: boolean,
+): number {
+  const hold = completionDelay(beats, mode);
+  if (mode === 'decision' || !revealedAtOnce || !beats.length) return hold;
+  return (
+    beats.slice(0, -1).reduce((total, beat) => total + beatDelay(beat), 180) +
+    hold
+  );
+}

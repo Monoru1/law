@@ -286,3 +286,42 @@ test('hostile free text is kept verbatim, never interpreted', async ({
   ).toBeVisible();
   expect(dialogs).toBe(0);
 });
+
+test('a second tab follows the journal, and a refused write is said', async ({
+  context,
+}) => {
+  const first = await context.newPage();
+  await first.emulateMedia({ reducedMotion: 'reduce' });
+  await seed(first, {
+    [ROOM]: saveOf(content, roomEvents()),
+    [HOUSE]: saveOf(
+      contentT2,
+      houseEvents([enter('t2.les-nouvelles', contentT2)]),
+    ),
+  });
+  await first.goto('/jouer/t2');
+  const second = await context.newPage();
+  await second.emulateMedia({ reducedMotion: 'reduce' });
+  await second.goto('/jouer/t2');
+  await expect(button(second, 'À côté de Sem')).toBeVisible();
+  await button(first, 'À côté de Sem').click();
+  // The other tab moves on with the stored journal instead of offering a
+  // decision that was already taken.
+  await expect(
+    second.getByText('Dans la cuisine, Camille essuie les verres. Un par un.'),
+  ).toBeVisible({ timeout: 15_000 });
+  // A write refused anyway is stated, with a way back, and changes nothing.
+  await second.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('thelaw:save-t2')!);
+    save.runId = 'une-autre-partie';
+    localStorage.setItem('thelaw:save-t2', JSON.stringify(save));
+  });
+  const before = await journal(second);
+  await button(second, 'Promettre').click();
+  await expect(second.locator('.player-alert')).toContainText(
+    'Une partie existe déjà ou a changé.',
+  );
+  expect(await journal(second)).toEqual(before);
+  await button(second, 'Recharger la partie').click();
+  await expect(second.locator('.player-alert')).toHaveCount(0);
+});

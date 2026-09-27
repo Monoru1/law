@@ -460,6 +460,24 @@ button:disabled {
 }
 .player-top,
 .player-main,
+.player-alert {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--law-line-strong);
+  background: var(--law-black);
+}
+.player-alert p {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  max-width: 60ch;
+}
 .player-bottom {
   position: relative;
   z-index: 2;

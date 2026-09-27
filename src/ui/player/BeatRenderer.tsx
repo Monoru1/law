@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   beatDelay,
-  completionDelay,
   renderText,
+  transitionHold,
   type Beat,
   type BeatSequenceMode,
   type Content,
@@ -37,13 +37,14 @@ export function BeatRenderer({
   useEffect(() => {
     done.current = onDone;
   }, [onDone]);
+  const [revealedAtOnce] = useState(!instant && (reduced || reduceAnimations));
   const [shown, setShown] = useState(
     instant || reduced || reduceAnimations ? beats.length : 0,
   );
   useEffect(() => {
     if (paused) return;
     if (shown >= beats.length) {
-      const delay = completionDelay(beats, mode);
+      const delay = transitionHold(beats, mode, Boolean(revealedAtOnce));
       if (delay === 0) {
         done.current();
         return;
@@ -56,7 +57,7 @@ export function BeatRenderer({
       shown === 0 ? 180 : beatDelay(beats[shown - 1]!),
     );
     return () => clearTimeout(t);
-  }, [shown, beats, paused, mode]);
+  }, [shown, beats, paused, mode, revealedAtOnce]);
   useEffect(() => {
     if (paused || shown === 0 || shown >= beats.length) return;
     latest.current?.scrollIntoView({

@@ -162,14 +162,23 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
             id: crypto.randomUUID(),
             at: Date.now(),
           } as GameEvent;
-          validateEvent(event, replay(save.events, content), content);
-          const next = {
-            ...save,
-            updatedAt: event.at,
-            events: [...save.events, event],
-          };
-          await persist(next);
-          set({ save: next });
+          try {
+            validateEvent(event, replay(save.events, content), content);
+            const next = {
+              ...save,
+              updatedAt: event.at,
+              events: [...save.events, event],
+            };
+            await persist(next);
+            set({ save: next, error: null });
+          } catch (error) {
+            // A refused write (another tab moved on, storage full) is said,
+            // never swallowed; the stored journal stays as it was.
+            set({
+              error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+          }
         }),
       settings: (update) =>
         enqueue(async () => {
