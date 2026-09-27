@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { content, copy } from '../../content';
+import { content as defaultContent, copy } from '../../content';
 import {
   dominantUnsignedPrinciple,
   lawStatement,
@@ -12,9 +12,13 @@ import {
   replay,
   resolveScene,
   resolvedBeats,
+  type Content,
   type Scene,
 } from '../../engine';
+import { t1Config, type TimelineConfig } from '../../engine/flow';
 import { useGameStore } from '../../store/gameStore';
+import type { UseBoundStore, StoreApi } from 'zustand';
+import type { GameStore } from '../../store/createGameStore';
 import {
   canAutoSend,
   releaseSend,
@@ -81,19 +85,30 @@ function useTimeTracker({ reset }: { reset: string }) {
     }),
   };
 }
-export function ScenePlayer() {
+export function ScenePlayer({
+  content = defaultContent,
+  useStore = useGameStore as UseBoundStore<StoreApi<GameStore>>,
+  flowConfig = t1Config,
+}: {
+  content?: Content;
+  useStore?: UseBoundStore<StoreApi<GameStore>>;
+  flowConfig?: TimelineConfig;
+} = {}) {
   const router = useRouter();
-  const save = useGameStore((s) => s.save);
-  const loaded = useGameStore((s) => s.loaded);
-  const error = useGameStore((s) => s.error);
-  const hydrate = useGameStore((s) => s.hydrate);
-  const append = useGameStore((s) => s.append);
-  const start = useGameStore((s) => s.start);
-  const setReportingStatus = useGameStore((s) => s.setReportingStatus);
+  const save = useStore((s) => s.save);
+  const loaded = useStore((s) => s.loaded);
+  const error = useStore((s) => s.error);
+  const hydrate = useStore((s) => s.hydrate);
+  const append = useStore((s) => s.append);
+  const start = useStore((s) => s.start);
+  const setReportingStatus = useStore((s) => s.setReportingStatus);
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
-  const state = useMemo(() => replay(save?.events ?? [], content), [save]);
+  const state = useMemo(
+    () => replay(save?.events ?? [], content),
+    [save, content],
+  );
 
   // Envoi automatique du rapport de playtest après run_completed.
   // Statut persisté dans la sauvegarde (reportingStatus) : survit au
@@ -155,7 +170,7 @@ export function ScenePlayer() {
   );
   useEffect(() => {
     if (!loaded || !save || state.completed || state.currentSceneId) return;
-    const first = nextScene(state, content);
+    const first = nextScene(state, content, flowConfig);
     if (first)
       void append({
         type: 'scene_entered',
@@ -163,8 +178,11 @@ export function ScenePlayer() {
         sceneVersion: first.version,
       });
     else if (state.events.some((e) => e.type === 'scene_entered'))
-      void append({ type: 'run_completed', timelineId: 't1' });
-  }, [loaded, save, state, append]);
+      void append({
+        type: 'run_completed',
+        timelineId: flowConfig.codaSceneId.split('.')[0] ?? 't1',
+      });
+  }, [loaded, save, state, append, content, flowConfig]);
   const sceneId = scene?.id ?? null;
   const visit = state.events.findLast(
     (event) => event.type === 'scene_entered',
@@ -214,16 +232,20 @@ export function ScenePlayer() {
   }, []);
   const advance = useCallback(async () => {
     if (!scene) return;
-    const latest = replay(useGameStore.getState().save?.events ?? [], content);
-    const next = nextScene(latest, content);
+    const latest = replay(useStore.getState().save?.events ?? [], content);
+    const next = nextScene(latest, content, flowConfig);
     if (next)
       await append({
         type: 'scene_entered',
         sceneId: next.id,
         sceneVersion: next.version,
       });
-    else await append({ type: 'run_completed', timelineId: 't1' });
-  }, [scene, append]);
+    else
+      await append({
+        type: 'run_completed',
+        timelineId: flowConfig.codaSceneId.split('.')[0] ?? 't1',
+      });
+  }, [scene, append, content, flowConfig, useStore]);
   const chosen =
     scene && scene.id in state.choices ? state.choices[scene.id] : null;
   const outcome = scene?.outcomes.find(

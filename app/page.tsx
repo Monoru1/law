@@ -98,7 +98,19 @@ export default function Home() {
             </p>
           ))}
           <div className="stack" style={{ marginTop: '2rem' }}>
-            <Button onClick={() => setPresentingId(null)}>{copy.back}</Button>
+            {presenting.timelineId === 't2' && (
+              <Button
+                onClick={() => {
+                  setPresentingId(null);
+                  router.push('/jouer/t2');
+                }}
+              >
+                {copy.home.start}
+              </Button>
+            )}
+            <Button className="ghost" onClick={() => setPresentingId(null)}>
+              {copy.back}
+            </Button>
           </div>
         </Dialog>
       )}

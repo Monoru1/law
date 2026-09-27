@@ -21,6 +21,7 @@ export const initialState = (): GameState => ({
   contradictions: [],
   confronted: [],
   evidence: {},
+  relations: [],
   completed: false,
   currentSceneId: null,
   decisions: 0,
@@ -197,6 +198,21 @@ export function reduce(
       next.completed = true;
       next.currentSceneId = null;
       break;
+    case 'relation_event': {
+      let record = next.relations.find(
+        (r) => r.characterId === event.characterId,
+      );
+      if (!record) {
+        record = { characterId: event.characterId, events: [] };
+        next.relations.push(record);
+      }
+      record.events.push({
+        kind: event.kind,
+        sceneId: event.sceneId,
+        at: event.at,
+      });
+      break;
+    }
   }
   return next;
 }

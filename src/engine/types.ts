@@ -27,7 +27,8 @@ export type Effect =
   | { setVar: string; value: Scalar }
   | { incVar: string; by: number | { fromValueOf: string } }
   | { schedule: { sceneId: string; when?: Condition } }
-  | { proposeLaw: { principleId: string; statementId: string } };
+  | { proposeLaw: { principleId: string; statementId: string } }
+  | { relationEvent: { characterId: string; kind: RelationEventKind } };
 export type Beat = {
   text: string;
   pauseMs?: number;
@@ -73,10 +74,22 @@ export type Outcome = {
   beats: Beat[];
   effects?: Effect[];
 };
+export type RelationEventKind =
+  | 'promise_made'
+  | 'promise_broken'
+  | 'lie_made'
+  | 'lie_revealed'
+  | 'chose_over'
+  | 'protected'
+  | 'sacrificed';
+export type RelationRecord = {
+  characterId: string;
+  events: { kind: RelationEventKind; sceneId: string; at: number }[];
+};
 export type Scene = {
   id: string;
   version: number;
-  timelineId: 't1';
+  timelineId: string;
   title: string;
   regression: 0 | 1 | 2 | 3;
   contentFlags: string[];
@@ -163,7 +176,15 @@ export type GameEvent =
       answer: 'maintain' | 'nuance' | 'abandon' | 'silence';
     }
   | { type: 'scene_skipped'; id: string; at: number; sceneId: string }
-  | { type: 'run_completed'; id: string; at: number; timelineId: string };
+  | { type: 'run_completed'; id: string; at: number; timelineId: string }
+  | {
+      type: 'relation_event';
+      id: string;
+      at: number;
+      characterId: string;
+      kind: RelationEventKind;
+      sceneId: string;
+    };
 export type Law = {
   number: number;
   principleId: string;
@@ -205,6 +226,7 @@ export type GameState = {
   contradictions: Contradiction[];
   confronted: string[];
   evidence: Record<string, number>;
+  relations: RelationRecord[];
   completed: boolean;
   currentSceneId: string | null;
   decisions: number;

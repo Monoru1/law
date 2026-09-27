@@ -31,6 +31,20 @@ export function applyEffects(
         state.schedules.push(effect.schedule);
     } else if ('proposeLaw' in effect)
       state.pendingLaws.push(effect.proposeLaw);
+    else if ('relationEvent' in effect) {
+      let record = state.relations.find(
+        (r) => r.characterId === effect.relationEvent.characterId,
+      );
+      if (!record) {
+        record = { characterId: effect.relationEvent.characterId, events: [] };
+        state.relations.push(record);
+      }
+      record.events.push({
+        kind: effect.relationEvent.kind,
+        sceneId: state.currentSceneId ?? '',
+        at: Date.now(),
+      });
+    }
   }
 }
 export function resolvedBeats<
