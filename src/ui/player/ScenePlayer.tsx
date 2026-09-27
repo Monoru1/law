@@ -127,7 +127,6 @@ export function ScenePlayer() {
   const [phase, setPhase] = useState<Phase>('scene');
   const [previousVisitId, setPreviousVisitId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [outcomeReady, setOutcomeReady] = useState(false);
   const [selected, setSelected] = useState<string>('');
   const [value, setValue] = useState(0);
   const [answer, setAnswer] = useState('');
@@ -137,6 +136,7 @@ export function ScenePlayer() {
   const [custom, setCustom] = useState('');
   const [pulse, setPulse] = useState(false);
   const pulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const choiceArea = useRef<HTMLDivElement>(null);
   const reduced = useReduced(save?.settings.reducedMotion ?? 'auto');
   const tracker = useTimeTracker({ reset: `${scene?.id}:${ready}` });
   // Physical acknowledgement: THE LAW registers a committed decision with a
@@ -173,7 +173,6 @@ export function ScenePlayer() {
   if (visitId !== previousVisitId) {
     setPreviousVisitId(visitId);
     setReady(false);
-    setOutcomeReady(false);
     setSelected('');
     setValue(0);
     setAnswer('');
@@ -189,6 +188,20 @@ export function ScenePlayer() {
       );
     setPhase(answered ? 'outcome' : 'scene');
   }
+  useEffect(() => {
+    if (!visitId) return;
+    window.scrollTo({
+      top: 0,
+      behavior: reduced ? 'auto' : 'smooth',
+    });
+  }, [visitId, phase, reduced]);
+  useEffect(() => {
+    if (!ready || phase !== 'scene') return;
+    choiceArea.current?.scrollIntoView({
+      block: 'nearest',
+      behavior: reduced ? 'auto' : 'smooth',
+    });
+  }, [ready, phase, reduced]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -301,7 +314,6 @@ export function ScenePlayer() {
       await lock('lawProposal', 'signed');
     }
     setPhase('outcome');
-    setOutcomeReady(true);
     await advance();
   };
   if (!loaded) return <main className="end-screen mono">THE LAW</main>;
@@ -552,11 +564,14 @@ export function ScenePlayer() {
     <main
       className={`stage reg-${scene.regression}${pulse ? ' stage--pulse' : ''}`}
       data-reduce={reduced}
+      data-phase={phase}
       style={{ fontSize: `${textScale}rem` }}
     >
       <Room traces={traceCount} />
       <header className="player-top">
-        <span className="mono">{scene.title}</span>
+        <span className="mono" aria-live="polite">
+          {scene.title}
+        </span>
         <Button className="ghost" onClick={() => setPause(true)}>
           {copy.quit}
         </Button>
@@ -732,6 +747,11 @@ export function ScenePlayer() {
               lawNumber={lawNumber}
               reduceAnimations={reduced}
               paused={pause || settings}
+              mode={
+                phase === 'outcome' || input.kind === 'passage'
+                  ? 'transition'
+                  : 'decision'
+              }
               instant={Boolean(
                 phase === 'outcome' &&
                 chosen !== null &&
@@ -742,18 +762,15 @@ export function ScenePlayer() {
               )}
               onDone={
                 phase === 'outcome'
-                  ? () => setOutcomeReady(true)
-                  : () => setReady(true)
+                  ? () => void afterOutcome()
+                  : input.kind === 'passage'
+                    ? () => void advance()
+                    : () => setReady(true)
               }
             />
-            {phase === 'scene' && ready && (
-              <div className="choice-area">{inputControl()}</div>
-            )}
-            {phase === 'outcome' && outcomeReady && (
-              <div className="outcome-actions">
-                <Button onClick={() => void afterOutcome()}>
-                  {copy.continue}
-                </Button>
+            {phase === 'scene' && ready && input.kind !== 'passage' && (
+              <div ref={choiceArea} className="choice-area">
+                {inputControl()}
               </div>
             )}
           </>

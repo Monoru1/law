@@ -67,7 +67,7 @@ export const confrontationUnsigned: Scene = {
 };
 export const pasEncore: Scene = {
   id: 't1.pas-encore',
-  version: 1,
+  version: 2,
   timelineId: 't1',
   title: 'Pas encore',
   regression: 2,
@@ -77,10 +77,6 @@ export const pasEncore: Scene = {
     { text: '—', pauseMs: 1200 },
     { text: 'Pas encore.' },
   ],
-  input: {
-    kind: 'choice',
-    confirm: 'tap',
-    options: [{ id: 'continuer', label: 'Continuer' }],
-  },
+  input: { kind: 'passage' },
   outcomes: [{ when: { any: true }, beats: [] }],
 };

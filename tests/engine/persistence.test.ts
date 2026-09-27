@@ -32,13 +32,50 @@ it('migrates v1 without changing events, settings, timestamps or run identity', 
   const current = saveFixture([choice('t1.bouton', 'appuyer')]);
   const { contentIdentity: omitted, ...legacy } = current;
   expect(omitted).toBe(contentIdentity(content));
-  expect(contentIdentity(legacyContent as typeof content)).toBe(
-    contentIdentity(content),
-  );
-  expect(migrateSave({ ...legacy, schemaVersion: 1 })).toEqual(current);
+  const migrated = migrateSave({ ...legacy, schemaVersion: 1 });
+  expect(migrated).toEqual(current);
+  expect(migrated.events).toEqual(current.events);
+  expect(migrated.runId).toBe(current.runId);
+  expect(migrated.createdAt).toBe(current.createdAt);
 });
 
-it.each([0, 3, -1, '2'])(
+it('migrates the former passive-continue content identity to the passage model', () => {
+  const current = saveFixture();
+  expect(
+    migrateSave({
+      ...current,
+      schemaVersion: 2,
+      contentIdentity: contentIdentity(legacyContent as typeof content),
+    }),
+  ).toEqual(current);
+});
+
+it('removes the former passive decision while preserving its scene visit', () => {
+  const formerVisit = event({
+    type: 'scene_entered',
+    sceneId: 't1.pas-encore',
+    sceneVersion: 1,
+  });
+  const formerContinue = event({
+    type: 'choice_locked',
+    sceneId: 't1.pas-encore',
+    sceneVersion: 1,
+    input: 'choice',
+    value: 'continuer',
+    hesitationMs: 100,
+    selectionChanges: 0,
+  });
+  const migrated = migrateSave({
+    ...saveFixture([formerVisit, formerContinue]),
+    schemaVersion: 2,
+    contentIdentity: contentIdentity(legacyContent as typeof content),
+  });
+
+  expect(migrated.events).not.toContainEqual(formerContinue);
+  expect(migrated.events).toContainEqual({ ...formerVisit, sceneVersion: 2 });
+});
+
+it.each([0, 4, -1, '3'])(
   'retains unsupported schema %s without calling it corruption',
   async (schemaVersion) => {
     const { map } = storageFixture();

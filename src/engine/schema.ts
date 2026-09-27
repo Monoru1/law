@@ -80,6 +80,7 @@ export const inputSchema = z.discriminatedUnion('kind', [
     maxLength: z.number().int().positive(),
     skippable: z.literal(true),
   }),
+  z.object({ kind: z.literal('passage') }),
   z.object({ kind: z.literal('lawProposal') }),
   z.object({ kind: z.literal('confrontation') }),
 ]);

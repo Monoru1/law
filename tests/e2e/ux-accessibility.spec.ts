@@ -60,7 +60,11 @@ for (const viewport of viewports) {
   }, testInfo) => {
     await page.setViewportSize(viewport);
     await seed(page, 't1.dix-mille');
-    await page.getByRole('button', { name: 'Afficher la suite' }).click();
+    await expect(
+      page.getByRole('button', {
+        name: /Afficher la suite|Voir la suite|Suivant/,
+      }),
+    ).toHaveCount(0);
     const accept = page.getByRole('button', { name: 'Accepter', exact: true });
     await expect(accept).toBeVisible();
     // Nothing is recorded before the player acts.
@@ -160,7 +164,11 @@ test('touch can reveal text and commit a choice with a single tap', async ({
   });
   const page = await context.newPage();
   await seed(page, 't1.dix-mille');
-  await page.getByRole('button', { name: 'Afficher la suite' }).tap();
+  await expect(
+    page.getByRole('button', {
+      name: /Afficher la suite|Voir la suite|Suivant/,
+    }),
+  ).toHaveCount(0);
   const refuse = page.getByRole('button', { name: 'Refuser', exact: true });
   await expect(refuse).toBeVisible();
   await refuse.tap();
@@ -172,6 +180,30 @@ test('touch can reveal text and commit a choice with a single tap', async ({
     )
     .toBe(1);
   await context.close();
+});
+
+test('a consequence flows into the next decision without a progress control', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await seed(page, 't1.dix-mille');
+  const accept = page.getByRole('button', { name: 'Accepter', exact: true });
+  await expect(accept).toBeVisible();
+  await accept.click();
+  await expect(
+    page.getByText('10 000 € ont été versés.', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Continuer', exact: true }),
+  ).toHaveCount(0);
+  await page.waitForTimeout(500);
+  await page.screenshot({
+    path: testInfo.outputPath('automatic-outcome-mobile.png'),
+    fullPage: true,
+  });
+  await expect(
+    page.getByRole('button', { name: 'Appuyer', exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
 });
 
 for (const action of ['Non', 'Signer']) {

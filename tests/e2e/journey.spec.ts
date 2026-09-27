@@ -1,55 +1,26 @@
 import { test, expect, type Page } from '@playwright/test';
 import { content } from '../../src/content';
 import { lawStatement, replay } from '../../src/engine';
-async function reveal(page: Page) {
-  await page.locator('body').press('Space');
-}
 // A committed choice is now a single deliberate click — no hold gesture.
 async function commit(page: Page, name: string) {
   await page.getByRole('button', { name, exact: true }).click();
 }
-// Advance through any beat reveals and outcome "Continuer" screens until the
-// named control appears. Resilient to the exact number of outcome/interlude
-// screens between two decisions.
+// Narrative and consequences advance on their own. Tests wait for the next
+// meaningful action instead of manufacturing progress clicks.
 async function advanceUntil(page: Page, name: string) {
   const target = page.getByRole('button', { name, exact: true });
-  for (let i = 0; i < 12; i++) {
-    if ((await target.count()) > 0 && (await target.isVisible())) return;
-    await page.locator('body').press('Space');
-    const cont = page.getByRole('button', { name: 'Continuer', exact: true });
-    if (
-      (await cont.count()) > 0 &&
-      (await cont.isVisible()) &&
-      (await cont.isEnabled())
-    ) {
-      await cont.click();
-    } else {
-      await page.waitForTimeout(250);
-    }
-  }
+  await expect(target).toBeVisible({ timeout: 15_000 });
 }
 // Advance through the final outcome screens until a narrative text is shown
 // (e.g. the ending, reached after the coda's outcome resolves).
 async function advanceUntilText(page: Page, text: string) {
   const target = page.getByText(text);
-  for (let i = 0; i < 12; i++) {
-    if ((await target.count()) > 0 && (await target.isVisible())) return;
-    await page.locator('body').press('Space');
-    const cont = page.getByRole('button', { name: 'Continuer', exact: true });
-    if (
-      (await cont.count()) > 0 &&
-      (await cont.isVisible()) &&
-      (await cont.isEnabled())
-    ) {
-      await cont.click();
-    } else {
-      await page.waitForTimeout(250);
-    }
-  }
+  await expect(target).toBeVisible({ timeout: 15_000 });
 }
 test('a full run records a signed law, contradicts it and remembers the written answer', async ({
   page,
 }) => {
+  test.slow();
   // The written answer must never leak to a third party. The consented
   // first-party report endpoint (/api/report) is its only legitimate
   // recipient, so it is excluded from the leak set.
@@ -68,40 +39,32 @@ test('a full run records a signed law, contradicts it and remembers the written 
     .fill('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).click();
   await page.getByRole('button', { name: 'J’accepte et je commence' }).click();
-  await reveal(page);
+  await advanceUntil(page, 'Appuyer');
   await page.getByRole('button', { name: 'Appuyer', exact: true }).click();
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await reveal(page);
+  await advanceUntil(page, 'Refuser');
   await commit(page, 'Refuser');
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await reveal(page);
+  await advanceUntil(page, 'Les sauver');
   await commit(page, 'Les sauver');
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).click();
+  await advanceUntil(page, 'Passer');
   await page.getByRole('button', { name: 'Passer' }).click();
-  await reveal(page);
+  await expect(page.getByRole('textbox', { name: 'Pourquoi ?' })).toBeVisible({
+    timeout: 15_000,
+  });
   await page
     .getByRole('textbox', { name: 'Pourquoi ?' })
     .fill('Pour rentrer chez moi.');
   await page.getByRole('button', { name: 'Continuer' }).click();
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await reveal(page);
+  await advanceUntil(page, 'Dossier B');
   await commit(page, 'Dossier B');
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).click();
+  await advanceUntil(page, 'Signer');
   await commit(page, 'Signer');
-  await reveal(page);
+  await advanceUntil(page, 'Ne rien donner');
   await commit(page, 'Ne rien donner');
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await reveal(page);
+  await advanceUntil(page, 'Arrêter le protocole');
   await commit(page, 'Arr\u00eater le protocole');
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await expect(page.getByText('Tu l\u2019as sign\u00e9e.')).toBeVisible();
-  await reveal(page);
+  await expect(page.getByText('Tu l\u2019as sign\u00e9e.')).toBeVisible({
+    timeout: 15_000,
+  });
   const recorded = await page.evaluate(
     () => JSON.parse(localStorage.getItem('thelaw:save')!).events,
   );
@@ -129,6 +92,7 @@ test('a full run records a signed law, contradicts it and remembers the written 
   expect(leaked).toEqual([]);
 });
 test('keyboard operation and resume from a saved scene', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await page.getByRole('button', { name: 'Commencer' }).focus();
   await page.keyboard.press('Enter');
@@ -138,21 +102,19 @@ test('keyboard operation and resume from a saved scene', async ({ page }) => {
   await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'J’accepte et je commence' }).focus();
   await page.keyboard.press('Enter');
-  await reveal(page);
+  await advanceUntil(page, 'Ne pas appuyer');
   await page.getByRole('button', { name: 'Ne pas appuyer' }).focus();
   await page.keyboard.press('Enter');
   await page.reload();
   await expect(page.getByText('Tu ne sauras jamais.')).toBeVisible();
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).focus();
-  await page.keyboard.press('Enter');
-  await reveal(page);
+  await advanceUntil(page, 'Refuser');
   await commit(page, 'Refuser');
   await expect(page.getByText('Tu as refus\u00e9.')).toBeVisible();
 });
 test('the complete story is playable using only the keyboard', async ({
   page,
 }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const activate = async (name: string) => {
     const button = page.getByRole('button', { name, exact: true });
     await button.focus();

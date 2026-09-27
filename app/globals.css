@@ -387,6 +387,14 @@ button:disabled {
   min-height: clamp(170px, 32vh, 400px);
   justify-content: end;
 }
+.stage[data-phase='outcome'] .beats {
+  min-height: 0;
+  padding-left: clamp(14px, 2vw, 24px);
+  border-left: 1px solid var(--law-line-strong);
+}
+.stage[data-phase='outcome'] .beat {
+  max-width: 27ch;
+}
 .beat {
   font-size: clamp(2rem, 4.2vw, 4.15rem);
   line-height: 1.08;
@@ -800,6 +808,9 @@ button:disabled {
     padding: 30px 0;
   }
   .beats {
+    min-height: 27vh;
+  }
+  .stage[data-phase='outcome'] .beats {
     min-height: 27vh;
   }
   .beat {

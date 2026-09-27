@@ -64,6 +64,7 @@ export type InputSpec =
       skippable: true;
     }
   | { kind: 'glyph'; options: OptionSpec[]; confirm: 'tap' | 'hold' }
+  | { kind: 'passage' }
   | { kind: 'lawProposal' }
   | { kind: 'confrontation' };
 export type FutureInputKind = 'rank' | 'pickPerson' | 'number' | 'collective';

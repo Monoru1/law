@@ -4,7 +4,7 @@ import { saveSchema } from '../engine/schema';
 import type { SaveGame } from './SaveAdapter';
 import legacyContent from './legacy-content-v1.json';
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 // Exact canonical identity, without probabilistic hashes or browser globals.
 function canonical(value: unknown): string {
@@ -28,6 +28,22 @@ export class IncompatibleSaveError extends Error {
 }
 
 const legacySchema = saveSchema.omit({ contentIdentity: true });
+const passiveContinueContent = (): Content => ({
+  ...content,
+  scenes: content.scenes.map((scene) =>
+    scene.id === 't1.pas-encore'
+      ? {
+          ...scene,
+          version: 1,
+          input: {
+            kind: 'choice' as const,
+            confirm: 'tap' as const,
+            options: [{ id: 'continuer', label: 'Continuer' }],
+          },
+        }
+      : scene,
+  ),
+});
 const migrations: Record<number, (data: unknown) => unknown> = {
   1: (raw) => {
     const old = legacySchema.parse(raw);
@@ -38,6 +54,32 @@ const migrations: Record<number, (data: unknown) => unknown> = {
       ...old,
       schemaVersion: 2,
       contentIdentity: canonical(legacyContent),
+    };
+  },
+  2: (raw) => {
+    const old = saveSchema.parse(raw) as SaveGame;
+    if (
+      old.contentVersion !== content.version ||
+      old.contentIdentity !== contentIdentity(passiveContinueContent())
+    )
+      throw new IncompatibleSaveError();
+    return {
+      ...old,
+      schemaVersion: 3,
+      contentIdentity: contentIdentity(content),
+      events: old.events
+        .filter(
+          (event) =>
+            !(
+              event.type === 'choice_locked' &&
+              event.sceneId === 't1.pas-encore'
+            ),
+        )
+        .map((event) =>
+          event.type === 'scene_entered' && event.sceneId === 't1.pas-encore'
+            ? { ...event, sceneVersion: 2 }
+            : event,
+        ),
     };
   },
 };

@@ -233,6 +233,9 @@ for (let run = 0; run < 500; run++) {
           statementId: p.statements[0].id,
         });
     }
+    // A passage is visited and read, then the engine proceeds without
+    // fabricating a player decision or a reporting event.
+    if (scene.input.kind === 'passage') continue;
     let value: string | number = '';
     if (scene.input.kind === 'slider') value = Math.floor(rand() * 41);
     else if (

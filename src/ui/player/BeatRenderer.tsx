@@ -1,10 +1,12 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { Button } from '../primitives/Button';
 import {
+  beatDelay,
+  completionDelay,
   renderText,
   type Beat,
+  type BeatSequenceMode,
   type Content,
   type GameState,
 } from '../../engine';
@@ -17,6 +19,7 @@ export function BeatRenderer({
   instant = false,
   reduceAnimations = false,
   paused = false,
+  mode = 'decision',
 }: {
   beats: Beat[];
   state: GameState;
@@ -26,42 +29,46 @@ export function BeatRenderer({
   instant?: boolean;
   reduceAnimations?: boolean;
   paused?: boolean;
+  mode?: BeatSequenceMode;
 }) {
   const reduced = useReducedMotion();
+  const done = useRef(onDone);
+  const latest = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    done.current = onDone;
+  }, [onDone]);
   const [shown, setShown] = useState(
     instant || reduced || reduceAnimations ? beats.length : 0,
   );
   useEffect(() => {
     if (paused) return;
     if (shown >= beats.length) {
-      onDone();
-      return;
+      const delay = completionDelay(beats, mode);
+      if (delay === 0) {
+        done.current();
+        return;
+      }
+      const completion = setTimeout(() => done.current(), delay);
+      return () => clearTimeout(completion);
     }
     const t = setTimeout(
       () => setShown((n) => n + 1),
-      shown === 0 ? 450 : Math.max(1100, beats[shown - 1]?.pauseMs ?? 0),
+      shown === 0 ? 180 : beatDelay(beats[shown - 1]!),
     );
     return () => clearTimeout(t);
-  }, [shown, beats, onDone, paused]);
+  }, [shown, beats, paused, mode]);
   useEffect(() => {
-    const advance = (e: KeyboardEvent) => {
-      if (
-        e.code === 'Space' &&
-        !paused &&
-        e.target === document.body &&
-        shown < beats.length
-      ) {
-        e.preventDefault();
-        setShown(beats.length);
-      }
-    };
-    window.addEventListener('keydown', advance);
-    return () => window.removeEventListener('keydown', advance);
-  }, [shown, beats.length, paused]);
+    if (paused || shown === 0 || shown >= beats.length) return;
+    latest.current?.scrollIntoView({
+      block: 'nearest',
+      behavior: reduced || reduceAnimations ? 'auto' : 'smooth',
+    });
+  }, [shown, beats.length, paused, reduced, reduceAnimations]);
   return (
-    <div className="beats" aria-live="polite">
+    <div className="beats" aria-live="polite" aria-atomic="false">
       {beats.slice(0, shown).map((beat, i) => (
         <motion.p
+          ref={i === shown - 1 ? latest : undefined}
           key={`${i}-${beat.text}`}
           initial={reduced || reduceAnimations ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -71,11 +78,6 @@ export function BeatRenderer({
           {renderText(beat.text, state, content, lawNumber)}
         </motion.p>
       ))}
-      {shown < beats.length && (
-        <Button className="ghost" onClick={() => setShown(beats.length)}>
-          Afficher la suite
-        </Button>
-      )}
     </div>
   );
 }
