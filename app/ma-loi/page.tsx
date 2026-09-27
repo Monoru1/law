@@ -5,7 +5,6 @@ import { content, copy } from '../../src/content';
 import { lawStatement, observations, replay } from '../../src/engine';
 import { useGameStore } from '../../src/store/gameStore';
 import { Button } from '../../src/ui/primitives/Button';
-import { HoldButton } from '../../src/ui/primitives/HoldButton';
 export default function MyLaw() {
   const save = useGameStore((s) => s.save);
   const loaded = useGameStore((s) => s.loaded);
@@ -169,23 +168,23 @@ export default function MyLaw() {
           <footer className="home-actions">
             <Button onClick={exportSave}>{copy.export}</Button>
             {erasing ? (
-              <HoldButton
-                simple={false}
-                onConfirm={async () => {
-                  await clear();
-                  setErasing(false);
-                }}
-              >
-                {copy.erase}
-              </HoldButton>
+              <>
+                <Button
+                  className="signal"
+                  onClick={async () => {
+                    await clear();
+                    setErasing(false);
+                  }}
+                >
+                  {copy.eraseConfirm}
+                </Button>
+                <Button className="ghost" onClick={() => setErasing(false)}>
+                  Annuler
+                </Button>
+              </>
             ) : (
               <Button className="ghost" onClick={() => setErasing(true)}>
                 {copy.erase}
-              </Button>
-            )}
-            {erasing && (
-              <Button className="ghost" onClick={() => setErasing(false)}>
-                Annuler
               </Button>
             )}
           </footer>

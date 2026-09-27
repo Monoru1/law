@@ -1,5 +1,8 @@
 import type { GameEvent } from '../engine';
 export type Settings = {
+  // Deprecated: the hold-to-confirm interaction was removed in favour of a
+  // single deliberate click. Retained in the schema so existing saves keep
+  // migrating cleanly; no longer read by the UI.
   simpleConfirmation: boolean;
   reducedMotion: 'auto' | 'on' | 'off';
   textSize: 'small' | 'normal' | 'large';
@@ -11,6 +14,7 @@ export const defaultSettings: Settings = {
   textSize: 'normal',
   sound: false,
 };
+export type ReportingStatus = 'not_sent' | 'sending' | 'sent' | 'failed';
 export type SaveGame = {
   schemaVersion: number;
   contentVersion: string;
@@ -20,6 +24,9 @@ export type SaveGame = {
   updatedAt: number;
   events: GameEvent[];
   settings: Settings;
+  pseudonym?: string;
+  reportingConsent?: boolean;
+  reportingStatus?: ReportingStatus;
 };
 export interface SaveAdapter {
   load(): Promise<SaveGame | null>;

@@ -18,7 +18,13 @@ for (const [width, height] of viewports)
       fullPage: true,
     });
     await page.getByRole('button', { name: 'Commencer' }).click();
+    await page
+      .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
+      .fill('Testeur');
     await page.getByRole('button', { name: 'Entrer' }).click();
+    await page
+      .getByRole('button', { name: 'J\u2019accepte et je commence' })
+      .click();
     await page.locator('body').press('Space');
     await expect(
       page.getByRole('button', { name: 'Appuyer', exact: true }),
@@ -35,7 +41,13 @@ test('reduced motion reveals text without movement', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await page.getByRole('button', { name: 'Commencer' }).click();
+  await page
+    .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
+    .fill('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).click();
+  await page
+    .getByRole('button', { name: 'J\u2019accepte et je commence' })
+    .click();
   await expect(
     page.getByRole('button', { name: 'Appuyer', exact: true }),
   ).toBeVisible();

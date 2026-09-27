@@ -15,8 +15,13 @@ import {
   type Scene,
 } from '../../engine';
 import { useGameStore } from '../../store/gameStore';
+import {
+  canAutoSend,
+  releaseSend,
+  submitReport,
+  tryClaimSend,
+} from '../../reporting/sendGate';
 import { Button } from '../primitives/Button';
-import { HoldButton } from '../primitives/HoldButton';
 import { Dialog } from '../primitives/Dialog';
 import { BeatRenderer } from './BeatRenderer';
 import { GlyphInput } from './inputs/GlyphInput';
@@ -84,10 +89,39 @@ export function ScenePlayer() {
   const hydrate = useGameStore((s) => s.hydrate);
   const append = useGameStore((s) => s.append);
   const start = useGameStore((s) => s.start);
+  const setReportingStatus = useGameStore((s) => s.setReportingStatus);
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
   const state = useMemo(() => replay(save?.events ?? [], content), [save]);
+
+  // Envoi automatique du rapport de playtest après run_completed.
+  // Statut persisté dans la sauvegarde (reportingStatus) : survit au
+  // rafraîchissement de page et à la navigation vers "Ma loi" et retour.
+  const completionEvent = save?.events.find((e) => e.type === 'run_completed');
+  const completionEventId = completionEvent?.id ?? null;
+  useEffect(() => {
+    if (!save || !completionEventId) return;
+    if (
+      !canAutoSend({
+        reportingConsent: save.reportingConsent,
+        reportingStatus: save.reportingStatus,
+      })
+    )
+      return;
+    if (!tryClaimSend(save.runId)) return;
+    const runId = save.runId;
+    void submitReport(save, setReportingStatus).finally(() =>
+      releaseSend(runId),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    completionEventId,
+    save?.runId,
+    save?.reportingConsent,
+    save?.reportingStatus,
+  ]);
+
   const current = content.scenes.find((s) => s.id === state.currentSceneId);
   const scene = current ? resolveScene(current, state) : null;
   const [phase, setPhase] = useState<Phase>('scene');
@@ -101,9 +135,24 @@ export function ScenePlayer() {
   const [settings, setSettings] = useState(false);
   const [variant, setVariant] = useState('');
   const [custom, setCustom] = useState('');
+  const [pulse, setPulse] = useState(false);
+  const pulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reduced = useReduced(save?.settings.reducedMotion ?? 'auto');
-  const simple = Boolean(save?.settings.simpleConfirmation || reduced);
   const tracker = useTimeTracker({ reset: `${scene?.id}:${ready}` });
+  // Physical acknowledgement: THE LAW registers a committed decision with a
+  // brief, restrained surface pulse. Silent under reduced motion.
+  const flashLock = useCallback(() => {
+    if (reduced) return;
+    if (pulseTimer.current) clearTimeout(pulseTimer.current);
+    setPulse(true);
+    pulseTimer.current = setTimeout(() => setPulse(false), 260);
+  }, [reduced]);
+  useEffect(
+    () => () => {
+      if (pulseTimer.current) clearTimeout(pulseTimer.current);
+    },
+    [],
+  );
   useEffect(() => {
     if (!loaded || !save || state.completed || state.currentSceneId) return;
     const first = nextScene(state, content);
@@ -184,6 +233,7 @@ export function ScenePlayer() {
     text?: string,
   ) => {
     if (!scene) return;
+    flashLock();
     const metrics = tracker.read();
     if (input === 'freeText') {
       if (text?.trim())
@@ -232,6 +282,7 @@ export function ScenePlayer() {
     : null;
   const unsigned = dominantUnsignedPrinciple(state, content);
   const signed = async (principleId: string, statementId: string) => {
+    flashLock();
     const number = nextLawNumber(state);
     await append({
       type: 'law_signed',
@@ -258,16 +309,42 @@ export function ScenePlayer() {
     return (
       <Onboarding
         error={error}
-        enter={async () => {
+        enter={async (pseudonym, reportingConsent) => {
           try {
-            await start();
+            await start({ pseudonym, reportingConsent });
           } catch {
             /* The store exposes the recovery error above. */
           }
         }}
       />
     );
-  if (state.completed) return <End state={state} />;
+  if (state.completed) {
+    const reportStatus = save?.reportingStatus ?? 'not_sent';
+    const showConsent = save?.reportingConsent === true;
+    const reporting =
+      showConsent && reportStatus === 'sent' ? (
+        <p className="end-reporting mono">Rapport de playtest transmis.</p>
+      ) : showConsent && reportStatus === 'failed' ? (
+        <div className="end-reporting end-reporting--failed">
+          <p className="mono">Le rapport n&apos;a pas pu être transmis.</p>
+          <Button
+            className="ghost end-reporting-retry"
+            onClick={async () => {
+              if (!save) return;
+              if (!tryClaimSend(save.runId)) return;
+              try {
+                await submitReport(save, setReportingStatus);
+              } finally {
+                releaseSend(save.runId);
+              }
+            }}
+          >
+            Réessayer
+          </Button>
+        </div>
+      ) : null;
+    return <End state={state} reporting={reporting} />;
+  }
   if (!scene) return <main className="end-screen mono">THE LAW</main>;
   const input = scene.input;
   const choiceOptions =
@@ -280,24 +357,15 @@ export function ScenePlayer() {
         <div
           className={`choice-grid ${input.options.length === 3 ? 'three' : ''}`}
         >
-          {input.options.map((option) =>
-            input.confirm === 'hold' ? (
-              <HoldButton
-                key={option.id}
-                simple={simple}
-                onConfirm={() => void lock(input.kind, option.id)}
-              >
-                {option.label}
-              </HoldButton>
-            ) : (
-              <Button
-                key={option.id}
-                onClick={() => void lock(input.kind, option.id)}
-              >
-                {option.label}
-              </Button>
-            ),
-          )}
+          {input.options.map((option) => (
+            <Button
+              key={option.id}
+              className="choice"
+              onClick={() => void lock(input.kind, option.id)}
+            >
+              {option.label}
+            </Button>
+          ))}
         </div>
       );
     }
@@ -318,33 +386,33 @@ export function ScenePlayer() {
             onChange={(e) => setValue(Number(e.target.value))}
           />
           <div>
-            <HoldButton
-              simple={simple}
-              onConfirm={() => void lock(input.kind, value)}
+            <Button
+              className="commit"
+              onClick={() => void lock(input.kind, value)}
             >
               {value === 0
                 ? input.zeroLabel
                 : input.labelTemplate.replace('{{n}}', String(value))}
-            </HoldButton>
+            </Button>
           </div>
         </div>
       );
     if (input.kind === 'freeText')
       return (
-        <div>
+        <div className="record">
           <textarea
-            className="field"
+            className="field record-field"
             aria-label={input.prompt}
             placeholder={input.placeholder}
             maxLength={input.maxLength}
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
           />
-          <div
-            className="mono"
-            style={{ textAlign: 'right', margin: '12px 0 30px' }}
-          >
-            {answer.length} / {input.maxLength}
+          <div className="record-meta mono">
+            <span>{copy.recordNote}</span>
+            <span>
+              {answer.length} / {input.maxLength}
+            </span>
           </div>
           <div className="home-actions">
             <Button
@@ -380,13 +448,13 @@ export function ScenePlayer() {
             }}
           />
           <div style={{ marginTop: 20 }}>
-            <HoldButton
-              simple={simple}
+            <Button
+              className="commit"
               disabled={!selected}
-              onConfirm={() => void lock(input.kind, selected)}
+              onClick={() => void lock(input.kind, selected)}
             >
               {copy.confirm}
-            </HoldButton>
+            </Button>
           </div>
         </>
       );
@@ -421,15 +489,15 @@ export function ScenePlayer() {
     if (input.kind === 'lawProposal')
       return (
         <div className="stack">
-          <HoldButton
-            simple={simple}
-            onConfirm={() => {
+          <Button
+            className="commit"
+            onClick={() => {
               if (unsigned?.statements[0])
                 void signed(unsigned.id, unsigned.statements[0].id);
             }}
           >
             {copy.confrontation.unsignedSign}
-          </HoldButton>
+          </Button>
           <Button
             onClick={async () => {
               if (unsigned)
@@ -477,13 +545,16 @@ export function ScenePlayer() {
       : save.settings.textSize === 'small'
         ? 0.88
         : 1;
+  const traceCount = state.events.filter(
+    (e) => e.type === 'choice_locked',
+  ).length;
   return (
     <main
-      className={`stage reg-${scene.regression}`}
+      className={`stage reg-${scene.regression}${pulse ? ' stage--pulse' : ''}`}
       data-reduce={reduced}
       style={{ fontSize: `${textScale}rem` }}
     >
-      <Room />
+      <Room traces={traceCount} />
       <header className="player-top">
         <span className="mono">{scene.title}</span>
         <Button className="ghost" onClick={() => setPause(true)}>
@@ -492,16 +563,17 @@ export function ScenePlayer() {
       </header>
       <div className="player-main">
         {phase === 'law' ? (
-          <>
-            <div className="beats">
-              <p className="mono">{copy.lawIntro}</p>
-              <p className="beat serif">
-                {custom.trim() ||
-                  principle?.statements.find(
-                    (s) => s.id === (variant || law?.statementId),
-                  )?.text}
-              </p>
-            </div>
+          <div className="law-proposal">
+            <p className="law-proposal-mark mono">
+              Protocole · Loi {String(nextLawNumber(state)).padStart(2, '0')}
+            </p>
+            <p className="mono law-proposal-intro">{copy.lawIntro}</p>
+            <p className="law-statement serif">
+              {custom.trim() ||
+                principle?.statements.find(
+                  (s) => s.id === (variant || law?.statementId),
+                )?.text}
+            </p>
             {principle && (
               <div className="choice-area">
                 <div className="stack">
@@ -529,9 +601,9 @@ export function ScenePlayer() {
                       ))}
                     </>
                   )}
-                  <HoldButton
-                    simple={simple}
-                    onConfirm={() =>
+                  <Button
+                    className="commit"
+                    onClick={() =>
                       void signed(
                         principle.id,
                         custom.trim()
@@ -543,7 +615,7 @@ export function ScenePlayer() {
                     }
                   >
                     {copy.signed}
-                  </HoldButton>
+                  </Button>
                   <Button
                     onClick={() =>
                       setVariant(principle.statements[0]?.id ?? '')
@@ -566,11 +638,13 @@ export function ScenePlayer() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         ) : phase === 'revision' ? (
-          <>
-            <p className="mono">LOI {String(lawNumber).padStart(2, '0')}</p>
-            <p className="serif beat">
+          <div className="law-proposal">
+            <p className="law-proposal-mark mono">
+              Révision · Loi {String(lawNumber).padStart(2, '0')}
+            </p>
+            <p className="serif law-statement">
               {revisionLaw ? lawStatement(revisionLaw, content) : ''}
             </p>
             <div className="choice-area stack">
@@ -594,23 +668,28 @@ export function ScenePlayer() {
                 onChange={(e) => setCustom(e.target.value)}
                 placeholder="Écris ta propre formulation"
               />
-              <HoldButton
-                simple={simple}
+              <Button
+                className="commit"
                 disabled={!variant && !custom.trim()}
-                onConfirm={() => void saveRevision()}
+                onClick={() => void saveRevision()}
               >
                 {copy.confirm}
-              </HoldButton>
+              </Button>
               <Button className="ghost" onClick={() => setPhase('scene')}>
                 Retour à la confrontation
               </Button>
             </div>
-          </>
+          </div>
         ) : phase === 'certainty' ? (
           <>
             <p className="serif beat">{copy.certainty}</p>
             <div className="choice-area">
-              <div className="range-value">{value}</div>
+              <div className="certainty-gauge">
+                <span className="range-value" aria-live="polite">
+                  {value}
+                </span>
+                <span className="certainty-unit mono">/ 100</span>
+              </div>
               <input
                 className="range"
                 type="range"
@@ -620,7 +699,7 @@ export function ScenePlayer() {
                 aria-label={copy.certainty}
                 onChange={(e) => setValue(Number(e.target.value))}
               />
-              <div className="footerline mono">
+              <div className="certainty-scale mono">
                 <span>{copy.certaintyLow}</span>
                 <span>{copy.certaintyHigh}</span>
               </div>

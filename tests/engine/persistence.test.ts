@@ -20,6 +20,14 @@ import { choice, event, saveFixture, storageFixture } from './fixtures';
 
 afterEach(() => vi.unstubAllGlobals());
 
+it('parses a legacy save with no pseudonym, reportingConsent or reportingStatus', () => {
+  const legacy = saveFixture([choice('t1.bouton', 'appuyer')]);
+  expect(migrateSave(legacy)).toEqual(legacy);
+  expect(migrateSave(legacy).pseudonym).toBeUndefined();
+  expect(migrateSave(legacy).reportingConsent).toBeUndefined();
+  expect(migrateSave(legacy).reportingStatus).toBeUndefined();
+});
+
 it('migrates v1 without changing events, settings, timestamps or run identity', () => {
   const current = saveFixture([choice('t1.bouton', 'appuyer')]);
   const { contentIdentity: omitted, ...legacy } = current;

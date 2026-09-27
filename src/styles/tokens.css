@@ -1,12 +1,35 @@
 :root {
-  --law-black: #0b0b0c;
-  --law-paper: #e9e6df;
-  --law-gray-100: #d1cec7;
-  --law-gray-300: #aaa79f;
-  --law-gray-500: #77746e;
-  --law-gray-700: #343332;
-  --law-gray-900: #171718;
-  --law-signal: #9e1b1b;
+  /* Surfaces — a layered institutional world that carries its own contrast,
+     so the atmosphere never depends on the room being physically dark. */
+  --law-void: #070709;
+  --law-black: #0d0d10;
+  --law-surface: #141418;
+  --law-surface-2: #1c1c21;
+  --law-surface-3: #24242a;
+
+  /* Ink — a deliberate text hierarchy, legible at 15:00 and at 03:00. */
+  --law-paper: #efece4;
+  --law-ink-2: #c6c3bb;
+  --law-ink-3: #97948c;
+
+  /* Hairlines / boundaries */
+  --law-line: rgba(233, 230, 223, 0.14);
+  --law-line-strong: rgba(233, 230, 223, 0.32);
+  --law-line-faint: rgba(233, 230, 223, 0.07);
+
+  /* Legacy gray scale, remapped onto the ink/surface system so existing
+     rules keep working while gaining daylight contrast. */
+  --law-gray-100: #d8d5cd;
+  --law-gray-300: #b4b1a9;
+  --law-gray-500: #8c8981;
+  --law-gray-700: #2b2b30;
+  --law-gray-900: #16161a;
+
+  /* Signal — reserved strictly for irreversible actions. */
+  --law-signal: #b23a30;
+  --law-signal-bright: #cf4a3e;
+  --law-signal-ink: #f5eae7;
+
   --radius: 0;
   --law-space-1: 0.25rem;
   --law-space-2: 0.5rem;
@@ -14,20 +37,26 @@
   --law-space-4: 1rem;
   --law-space-6: 1.5rem;
   --law-space-8: 2rem;
+
   --law-type-meta: 0.75rem;
   --law-type-help: 0.8125rem;
   --law-type-title: clamp(1.75rem, 3vw, 2.5rem);
   --law-leading-help: 1.55;
   --law-tracking-meta: 0.1em;
+
   --law-target-min: 44px;
-  --law-control-min: 58px;
+  --law-control-min: 62px;
   --law-rule: 1px;
   --law-focus-width: 2px;
-  --law-focus-offset: 5px;
+  --law-focus-offset: 4px;
   --law-meter-height: 4px;
+
   --law-duration-feedback: 100ms;
+  --law-duration-lock: 260ms;
   --law-ease-feedback: ease-out;
-  --law-control-surface: var(--law-gray-900);
+
+  --law-control-surface: var(--law-surface);
+  --law-control-surface-hover: var(--law-surface-2);
   --law-control-active: var(--law-paper);
   --law-control-ink: var(--law-black);
   --law-control-track: var(--law-gray-500);

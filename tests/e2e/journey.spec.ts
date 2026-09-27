@@ -4,34 +4,80 @@ import { lawStatement, replay } from '../../src/engine';
 async function reveal(page: Page) {
   await page.locator('body').press('Space');
 }
-async function hold(page: Page, name: string) {
-  const button = page.getByRole('button', { name, exact: true });
-  await button.focus();
-  await page.keyboard.down('Enter');
-  await page.waitForTimeout(1300);
-  await page.keyboard.up('Enter');
+// A committed choice is now a single deliberate click — no hold gesture.
+async function commit(page: Page, name: string) {
+  await page.getByRole('button', { name, exact: true }).click();
+}
+// Advance through any beat reveals and outcome "Continuer" screens until the
+// named control appears. Resilient to the exact number of outcome/interlude
+// screens between two decisions.
+async function advanceUntil(page: Page, name: string) {
+  const target = page.getByRole('button', { name, exact: true });
+  for (let i = 0; i < 12; i++) {
+    if ((await target.count()) > 0 && (await target.isVisible())) return;
+    await page.locator('body').press('Space');
+    const cont = page.getByRole('button', { name: 'Continuer', exact: true });
+    if (
+      (await cont.count()) > 0 &&
+      (await cont.isVisible()) &&
+      (await cont.isEnabled())
+    ) {
+      await cont.click();
+    } else {
+      await page.waitForTimeout(250);
+    }
+  }
+}
+// Advance through the final outcome screens until a narrative text is shown
+// (e.g. the ending, reached after the coda's outcome resolves).
+async function advanceUntilText(page: Page, text: string) {
+  const target = page.getByText(text);
+  for (let i = 0; i < 12; i++) {
+    if ((await target.count()) > 0 && (await target.isVisible())) return;
+    await page.locator('body').press('Space');
+    const cont = page.getByRole('button', { name: 'Continuer', exact: true });
+    if (
+      (await cont.count()) > 0 &&
+      (await cont.isVisible()) &&
+      (await cont.isEnabled())
+    ) {
+      await cont.click();
+    } else {
+      await page.waitForTimeout(250);
+    }
+  }
 }
 test('a full run records a signed law, contradicts it and remembers the written answer', async ({
   page,
 }) => {
+  // The written answer must never leak to a third party. The consented
+  // first-party report endpoint (/api/report) is its only legitimate
+  // recipient, so it is excluded from the leak set.
   const leaked: string[] = [];
   page.on('request', (request) => {
-    if (request.postData()?.includes('Pour rentrer chez moi'))
+    if (
+      request.postData()?.includes('Pour rentrer chez moi') &&
+      !request.url().includes('/api/report')
+    )
       leaked.push(request.url());
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Commencer' }).click();
+  await page
+    .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
+    .fill('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).click();
+  await page.getByRole('button', { name: 'J’accepte et je commence' }).click();
   await reveal(page);
   await page.getByRole('button', { name: 'Appuyer', exact: true }).click();
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
   await reveal(page);
-  await hold(page, 'Refuser');
+  await commit(page, 'Refuser');
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
   await reveal(page);
-  await hold(page, 'Les sauver');
+  await commit(page, 'Les sauver');
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Passer' }).click();
@@ -42,18 +88,16 @@ test('a full run records a signed law, contradicts it and remembers the written 
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await reveal(page);
-  await hold(page, 'Dossier B');
+  await commit(page, 'Dossier B');
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
-  await hold(page, 'Signer');
+  await commit(page, 'Signer');
   await reveal(page);
-  await hold(page, 'Confirmer');
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).click();
+  await commit(page, 'Ne rien donner');
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
   await reveal(page);
-  await hold(page, 'Arr\u00eater le protocole');
+  await commit(page, 'Arr\u00eater le protocole');
   await reveal(page);
   await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText('Tu l\u2019as sign\u00e9e.')).toBeVisible();
@@ -71,14 +115,12 @@ test('a full run records a signed law, contradicts it and remembers the written 
     page.getByText(`\u00ab\u00a0${statement}\u00a0\u00bb`, { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Abandonner' }).click();
-  await reveal(page);
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await reveal(page);
+  await advanceUntil(page, 'Oui');
   await expect(page.getByText(/Pour rentrer chez moi/)).toBeVisible();
   await page.getByRole('button', { name: 'Oui' }).click();
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await reveal(page);
+  await advanceUntil(page, 'Sortir de la pi\u00e8ce');
   await page.getByRole('button', { name: 'Sortir de la pi\u00e8ce' }).click();
+  await advanceUntilText(page, 'Elles \u00e9taient toutes les tiennes.');
   await expect(
     page.getByText('Elles \u00e9taient toutes les tiennes.'),
   ).toBeVisible();
@@ -90,7 +132,11 @@ test('keyboard operation and resume from a saved scene', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Commencer' }).focus();
   await page.keyboard.press('Enter');
+  await page.getByRole('textbox', { name: 'Ton nom ou pseudonyme' }).focus();
+  await page.keyboard.type('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'J’accepte et je commence' }).focus();
   await page.keyboard.press('Enter');
   await reveal(page);
   await page.getByRole('button', { name: 'Ne pas appuyer' }).focus();
@@ -101,7 +147,7 @@ test('keyboard operation and resume from a saved scene', async ({ page }) => {
   await page.getByRole('button', { name: 'Continuer' }).focus();
   await page.keyboard.press('Enter');
   await reveal(page);
-  await hold(page, 'Refuser');
+  await commit(page, 'Refuser');
   await expect(page.getByText('Tu as refus\u00e9.')).toBeVisible();
 });
 test('the complete story is playable using only the keyboard', async ({
@@ -114,46 +160,33 @@ test('the complete story is playable using only the keyboard', async ({
   };
   await page.goto('/');
   await activate('Commencer');
+  await page.getByRole('textbox', { name: 'Ton nom ou pseudonyme' }).focus();
+  await page.keyboard.type('Testeur');
   await activate('Entrer');
-  await reveal(page);
+  await activate('J’accepte et je commence');
+  await advanceUntil(page, 'Appuyer');
   await activate('Appuyer');
-  await reveal(page);
-  await activate('Continuer');
-  await reveal(page);
-  await hold(page, 'Refuser');
-  await reveal(page);
-  await activate('Continuer');
-  await reveal(page);
-  await hold(page, 'Les sauver');
-  await reveal(page);
-  await activate('Continuer');
+  await advanceUntil(page, 'Refuser');
+  await activate('Refuser');
+  await advanceUntil(page, 'Les sauver');
+  await activate('Les sauver');
+  await advanceUntil(page, 'Passer');
   await activate('Passer');
-  await reveal(page);
+  await advanceUntil(page, 'Je pr\u00e9f\u00e8re ne pas r\u00e9pondre');
   await activate('Je pr\u00e9f\u00e8re ne pas r\u00e9pondre');
-  await activate('Continuer');
-  await reveal(page);
-  await hold(page, 'Dossier A');
-  await reveal(page);
-  await activate('Continuer');
+  await advanceUntil(page, 'Dossier A');
+  await activate('Dossier A');
+  await advanceUntil(page, 'Ne pas signer');
   await activate('Ne pas signer');
-  await reveal(page);
-  await hold(page, 'Confirmer');
-  await reveal(page);
-  await activate('Continuer');
-  await reveal(page);
-  await activate('Continuer');
-  await reveal(page);
-  await hold(page, 'Continuer le protocole');
-  await reveal(page);
-  await activate('Continuer');
-  await reveal(page);
-  await activate('Continuer');
-  await activate('Continuer');
-  await reveal(page);
+  await advanceUntil(page, 'Ne rien donner');
+  await activate('Ne rien donner');
+  await advanceUntil(page, 'Continuer le protocole');
+  await activate('Continuer le protocole');
+  await advanceUntil(page, 'Oui');
   await activate('Oui');
-  await activate('Continuer');
-  await reveal(page);
+  await advanceUntil(page, 'Sortir de la pi\u00e8ce');
   await activate('Sortir de la pi\u00e8ce');
+  await advanceUntilText(page, 'Elles \u00e9taient toutes les tiennes.');
   await expect(
     page.getByText('Elles \u00e9taient toutes les tiennes.'),
   ).toBeVisible();

@@ -55,27 +55,19 @@ async function events(page: Page): Promise<GameEvent[]> {
 }
 
 for (const viewport of viewports) {
-  test(`hold, pause and touch-sized navigation ${viewport.width}×${viewport.height}`, async ({
+  test(`single-click choice, pause and touch-sized navigation ${viewport.width}×${viewport.height}`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport);
     await seed(page, 't1.dix-mille');
     await page.getByRole('button', { name: 'Afficher la suite' }).click();
     const accept = page.getByRole('button', { name: 'Accepter', exact: true });
-    await expect(accept).toHaveAccessibleDescription(
-      'Maintenir pour confirmer. Relâcher pour annuler.',
-    );
-    await accept.click();
-    await expect(accept).toHaveAccessibleDescription(
-      'Maintien interrompu. Maintiens pour confirmer.',
-    );
+    await expect(accept).toBeVisible();
+    // Nothing is recorded before the player acts.
     expect(
       (await events(page)).filter((event) => event.type === 'choice_locked'),
     ).toHaveLength(0);
-    await page.screenshot({
-      path: testInfo.outputPath('hold.png'),
-      fullPage: true,
-    });
+    // Pause + full keyboard navigation of the dialog and settings.
     await page.getByRole('button', { name: 'Quitter' }).focus();
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', { name: 'Pause' });
@@ -94,25 +86,13 @@ for (const viewport of viewports) {
     for (let i = 0; i < 3; i++) await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
     const settings = page.getByRole('dialog', { name: 'Paramètres' });
-    await expect(
-      settings.getByRole('checkbox', { name: 'Confirmation simple' }),
-    ).toBeFocused();
+    await expect(settings).toBeVisible();
+    // First control in settings is the reduce-motion select (no hold setting).
+    await expect(settings.getByRole('combobox').first()).toBeFocused();
     await page.keyboard.press('Escape');
-    await expect(settings).toHaveCount(0);
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await accept.focus();
-    await page.keyboard.down('Enter');
-    await page.waitForTimeout(350);
-    await page.keyboard.press('Tab');
-    await page.keyboard.up('Enter');
-    await page.waitForTimeout(1000);
-    expect(
-      (await events(page)).filter((event) => event.type === 'choice_locked'),
-    ).toHaveLength(0);
-    await accept.focus();
-    await page.keyboard.down('Enter');
-    await page.waitForTimeout(1300);
-    await page.keyboard.up('Enter');
+    // A single click on a choice commits it immediately — no hold, no wait.
+    await accept.click();
     await expect
       .poll(
         async () =>
@@ -140,32 +120,24 @@ for (const viewport of viewports) {
     });
   });
 
-  test(`reduced motion keeps choices distinct ${viewport.width}×${viewport.height}`, async ({
+  test(`reduced motion keeps choices operable ${viewport.width}×${viewport.height}`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await seed(page, 't1.dix-mille');
     const accept = page.getByRole('button', { name: 'Accepter', exact: true });
-    await accept.focus();
-    await page.keyboard.press('Enter');
-    await expect(
-      page.getByRole('button', { name: 'Confirmer : Accepter', exact: true }),
-    ).toHaveAttribute('aria-pressed', 'true');
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Enter');
-    await expect(accept).toHaveAttribute('aria-pressed', 'false');
-    const refuse = page.getByRole('button', {
-      name: 'Confirmer : Refuser',
-      exact: true,
-    });
-    await expect(refuse).toBeFocused();
-    await expect(page.locator('[aria-pressed="true"]')).toHaveCount(1);
+    const refuse = page.getByRole('button', { name: 'Refuser', exact: true });
+    // With reduced motion the beats resolve instantly and both choices are
+    // present and distinct without any hold gesture.
+    await expect(accept).toBeVisible();
+    await expect(refuse).toBeVisible();
     await expect(page.locator('.stage')).toHaveAttribute('data-reduce', 'true');
     await page.screenshot({
-      path: testInfo.outputPath('simple.png'),
+      path: testInfo.outputPath('reduced.png'),
       fullPage: true,
     });
+    await accept.focus();
     await page.keyboard.press('Enter');
     await expect
       .poll(
@@ -177,7 +149,7 @@ for (const viewport of viewports) {
   });
 }
 
-test('touch can reveal text and confirm without a keyboard', async ({
+test('touch can reveal text and commit a choice with a single tap', async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -189,21 +161,9 @@ test('touch can reveal text and confirm without a keyboard', async ({
   const page = await context.newPage();
   await seed(page, 't1.dix-mille');
   await page.getByRole('button', { name: 'Afficher la suite' }).tap();
-  await expect(
-    page.getByRole('button', { name: 'Accepter', exact: true }),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Quitter' }).tap();
-  await page.getByRole('button', { name: 'Paramètres' }).tap();
-  await page.getByRole('checkbox', { name: 'Confirmation simple' }).check();
-  await page.getByRole('button', { name: 'Continuer', exact: true }).tap();
-  await page.getByRole('button', { name: 'Accepter', exact: true }).tap();
-  await page.getByRole('button', { name: 'Refuser', exact: true }).tap();
-  await expect(
-    page.getByRole('button', { name: 'Accepter', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'false');
-  await page
-    .getByRole('button', { name: 'Confirmer : Refuser', exact: true })
-    .tap();
+  const refuse = page.getByRole('button', { name: 'Refuser', exact: true });
+  await expect(refuse).toBeVisible();
+  await refuse.tap();
   await expect
     .poll(
       async () =>
@@ -255,11 +215,8 @@ for (const action of ['Non', 'Signer']) {
         selectionChanges: 0,
       },
     ]);
+    // Both "Signer" and "Non" commit with a single click — no hold gesture.
     await page.getByRole('button', { name: action, exact: true }).click();
-    if (action === 'Signer')
-      await page
-        .getByRole('button', { name: 'Confirmer : Signer', exact: true })
-        .click();
     await expect
       .poll(async () =>
         (await events(page)).some(
@@ -302,10 +259,17 @@ test('empty history and unreadable saves stay distinguishable', async ({
   await expect(
     page.getByRole('alert').filter({ hasText: /Sauvegarde illisible/ }),
   ).toBeVisible();
+  await page
+    .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
+    .fill('Testeur');
   await page.getByRole('button', { name: 'Entrer', exact: true }).click();
+  await page.getByRole('button', { name: 'J’accepte et je commence' }).click();
   expect(await page.evaluate(() => localStorage.getItem('thelaw:save'))).toBe(
     '{broken',
   );
+  // The failed attempt leaves onboarding on the consent step; step back to
+  // the intro step, where the home link lives.
+  await page.getByRole('button', { name: 'Retour', exact: true }).click();
   await page.getByRole('link', { name: 'Retour à l’accueil' }).click();
   await expect(page).toHaveURL('/');
 });

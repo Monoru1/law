@@ -9,6 +9,7 @@ import {
 } from '../persistence/migrations';
 import {
   defaultSettings,
+  type ReportingStatus,
   type SaveGame,
   type Settings,
 } from '../persistence/SaveAdapter';
@@ -22,10 +23,15 @@ type Store = {
   loaded: boolean;
   error: string | null;
   hydrate: () => Promise<void>;
-  start: (options?: { replaceExisting: true }) => Promise<void>;
+  start: (options?: {
+    replaceExisting?: true;
+    pseudonym?: string;
+    reportingConsent?: boolean;
+  }) => Promise<void>;
   restore: (key: string) => Promise<void>;
   append: (event: EventDraft) => Promise<void>;
   settings: (update: Partial<Settings>) => Promise<void>;
+  setReportingStatus: (status: ReportingStatus) => Promise<void>;
   clear: () => Promise<void>;
 };
 const persist = async (save: SaveGame) => localStorageAdapter.save(save);
@@ -43,7 +49,19 @@ export const useGameStore = create<Store>((set, get) => ({
   hydrate: () =>
     enqueue(async () => {
       try {
-        const save = await localStorageAdapter.load();
+        let save = await localStorageAdapter.load();
+        // A save frozen mid-send (interrupted before completion) cannot be
+        // trusted to still be in flight — surface a retry instead of
+        // silently withholding the report forever.
+        if (save && save.reportingStatus === 'sending') {
+          const corrected: SaveGame = { ...save, reportingStatus: 'failed' };
+          try {
+            await persist(corrected);
+          } catch {
+            /* best effort — the in-memory correction still applies */
+          }
+          save = corrected;
+        }
         set({ save, loaded: true, error: null });
       } catch (e) {
         set({
@@ -78,6 +96,7 @@ export const useGameStore = create<Store>((set, get) => ({
         at: now,
         contentVersion: content.version,
       };
+      const pseudonym = options?.pseudonym?.trim().slice(0, 64) || undefined;
       const save: SaveGame = {
         schemaVersion: CURRENT_SCHEMA_VERSION,
         contentVersion: content.version,
@@ -87,6 +106,10 @@ export const useGameStore = create<Store>((set, get) => ({
         updatedAt: now,
         events: [event],
         settings: { ...defaultSettings },
+        ...(pseudonym !== undefined ? { pseudonym } : {}),
+        ...(options?.reportingConsent !== undefined
+          ? { reportingConsent: options.reportingConsent }
+          : {}),
       };
       if (options?.replaceExisting) await localStorageAdapter.replace(save);
       else await persist(save);
@@ -122,6 +145,18 @@ export const useGameStore = create<Store>((set, get) => ({
       const next = {
         ...save,
         settings: { ...save.settings, ...update },
+        updatedAt: Date.now(),
+      };
+      await persist(next);
+      set({ save: next });
+    }),
+  setReportingStatus: (status) =>
+    enqueue(async () => {
+      const save = get().save;
+      if (!save) return;
+      const next: SaveGame = {
+        ...save,
+        reportingStatus: status,
         updatedAt: Date.now(),
       };
       await persist(next);
