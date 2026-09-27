@@ -120,6 +120,10 @@ test('a night in the house remembers the room, using only the keyboard', async (
   await press(page, 'J’aurais continué');
   await press(page, 'Passer');
   // The lent money changes who needs the envelope.
+  await advanceUntilText(
+    page,
+    'Sem regarde ailleurs. « Pas moi. J’ai ce qu’il faut. »',
+  );
   await press(page, 'Mila');
   await press(page, 'Passer');
   await press(page, 'Lui dire que tu ne sais rien');
@@ -143,6 +147,11 @@ test('a night in the house remembers the room, using only the keyboard', async (
   await advanceUntilText(page, 'Quelqu’un t’a sauvé la vie.');
   await expect(page.getByText(WORDS, { exact: false })).toBeVisible();
   await expect(page.getByText('Ils avaient un nom.')).toBeVisible();
+  // The balcony answer that contradicts the room returns beside the name.
+  await expect(
+    page.getByText('Sur le balcon, tu as dit à Omar que tu aurais continué.'),
+  ).toBeVisible();
+  await expect(page.getByText('Omar a pris une deuxième garde.')).toBeVisible();
   await expect(
     page.getByText('Camille recompte les verres. Il en manque un.'),
   ).toBeVisible();

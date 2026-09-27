@@ -293,6 +293,30 @@ test('a signed law rests before the room goes on', async ({ page }) => {
   expect(await count(page, 'choice_locked')).toBe(1);
 });
 
+test('written words rest verbatim above their consequence, even unbroken, at 360px', async ({
+  page,
+}) => {
+  await page.setViewportSize(viewports[3]!);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await seed(page, 't1.pourquoi');
+  const words = `<b>{{law:1.statement|}}</b> ${'x'.repeat(250)}`;
+  const field = page.getByRole('textbox', { name: 'Pourquoi ?' });
+  await expect(field).toBeVisible({ timeout: 15_000 });
+  await field.fill(words);
+  await page.getByRole('button', { name: 'Consigner', exact: true }).click();
+  await expect(page.locator('.lock-trace')).toHaveText(
+    `« ${words.slice(0, 280)} »`,
+  );
+  await expect(
+    page.getByRole('button', { name: 'Suivant', exact: true }),
+  ).toBeFocused({ timeout: 5_000 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
+
 test('leaving the room is its own way out: no second act', async ({ page }) => {
   await seed(page, 't1.coda');
   const leave = page.getByRole('button', {

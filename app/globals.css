@@ -530,6 +530,7 @@ button:disabled {
   max-width: 24ch;
   margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: break-word;
   color: var(--law-ink-2);
 }
 .beat.meta,
@@ -581,6 +582,7 @@ button:disabled {
   line-height: 1.5;
   color: var(--law-gray-300);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .law-proposal .lock-trace {
   margin: 18px 0 0;
