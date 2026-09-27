@@ -563,21 +563,57 @@ button:disabled {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  padding: 24px;
-  gap: 18px;
+  padding: clamp(28px, 6vh, 64px) 24px;
+}
+.end-inner {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 42ch;
 }
 .end-screen h1 {
   font-size: clamp(5rem, 14vw, 15rem);
   letter-spacing: -0.08em;
   line-height: 0.8;
-  margin: 0 0 30px;
+  margin: 0 0 clamp(24px, 5vh, 44px);
 }
-.end-screen p {
+.end-statements {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vh, 18px);
+}
+.end-screen .end-statements p {
   font-size: clamp(1.5rem, 3vw, 3rem);
   line-height: 1.12;
   margin: 0;
+}
+.end-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(16px, 2.5vh, 24px);
+  margin-top: clamp(28px, 5vh, 52px);
+}
+.end-reporting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--law-gray-300);
+  font-size: 0.72rem;
+}
+.end-reporting--failed .end-reporting-retry {
+  min-height: var(--law-target-min);
+  font-size: 0.72rem;
+}
+.end-teaser {
+  margin: clamp(24px, 5vh, 48px) 0 0;
+  color: var(--law-gray-300);
+  text-align: center;
 }
 @media (max-width: 650px) {
   .home h1 {

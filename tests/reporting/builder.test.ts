@@ -168,6 +168,52 @@ describe('buildReport', () => {
     expect(report!.decisions[0]!.justification).toBe('Parce que.');
   });
 
+  it('freeText: displayValue humain, rawValue technique préservé', () => {
+    const pourquoi = content.scenes.find((s) => s.id === 't1.pourquoi')!;
+    const written = makeSave([
+      event({
+        type: 'justification_given',
+        sceneId: 't1.pourquoi',
+        text: 'Pour rentrer chez moi.',
+      }),
+      event({
+        type: 'choice_locked',
+        sceneId: 't1.pourquoi',
+        sceneVersion: pourquoi.version,
+        input: 'freeText',
+        value: 'written',
+        hesitationMs: 2000,
+        selectionChanges: 0,
+      }),
+      event({ type: 'run_completed', timelineId: 't1' }),
+    ]);
+    const wReport = buildReport(written, content)!;
+    const wDecision = wReport.decisions.find(
+      (d) => d.sceneId === 't1.pourquoi',
+    )!;
+    expect(wDecision.displayValue).toBe('Réponse écrite');
+    expect(wDecision.rawValue).toBe('written');
+    expect(wDecision.justification).toBe('Pour rentrer chez moi.');
+
+    const declined = makeSave([
+      event({
+        type: 'choice_locked',
+        sceneId: 't1.pourquoi',
+        sceneVersion: pourquoi.version,
+        input: 'freeText',
+        value: 'declined',
+        hesitationMs: 800,
+        selectionChanges: 0,
+      }),
+      event({ type: 'run_completed', timelineId: 't1' }),
+    ]);
+    const dDecision = buildReport(declined, content)!.decisions.find(
+      (d) => d.sceneId === 't1.pourquoi',
+    )!;
+    expect(dDecision.displayValue).toBe('Sans réponse écrite');
+    expect(dDecision.rawValue).toBe('declined');
+  });
+
   it('loi signée apparaît dans laws avec status active', () => {
     const events: GameEvent[] = [
       event({

@@ -23,6 +23,30 @@ function formatMs(ms: number): string {
   return `${s}s`;
 }
 
+// Human-readable hesitation. The raw millisecond value is preserved in the
+// report model; this is presentation only.
+function formatHesitation(ms: number): string {
+  if (ms < 1000) return 'moins d’une seconde';
+  const totalSeconds = ms / 1000;
+  if (totalSeconds < 60) {
+    const rounded = Math.round(totalSeconds * 10) / 10;
+    const text = Number.isInteger(rounded)
+      ? String(rounded)
+      : rounded.toFixed(1).replace('.', ',');
+    return `${text} s`;
+  }
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.round(totalSeconds % 60);
+  return `${minutes} min ${String(seconds).padStart(2, '0')} s`;
+}
+
+const LAW_STATUS_LABELS: Record<string, string> = {
+  active: 'en vigueur',
+  revised: 'révisée',
+  abandoned: 'abrogée',
+  declined: 'déclinée',
+};
+
 export function emailSubject(report: PlaytestReport): string {
   return `THE LAW — Playtest — ${report.pseudonym} — ${formatDate(report.completedAt)}`;
 }
@@ -38,8 +62,8 @@ export function renderEmailHtml(report: PlaytestReport): string {
       <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;font-family:monospace;font-size:12px;">${d.order}</td>
       <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;font-size:13px;">${escapeHtml(d.sceneTitle)}</td>
       <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;font-size:13px;">${escapeHtml(d.displayValue)}</td>
-      <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;font-family:monospace;font-size:12px;">${d.hesitationMs} ms</td>
-      <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;font-family:monospace;font-size:12px;">${d.certainty !== undefined ? d.certainty : '—'}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;font-family:monospace;font-size:12px;" title="${d.hesitationMs} ms">${formatHesitation(d.hesitationMs)}</td>
+      <td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;font-family:monospace;font-size:12px;">${d.certainty !== undefined ? `${d.certainty} %` : '—'}</td>
     </tr>`,
     )
     .join('');
@@ -63,19 +87,21 @@ export function renderEmailHtml(report: PlaytestReport): string {
       ? '<p style="color:#666;font-size:13px;">Aucune loi signée.</p>'
       : report.laws
           .map((l) => {
-            const label =
+            const heading =
               l.number !== null
-                ? `Loi ${String(l.number).padStart(2, '0')} — ${escapeHtml(l.principleId)} — ${l.status}`
-                : `Proposition déclinée — ${escapeHtml(l.principleId)}`;
+                ? `Loi ${String(l.number).padStart(2, '0')}`
+                : 'Proposition déclinée';
+            const statusLabel = LAW_STATUS_LABELS[l.status] ?? l.status;
+            const statement = l.currentStatement.trim();
+            // Human-facing law text leads; principle ID stays as technical metadata.
+            const body = statement
+              ? `<p style="margin:0;font-size:16px;line-height:1.4;">${escapeHtml(statement)}</p>`
+              : '<p style="margin:0;font-size:14px;color:#666;font-style:italic;">Aucune formulation retenue.</p>';
             return `
-    <div style="margin-bottom:16px;padding:12px;border-left:3px solid #000;">
-      <p style="margin:0 0 4px;font-family:monospace;font-size:12px;text-transform:uppercase;">${label}</p>
-      <p style="margin:0;font-size:14px;">${escapeHtml(l.currentStatement)}</p>
-      ${
-        l.revisions.length > 0
-          ? `<p style="margin:8px 0 0;font-family:monospace;font-size:11px;color:#666;">${l.revisions.length} révision(s)</p>`
-          : ''
-      }
+    <div style="margin-bottom:16px;padding:12px 14px;border-left:3px solid #000;">
+      <p style="margin:0 0 6px;font-family:monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#666;">${heading} · ${statusLabel}</p>
+      ${body}
+      <p style="margin:8px 0 0;font-family:monospace;font-size:10px;color:#999;">${escapeHtml(l.principleId)}${l.revisions.length > 0 ? ` · ${l.revisions.length} révision(s)` : ''}</p>
     </div>`;
           })
           .join('');
@@ -171,10 +197,11 @@ export function renderEmailText(report: PlaytestReport): string {
   lines.push('-'.repeat(20));
   for (const d of report.decisions) {
     lines.push(
-      `${d.order}. [${d.sceneId}] ${d.displayValue} (${d.hesitationMs}ms)`,
+      `${d.order}. ${d.sceneTitle} — ${d.displayValue} (hésitation : ${formatHesitation(d.hesitationMs)})`,
     );
-    if (d.certainty !== undefined) lines.push(`   Certitude : ${d.certainty}`);
-    if (d.justification) lines.push(`   "${d.justification}"`);
+    if (d.certainty !== undefined)
+      lines.push(`   Certitude : ${d.certainty} %`);
+    if (d.justification) lines.push(`   « ${d.justification} »`);
   }
   lines.push('');
 
@@ -184,15 +211,18 @@ export function renderEmailText(report: PlaytestReport): string {
     lines.push('Aucune loi signée.');
   } else {
     for (const l of report.laws) {
+      const statusLabel = LAW_STATUS_LABELS[l.status] ?? l.status;
       if (l.number !== null) {
+        const statement = l.currentStatement.trim() || '(aucune formulation)';
         lines.push(
-          `Loi ${String(l.number).padStart(2, '0')} [${l.status}] : ${l.currentStatement}`,
+          `Loi ${String(l.number).padStart(2, '0')} (${statusLabel}) : ${statement}`,
         );
+        lines.push(`   [${l.principleId}]`);
         for (const r of l.revisions) {
-          lines.push(`  Révision : ${r.text}`);
+          lines.push(`   Révision : ${r.text}`);
         }
       } else {
-        lines.push(`Proposition déclinée [${l.principleId}]`);
+        lines.push(`Proposition déclinée (${statusLabel}) [${l.principleId}]`);
       }
     }
   }

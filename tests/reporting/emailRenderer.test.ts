@@ -142,6 +142,60 @@ describe('renderEmailText', () => {
         ],
       }),
     );
-    expect(text).toContain('Proposition déclinée [P_TEST]');
+    expect(text).toContain('Proposition déclinée (déclinée) [P_TEST]');
+  });
+});
+
+describe('human-readable presentation', () => {
+  const decision = (hesitationMs: number) => ({
+    order: 1,
+    sceneId: 't1.bouton',
+    sceneTitle: 'Le bouton',
+    inputKind: 'binary',
+    rawValue: 'appuyer' as const,
+    displayValue: 'Appuyer',
+    hesitationMs,
+    selectionChanges: 0,
+  });
+
+  it('rend l’hésitation en secondes lisibles, pas en millisecondes brutes', () => {
+    const html = renderEmailHtml(makeReport({ decisions: [decision(3200)] }));
+    expect(html).toContain('3,2 s');
+    // la valeur brute reste disponible en title, jamais comme libellé principal
+    expect(html).not.toMatch(/>3200 ms</);
+  });
+
+  it('rend une hésitation sous la seconde de façon humaine', () => {
+    const html = renderEmailHtml(makeReport({ decisions: [decision(400)] }));
+    expect(html).toContain('moins d’une seconde');
+  });
+
+  it('préserve la valeur brute d’hésitation dans un attribut technique', () => {
+    const html = renderEmailHtml(makeReport({ decisions: [decision(3200)] }));
+    expect(html).toContain('title="3200 ms"');
+  });
+
+  it('priorise le texte de loi sur l’identifiant de principe', () => {
+    const html = renderEmailHtml(
+      makeReport({
+        laws: [
+          {
+            number: 1,
+            principleId: 'P_INNOCENT',
+            currentStatement: 'On ne sacrifie pas un innocent.',
+            status: 'active',
+            signedAt: 10,
+            revisions: [],
+          },
+        ],
+      }),
+    );
+    const statementAt = html.indexOf('On ne sacrifie pas un innocent.');
+    const principleAt = html.indexOf('P_INNOCENT');
+    expect(statementAt).toBeGreaterThan(-1);
+    // le texte humain apparaît avant l’identifiant technique
+    expect(statementAt).toBeLessThan(principleAt);
+    // le statut est traduit
+    expect(html).toContain('en vigueur');
   });
 });

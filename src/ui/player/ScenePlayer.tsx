@@ -305,59 +305,29 @@ export function ScenePlayer() {
   if (state.completed) {
     const reportStatus = save?.reportingStatus ?? 'not_sent';
     const showConsent = save?.reportingConsent === true;
-    return (
-      <>
-        <End state={state} />
-        {showConsent && reportStatus === 'sent' && (
-          <p
-            className="mono"
-            style={{
-              position: 'fixed',
-              bottom: 60,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              fontSize: '0.75rem',
-              color: 'var(--law-gray-300)',
-              pointerEvents: 'none',
+    const reporting =
+      showConsent && reportStatus === 'sent' ? (
+        <p className="end-reporting mono">Rapport de playtest transmis.</p>
+      ) : showConsent && reportStatus === 'failed' ? (
+        <div className="end-reporting end-reporting--failed">
+          <p className="mono">Le rapport n&apos;a pas pu être transmis.</p>
+          <Button
+            className="ghost end-reporting-retry"
+            onClick={async () => {
+              if (!save) return;
+              if (!tryClaimSend(save.runId)) return;
+              try {
+                await submitReport(save, setReportingStatus);
+              } finally {
+                releaseSend(save.runId);
+              }
             }}
           >
-            Rapport de playtest transmis.
-          </p>
-        )}
-        {showConsent && reportStatus === 'failed' && (
-          <div
-            style={{
-              position: 'fixed',
-              bottom: 60,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              display: 'flex',
-              gap: 12,
-              alignItems: 'center',
-            }}
-          >
-            <p className="mono" style={{ fontSize: '0.75rem', margin: 0 }}>
-              Le rapport n&apos;a pas pu être transmis.
-            </p>
-            <Button
-              className="ghost"
-              onClick={async () => {
-                if (!save) return;
-                if (!tryClaimSend(save.runId)) return;
-                try {
-                  await submitReport(save, setReportingStatus);
-                } finally {
-                  releaseSend(save.runId);
-                }
-              }}
-              style={{ fontSize: '0.75rem' }}
-            >
-              Réessayer
-            </Button>
-          </div>
-        )}
-      </>
-    );
+            Réessayer
+          </Button>
+        </div>
+      ) : null;
+    return <End state={state} reporting={reporting} />;
   }
   if (!scene) return <main className="end-screen mono">THE LAW</main>;
   const input = scene.input;

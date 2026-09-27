@@ -41,6 +41,12 @@ function resolveDisplayValue(
     if (rawValue === 0 && input.zeroLabel) return input.zeroLabel;
     return input.labelTemplate.replace('{{n}}', String(rawValue));
   }
+  // freeText locks with the technical tokens 'written' / 'declined'. The raw
+  // value is preserved on the record; the human-facing label must not surface
+  // the token. The written text itself lives in the justification field.
+  if (input.kind === 'freeText') {
+    return rawValue === 'written' ? 'Réponse écrite' : 'Sans réponse écrite';
+  }
   return String(rawValue);
 }
 
