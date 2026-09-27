@@ -76,7 +76,7 @@ for (const viewport of viewports) {
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', { name: 'Pause' });
     await expect(
-      dialog.getByRole('button', { name: 'Continuer', exact: true }),
+      dialog.getByRole('button', { name: 'Reprendre', exact: true }),
     ).toBeFocused();
     await expect(page.locator('main')).toHaveAttribute('inert', '');
     await page.keyboard.press('Shift+Tab');
@@ -85,7 +85,7 @@ for (const viewport of viewports) {
     ).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(
-      dialog.getByRole('button', { name: 'Continuer', exact: true }),
+      dialog.getByRole('button', { name: 'Reprendre', exact: true }),
     ).toBeFocused();
     for (let i = 0; i < 3; i++) await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
@@ -204,6 +204,62 @@ test('a consequence flows into the next decision without a progress control', as
   await expect(
     page.getByRole('button', { name: 'Appuyer', exact: true }),
   ).toBeVisible({ timeout: 15_000 });
+});
+
+test('the room carries factual decision traces into a later scene', async ({
+  page,
+}, testInfo) => {
+  const choices: GameEvent[] = [
+    ['t1.bouton', 'appuyer'],
+    ['t1.dix-mille', 'refuser'],
+    ['t1.sept-annees', 'sauver'],
+  ].flatMap(([sceneId, value], index) => [
+    {
+      type: 'scene_entered' as const,
+      id: `remembered-visit-${index}`,
+      at: 10 + index * 2,
+      sceneId: sceneId!,
+      sceneVersion: 1,
+    },
+    {
+      type: 'choice_locked' as const,
+      id: `remembered-${index}`,
+      at: 11 + index * 2,
+      sceneId: sceneId!,
+      sceneVersion: 1,
+      input: 'binary' as const,
+      value: value!,
+      hesitationMs: 0,
+      selectionChanges: 0,
+    },
+  ]);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await seed(page, 't1.le-protocole', choices);
+  const room = page.locator('.room');
+  await expect(room).toHaveAttribute('data-memory', '3');
+  await expect(room).toHaveAttribute('data-regression', '2');
+  await expect(room.locator('.room-trace')).toHaveCount(3);
+  const positions = await room
+    .locator('.room-trace')
+    .evaluateAll((traces) =>
+      traces.map((trace) =>
+        (trace as HTMLElement).style.getPropertyValue('--trace-x'),
+      ),
+    );
+  expect(new Set(positions).size).toBeGreaterThan(1);
+  await page.screenshot({
+    path: testInfo.outputPath('remembered-room-desktop.png'),
+    fullPage: true,
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(room.locator('.room-trace')).toHaveCount(3);
+  await page.screenshot({
+    path: testInfo.outputPath('remembered-room-mobile.png'),
+    fullPage: true,
+  });
 });
 
 for (const action of ['Non', 'Signer']) {

@@ -53,7 +53,7 @@ test('a full run records a signed law, contradicts it and remembers the written 
   await page
     .getByRole('textbox', { name: 'Pourquoi ?' })
     .fill('Pour rentrer chez moi.');
-  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Consigner' }).click();
   await advanceUntil(page, 'Dossier B');
   await commit(page, 'Dossier B');
   await advanceUntil(page, 'Signer');

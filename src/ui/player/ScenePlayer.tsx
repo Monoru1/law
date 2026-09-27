@@ -369,10 +369,12 @@ export function ScenePlayer() {
         <div
           className={`choice-grid ${input.options.length === 3 ? 'three' : ''}`}
         >
-          {input.options.map((option) => (
+          {input.options.map((option, index) => (
             <Button
               key={option.id}
               className="choice"
+              data-choice-index={String(index + 1).padStart(2, '0')}
+              aria-label={option.label}
               onClick={() => void lock(input.kind, option.id)}
             >
               {option.label}
@@ -437,7 +439,7 @@ export function ScenePlayer() {
               }
               disabled={!answer.trim()}
             >
-              Continuer
+              {copy.recordConfirm}
             </Button>
             <Button
               className="ghost"
@@ -557,17 +559,18 @@ export function ScenePlayer() {
       : save.settings.textSize === 'small'
         ? 0.88
         : 1;
-  const traceCount = state.events.filter(
-    (e) => e.type === 'choice_locked',
-  ).length;
+  const roomDecisions = state.events.filter(
+    (event) => event.type === 'choice_locked',
+  );
   return (
     <main
       className={`stage reg-${scene.regression}${pulse ? ' stage--pulse' : ''}`}
       data-reduce={reduced}
       data-phase={phase}
+      data-input={input.kind}
       style={{ fontSize: `${textScale}rem` }}
     >
-      <Room traces={traceCount} />
+      <Room decisions={roomDecisions} regression={scene.regression} />
       <header className="player-top">
         <span className="mono" aria-live="polite">
           {scene.title}
@@ -576,7 +579,7 @@ export function ScenePlayer() {
           {copy.quit}
         </Button>
       </header>
-      <div className="player-main">
+      <div className="player-main" key={`${visitId}:${phase}`}>
         {phase === 'law' ? (
           <div className="law-proposal">
             <p className="law-proposal-mark mono">
@@ -784,7 +787,7 @@ export function ScenePlayer() {
           <p className="mono">THE LAW / 01</p>
           <h2 className="serif">{copy.pause}</h2>
           <div className="stack">
-            <Button onClick={() => setPause(false)}>{copy.continue}</Button>
+            <Button onClick={() => setPause(false)}>{copy.resume}</Button>
             <Button onClick={() => void skip()}>Passer cette scène</Button>
             <Link className="law-button" href="/ma-loi">
               {copy.home.laws}

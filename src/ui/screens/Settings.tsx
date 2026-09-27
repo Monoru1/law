@@ -49,7 +49,7 @@ export function Settings({ close }: { close: () => void }) {
         />
       </label>
       <div style={{ marginTop: 35 }}>
-        <Button onClick={close}>{copy.continue}</Button>
+        <Button onClick={close}>{copy.resume}</Button>
       </div>
     </Dialog>
   );
