@@ -105,6 +105,10 @@ export const copy = {
   return: 'Lire ma loi',
   toHouse: 'Entrer dans la maison',
   confirm: 'Confirmer',
+  // The way on from a consequence that rests; never a decision.
+  next: 'Suivant',
+  // What remains on the law page once the player has answered it.
+  sealed: { signed: 'Signée.', declined: 'Non signée.' },
   resume: 'Reprendre',
   reload: 'Recharger la partie',
   recordConfirm: 'Consigner',

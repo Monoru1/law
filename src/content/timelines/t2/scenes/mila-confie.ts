@@ -14,7 +14,7 @@ export const milaConfie: Scene = {
     {
       text: 'Mila est assise dans l’escalier. Son téléphone à côté d’elle, écran vers le haut.',
     },
-    { text: 'Dix-neuf ans. Sur une liste depuis un an.' },
+    { text: 'Vingt ans. Sur une liste depuis deux ans.' },
     {
       text: '« L’an dernier, ils ont appelé. Une heure après, ils ont rappelé : finalement, non. »',
     },

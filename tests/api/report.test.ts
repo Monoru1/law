@@ -89,6 +89,14 @@ function postRequest(body: unknown): NextRequest {
   });
 }
 
+function postWithContentType(body: unknown, contentType: string): NextRequest {
+  return new NextRequest('http://localhost/api/report', {
+    method: 'POST',
+    headers: { 'content-type': contentType },
+    body: JSON.stringify(body),
+  });
+}
+
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
@@ -102,6 +110,15 @@ describe('GET /api/report', () => {
 });
 
 describe('POST /api/report — validation', () => {
+  it('refuse les POST de formulaire cross-site et interdit la mise en cache', async () => {
+    stubValidEnv();
+    const res = await POST(
+      postWithContentType(validSavePayload(), 'text/plain;charset=UTF-8'),
+    );
+    expect(res.status).toBe(415);
+    expect(res.headers.get('cache-control')).toBe('no-store');
+  });
+
   it('503 si une variable d’environnement obligatoire est absente', async () => {
     for (const missing of ENV_KEYS) {
       if (missing === 'REPORT_FROM_NAME') continue; // optionnelle
@@ -154,6 +171,21 @@ describe('POST /api/report — validation', () => {
     });
     const res = await POST(postRequest(huge));
     expect(res.status).toBe(413);
+  });
+
+  it('mesure la limite en octets UTF-8 et non en caractères JavaScript', async () => {
+    stubValidEnv();
+    const huge = validSavePayload({ pseudonym: 'é'.repeat(300 * 1024) });
+    const res = await POST(postRequest(huge));
+    expect(res.status).toBe(413);
+  });
+
+  it('refuse les champs racine inconnus au lieu de les ignorer', async () => {
+    stubValidEnv();
+    const res = await POST(
+      postRequest(validSavePayload({ recipient: 'attacker@example.test' })),
+    );
+    expect(res.status).toBe(400);
   });
 });
 

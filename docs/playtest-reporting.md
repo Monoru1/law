@@ -31,7 +31,7 @@ Chaque timeline a son propre journal, son propre `runId` et son propre rapport. 
 
 ## Validation serveur
 
-L’API relit la sauvegarde exactement comme un chargement local : `migrateSave(body, contenu de sa timeline)` — schéma, contrats de scène et rejeu de chaque événement. Une histoire impossible (décision hors de sa scène, achèvement prématuré, doublon) est refusée en 400 avant toute construction de rapport. Le pseudonyme est débarrassé des caractères de contrôle avant le sujet et le corps.
+L’API exige `application/json`, refuse les champs racine inconnus et relit la sauvegarde exactement comme un chargement local : `migrateSave(body, contenu de sa timeline)` — schéma, contrats de scène et rejeu de chaque événement. Une histoire impossible (décision hors de sa scène, achèvement prématuré, doublon) est refusée en 400 avant toute construction de rapport. Le pseudonyme est débarrassé des caractères de contrôle avant le sujet et le corps. Le corps est limité à 512 Kio mesurés en octets UTF-8 et toutes les réponses portent `Cache-Control: no-store`.
 
 ## Limitation d’envoi
 
@@ -82,7 +82,7 @@ Erreurs non-2xx : loguées server-side, réponse sobre au client.
 - Côté client : `reportingStatus` est un champ **persisté** de `SaveGame` (localStorage), pas un état mémoire éphémère. Il survit au rafraîchissement de page, à la fermeture/réouverture de l'onglet et à la navigation vers "Ma loi" puis retour à l'écran final.
 - React Strict Mode (double effet mount → unmount → remount) est couvert par une garde synchrone en mémoire (`tryClaimSend`/`releaseSend` dans `sendGate.ts`), qui agit avant même la persistance du statut `sending` — nécessaire car la persistance elle-même est asynchrone.
 - Un statut `sending` retrouvé au chargement d'une session interrompue (l'app a été fermée pendant l'envoi) est automatiquement rétrogradé en `failed` : on ne peut pas savoir si la requête a réellement abouti côté serveur, donc on expose un bouton "Réessayer" plutôt que de bloquer silencieusement.
-- Côté serveur : **aucune déduplication par runId**. Il n'y a pas de base de données ; l'API ne peut pas savoir si une requête pour ce `runId` a déjà été traitée. Un idempotency key dérivé de `runId` + `reportVersion` n'apporterait rien sans un magasin serveur pour le vérifier — non implémenté pour cette raison, documenté plutôt que simulé.
+- Côté serveur : déduplication **best effort par instance** sur `timelineId:runId`, pendant dix minutes. Il n'y a pas de base de données ; une autre instance ou un redémarrage ne connaît pas les livraisons précédentes. Un idempotency key dérivé de `runId` + `reportVersion` n'apporterait rien sans un magasin serveur durable pour le vérifier.
 - **Limite honnête** : si le navigateur se ferme ou perd la connexion _pendant_ que la requête est en cours de traitement côté serveur (après que le corps a été reçu, avant que la réponse ne revienne au client), un second envoi ultérieur peut produire un doublon réel. Aucune garantie d'exactly-once distribué n'est faite en V1.
 
 ## Comportement offline/erreur
@@ -110,3 +110,16 @@ Erreurs non-2xx : loguées server-side, réponse sobre au client.
 2. Redéployer le site.
 3. Vérifier que `/api/report` répond 405 sur GET (test rapide dans le navigateur).
 4. Jouer une partie complète pour déclencher l'envoi réel.
+
+## Checklist de mise en production
+
+- [ ] Définir les quatre variables ci-dessus uniquement dans le contexte Production de Netlify ; vérifier qu'aucune variable `NEXT_PUBLIC_*` ne contient de secret.
+- [ ] Vérifier le domaine expéditeur chez Brevo (SPF, DKIM, DMARC) et effectuer un envoi réel T1 puis T2.
+- [ ] Vérifier sur le domaine final les headers CSP, `frame-ancestors`, `nosniff`, Referrer-Policy, Permissions-Policy et `Cache-Control: no-store` sur `/api/report`.
+- [ ] Choisir un stockage serveur durable si l'exigence devient « un seul email garanti par run » ou si plusieurs instances Netlify sont actives ; la mémoire d'instance actuelle ne le garantit pas.
+- [ ] Définir une politique de rétention et de suppression des rapports dans Brevo et dans la boîte destinataire ; documenter qui y a accès et comment une demande d'effacement est traitée.
+- [ ] Configurer la durée de rétention des logs Netlify/Brevo et vérifier en production qu'aucun corps de rapport ni secret n'y est enregistré.
+- [ ] Activer les alertes d'échec de fonction et contrôler les réponses 429/502 sans journaliser le payload.
+- [ ] Vérifier la sauvegarde locale, l'export et l'effacement sur les navigateurs réellement supportés ; aucune sauvegarde serveur du journal joueur n'existe.
+- [ ] Renseigner puis faire valider par une personne compétente : identité et coordonnées de l'éditeur, directeur de publication, hébergeur, contact confidentialité, base légale, finalités, catégories de données, destinataires/sous-traitants, transferts éventuels, durées de conservation, droits et voie de réclamation.
+- [ ] Publier les mentions légales et l'information confidentialité validées avant ouverture publique. Aucun texte juridique fictif n'est fourni par ce dépôt.

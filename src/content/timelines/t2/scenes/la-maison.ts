@@ -24,17 +24,36 @@ const names: Record<string, string> = {
   omar: 'Omar',
   mila: 'Mila',
 };
-// The first choice of the night, the seat, decides who walks you out.
+// Mila stayed through the night only to leave at four twelve: she is gone
+// before anyone walks to the door, which is not the same as turning away.
+const gone: Record<string, Condition> = {
+  camille: { any: [] },
+  sem: { any: [] },
+  omar: { any: [] },
+  mila: chose('t2.retour-mila', 'rester'),
+};
+// The first choice of the night, the seat, decides who walks you out. It
+// opens the morning, before anyone leaves the house.
 const doorway: Beat[] = Object.entries(names).flatMap(([id, name]) => [
   {
     text: `${name} t’accompagne jusqu’à la porte.`,
     requires: {
-      all: [chose('t2.les-nouvelles', id), { not: turnedAway[id]! }],
+      all: [
+        chose('t2.les-nouvelles', id),
+        { not: turnedAway[id]! },
+        { not: gone[id]! },
+      ],
     },
   },
   {
+    text: `${name} n’est pas là pour t’accompagner jusqu’à la porte.`,
+    requires: { all: [chose('t2.les-nouvelles', id), gone[id]!] },
+  },
+  {
     text: 'Personne ne t’accompagne jusqu’à la porte.',
-    requires: { all: [chose('t2.les-nouvelles', id), turnedAway[id]!] },
+    requires: {
+      all: [chose('t2.les-nouvelles', id), turnedAway[id]!, { not: gone[id]! }],
+    },
   },
 ]);
 const tookMoney: Condition = { flag: 'took_money' };
@@ -57,7 +76,8 @@ export const laMaison: Scene = {
   regression: 3,
   contentFlags: [],
   beats: [
-    { text: 'Le matin.' },
+    { text: 'La maison se vide.' },
+    ...doorway,
     {
       text: 'Sem part à huit heures. Il a de quoi tenir jusqu’à l’été.',
       requires: { flag: 't2.pret-sem' },
@@ -106,6 +126,15 @@ export const laMaison: Scene = {
       text: 'Omar part prendre sa garde.',
       requires: { not: { any: [stopped, continued] } },
     },
+    // The envelope, the next day: what it bought, and what it did not.
+    {
+      text: 'Pour la première fois depuis Yanis, Omar ne prend qu’une garde.',
+      requires: { flag: 't2.enveloppe-omar' },
+    },
+    {
+      text: 'Omar a pris une deuxième garde.',
+      requires: { flag: 't2.enveloppe-mila' },
+    },
     {
       text: 'Camille recompte les verres. Il en manque un.',
       requires: turnedAway.camille!,
@@ -114,7 +143,6 @@ export const laMaison: Scene = {
       text: 'Camille recompte les verres. Le compte est bon.',
       requires: { not: turnedAway.camille! },
     },
-    ...doorway,
     { text: '—', pauseMs: 1600 },
     {
       text: 'Un homme de cinquante-deux ans vide son bureau.',
@@ -147,6 +175,21 @@ export const laMaison: Scene = {
     { text: 'La chambre 14 reste occupée.', requires: continued },
     { text: 'Une chambre 14 vide.', requires: stopped },
     name('Yanis.', { any: [continued, stopped] }),
+    // What was said on the balcony comes back beside the name, not before.
+    {
+      text: 'Sur le balcon, tu as dit à Omar que tu aurais continué.',
+      style: 'whisper',
+      requires: {
+        all: [stopped, chose('t2.omar-histoire', 'aurais-continue')],
+      },
+    },
+    {
+      text: 'Sur le balcon, tu as dit à Omar que tu aurais arrêté.',
+      style: 'whisper',
+      requires: {
+        all: [continued, chose('t2.omar-histoire', 'aurais-arrete')],
+      },
+    },
     {
       text: 'Dix personnes rentreront chez elles ce soir.',
       requires: chose('t1.sept-annees', 'sauver'),

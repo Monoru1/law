@@ -95,11 +95,6 @@ export const omarHistoire: Scene = {
       beats: [
         { text: 'Omar hoche la tête.' },
         { text: '« Moi aussi, j’aurais dit ça. Avant. »' },
-        {
-          text: 'Dans la pièce, tu as arrêté le protocole.',
-          style: 'whisper',
-          requires: stopped,
-        },
       ],
       fact: 'Sur le balcon, tu as dit à Omar que tu aurais continué.',
     },
@@ -111,11 +106,6 @@ export const omarHistoire: Scene = {
           requires: stopped,
         },
         { text: '« C’est facile, maintenant. »', requires: { not: stopped } },
-        {
-          text: 'Dans la pièce, tu as continué le protocole.',
-          style: 'whisper',
-          requires: continued,
-        },
       ],
       fact: 'Sur le balcon, tu as dit à Omar que tu aurais arrêté.',
     },

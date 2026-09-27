@@ -16,10 +16,15 @@ import {
   matchOutcome,
   nextLawNumber,
   nextScene,
+  outcomeCadence,
+  REST_SETTLE_MS,
   replay,
   resolveScene,
   resolvedBeats,
+  sceneOptions,
+  visitStage,
   type Content,
+  type GameEvent,
   type Scene,
 } from '../../engine';
 import { useGameStore } from '../../store/gameStore';
@@ -39,7 +44,10 @@ import { Room } from '../stage/Room';
 import { Settings } from '../screens/Settings';
 import { End } from '../screens/End';
 import { Onboarding } from '../screens/Onboarding';
-type Phase = 'scene' | 'outcome' | 'certainty' | 'law' | 'revision';
+type Phase = 'scene' | 'outcome' | 'law' | 'revision' | 'sealed';
+// The law page and the revision page are opened by the player; every other
+// phase is read from the journal, so a reload returns to the same place.
+type Overlay = 'law' | 'revision' | null;
 function useReduced(setting: 'auto' | 'on' | 'off') {
   const [system, setSystem] = useState(false);
   useEffect(() => {
@@ -92,6 +100,67 @@ function useTimeTracker({ reset }: { reset: string }) {
   };
 }
 const ordinals = ['première', 'deuxième', 'troisième', 'quatrième'];
+// What the player committed, in their own terms, kept above its consequence.
+function decisionTrace(
+  scene: Scene,
+  event: Extract<GameEvent, { type: 'choice_locked' }> | undefined,
+  justification: string | undefined,
+): string | null {
+  if (!event) return null;
+  const input = scene.input;
+  if (input.kind === 'freeText')
+    return justification
+      ? `«\u00a0${justification}\u00a0»`
+      : 'Je préfère ne pas répondre';
+  if (input.kind === 'slider')
+    return event.value === 0
+      ? (input.zeroLabel ?? '0')
+      : input.labelTemplate.replace('{{n}}', String(event.value));
+  if (input.kind === 'confrontation')
+    return (
+      copy.confrontation[event.value as keyof typeof copy.confrontation] ?? null
+    );
+  if (input.kind === 'lawProposal')
+    return event.value === 'silence'
+      ? copy.confrontation.silence
+      : event.value === 'no'
+        ? copy.confrontation.unsignedNo
+        : null;
+  return sceneOptions(scene).get(String(event.value))?.label ?? null;
+}
+// The way on under a resting consequence: small, textual, focused so that
+// Enter or Space continue, and never a second decision.
+function RestAdvance({ onAdvance }: { onAdvance: () => void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    ref.current?.focus({ preventScroll: true });
+    ref.current?.scrollIntoView({ block: 'nearest' });
+  }, []);
+  return (
+    <div className="rest">
+      <button
+        ref={ref}
+        type="button"
+        className="rest-advance mono"
+        aria-label={copy.next}
+        onClick={onAdvance}
+      >
+        {copy.next}
+        <span aria-hidden="true">{'\u00a0→'}</span>
+      </button>
+    </div>
+  );
+}
+// True once the settle has passed since the key last changed.
+function useSettled(key: string, active: boolean) {
+  const [settledKey, setSettledKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    const timer = setTimeout(() => setSettledKey(key), REST_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [key, active]);
+  return active && settledKey === key;
+}
 function createSingleFlight() {
   let busy = false;
   return async (action: () => Promise<void>) => {
@@ -175,9 +244,11 @@ export function ScenePlayer({
 
   const current = content.scenes.find((s) => s.id === state.currentSceneId);
   const scene = current ? resolveScene(current, state) : null;
-  const [phase, setPhase] = useState<Phase>('scene');
+  const [overlay, setOverlay] = useState<Overlay>(null);
   const [previousVisitId, setPreviousVisitId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  // The consequence of a decision has been shown and now rests.
+  const [resting, setResting] = useState(false);
   const [selected, setSelected] = useState<string>('');
   const [value, setValue] = useState(0);
   const [answer, setAnswer] = useState('');
@@ -229,21 +300,26 @@ export function ScenePlayer({
   if (visitId !== previousVisitId) {
     setPreviousVisitId(visitId);
     setReady(false);
+    setResting(false);
+    setOverlay(null);
     setSelected('');
     setValue(0);
     setAnswer('');
     setVariant('');
     setCustom('');
-    const answered = state.events
-      .slice(
-        state.events.findLastIndex((event) => event.type === 'scene_entered') +
-          1,
-      )
-      .some(
-        (event) => event.type === 'choice_locked' && event.sceneId === sceneId,
-      );
-    setPhase(answered ? 'outcome' : 'scene');
   }
+  const stage = sceneId ? visitStage(state.events, sceneId) : 'deciding';
+  const phase: Phase =
+    overlay ??
+    (stage === 'sealed'
+      ? 'sealed'
+      : stage === 'consequence'
+        ? 'outcome'
+        : 'scene');
+  const visitEvents = state.events.slice(
+    state.events.findLastIndex((event) => event.type === 'scene_entered') + 1,
+  );
+  const sealedSettled = useSettled(`${visitId}:sealed`, phase === 'sealed');
   useEffect(() => {
     if (!visitId) return;
     window.scrollTo({
@@ -268,9 +344,14 @@ export function ScenePlayer({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
+  // Moves on from one visit only: a second activation that lands after the
+  // journal has moved on (double click, key repeat) finds a newer visit and
+  // does nothing, so no scene is ever skipped.
   const advance = useCallback(async () => {
     if (!scene) return;
     const latest = replay(useStore.getState().save?.events ?? [], content);
+    const current = latest.events.findLast((e) => e.type === 'scene_entered');
+    if (latest.completed || (current?.id ?? null) !== visitId) return;
     const next = nextScene(latest, content);
     if (next)
       await append({
@@ -283,7 +364,7 @@ export function ScenePlayer({
         type: 'run_completed',
         timelineId: content.timelineId,
       });
-  }, [scene, append, content, useStore]);
+  }, [scene, append, content, useStore, visitId]);
   const chosen =
     scene && scene.id in state.choices ? state.choices[scene.id] : null;
   const outcome = scene?.outcomes.find(
@@ -326,29 +407,23 @@ export function ScenePlayer({
       ...metrics,
     });
     setReady(false);
-    setPhase('outcome');
+    setOverlay(null);
   };
   const lock = (...args: Parameters<typeof record>) =>
     singleFlight(() => record(...args));
-  const afterOutcome = () =>
-    singleFlight(async () => {
-      if (!scene) return;
-      if (
-        scene.followUps?.includes('certainty') &&
-        !(scene.id in state.certainty)
-      ) {
-        setPhase('certainty');
-        return;
-      }
-      if (
-        scene.followUps?.includes('lawProposal') &&
-        state.pendingLaws.length
-      ) {
-        setPhase('law');
-        return;
-      }
-      await advance();
-    });
+  const certaintyPending = Boolean(
+    scene?.followUps?.includes('certainty') && !(scene.id in state.certainty),
+  );
+  // After a consequence: the law it proposes, if any, then the next scene.
+  const moveOn = async () => {
+    if (!scene) return;
+    if (scene.followUps?.includes('lawProposal') && state.pendingLaws.length) {
+      setOverlay('law');
+      return;
+    }
+    await advance();
+  };
+  const afterOutcome = () => singleFlight(moveOn);
   const skip = () =>
     singleFlight(async () => {
       if (!scene) return;
@@ -383,8 +458,8 @@ export function ScenePlayer({
       if (scene?.input.kind === 'lawProposal') {
         await record('lawProposal', 'signed');
       }
-      setPhase('outcome');
-      await advance();
+      // The signed law rests on screen before the night goes on.
+      setOverlay(null);
     });
   if (!loaded) return <main className="end-screen mono">THE LAW</main>;
   if (!save && threshold) return <>{threshold}</>;
@@ -553,7 +628,7 @@ export function ScenePlayer({
                 onClick={() =>
                   singleFlight(async () => {
                     if (key === 'nuance') {
-                      setPhase('revision');
+                      setOverlay('revision');
                       return;
                     }
                     if (key === 'abandon' && lawNumber)
@@ -610,9 +685,13 @@ export function ScenePlayer({
     return null;
   };
   const revisionLaw = state.laws.find((l) => l.number === lawNumber);
-  const revisions =
+  // Rewriting a law into the words it already has would record no change.
+  const revisions = (
     content.principles.find((p) => p.id === revisionLaw?.principleId)
-      ?.statements ?? [];
+      ?.statements ?? []
+  ).filter(
+    (s) => !revisionLaw || s.text !== lawStatement(revisionLaw, content),
+  );
   const saveRevision = () =>
     singleFlight(async () => {
       if (!lawNumber || (!variant && !custom.trim())) return;
@@ -633,6 +712,29 @@ export function ScenePlayer({
       });
       await record('confrontation', 'nuance');
     });
+  const cadence = outcomeCadence(input);
+  const lockedEvent = visitEvents.findLast(
+    (e): e is Extract<GameEvent, { type: 'choice_locked' }> =>
+      e.type === 'choice_locked' && e.sceneId === scene.id,
+  );
+  const trace = decisionTrace(
+    scene,
+    lockedEvent,
+    state.justifications[scene.id],
+  );
+  const sealing = visitEvents.findLast(
+    (e) => e.type === 'law_signed' || e.type === 'law_declined',
+  );
+  const sealedLaw =
+    sealing?.type === 'law_signed'
+      ? state.laws.find((l) => l.number === sealing.lawNumber)
+      : undefined;
+  const sealedStatement = sealedLaw
+    ? lawStatement(sealedLaw, content)
+    : sealing?.type === 'law_declined'
+      ? content.principles.find((p) => p.id === sealing.principleId)
+          ?.statements[0]?.text
+      : '';
   const textScale =
     save.settings.textSize === 'large'
       ? 1.15
@@ -739,7 +841,7 @@ export function ScenePlayer({
                           type: 'law_declined',
                           principleId: principle.id,
                         });
-                        await advance();
+                        setOverlay(null);
                       })
                     }
                   >
@@ -785,57 +887,31 @@ export function ScenePlayer({
               >
                 {copy.confirm}
               </Button>
-              <Button className="ghost" onClick={() => setPhase('scene')}>
+              <Button className="ghost" onClick={() => setOverlay(null)}>
                 Retour à la confrontation
               </Button>
             </div>
           </div>
-        ) : phase === 'certainty' ? (
-          <>
-            <p className="serif beat">{copy.certainty}</p>
-            <div className="choice-area">
-              <div className="certainty-gauge">
-                <span className="range-value" aria-live="polite">
-                  {value}
-                </span>
-                <span className="certainty-unit mono">/ 100</span>
-              </div>
-              <input
-                className="range"
-                type="range"
-                min="0"
-                max="100"
-                value={value}
-                aria-label={copy.certainty}
-                onChange={(e) => setValue(Number(e.target.value))}
-              />
-              <div className="certainty-scale mono">
-                <span>{copy.certaintyLow}</span>
-                <span>{copy.certaintyHigh}</span>
-              </div>
-              <div className="home-actions">
-                <Button
-                  onClick={() =>
-                    singleFlight(async () => {
-                      await append({
-                        type: 'certainty_given',
-                        sceneId: scene.id,
-                        value,
-                      });
-                      await advance();
-                    })
-                  }
-                >
-                  {copy.confirm}
-                </Button>
-                <Button className="ghost" onClick={() => void advanceOnce()}>
-                  {copy.skip}
-                </Button>
-              </div>
-            </div>
-          </>
+        ) : phase === 'sealed' ? (
+          <div className="law-proposal">
+            <p className="law-proposal-mark mono">
+              {sealedLaw
+                ? `Protocole · Loi ${String(sealedLaw.number).padStart(2, '0')}`
+                : 'Protocole'}
+            </p>
+            <p className="law-statement serif">{sealedStatement}</p>
+            <p className="lock-trace mono">
+              {sealedLaw ? copy.sealed.signed : copy.sealed.declined}
+            </p>
+            {sealedSettled && (
+              <RestAdvance onAdvance={() => void advanceOnce()} />
+            )}
+          </div>
         ) : (
           <>
+            {phase === 'outcome' && trace && (
+              <p className="lock-trace mono">{trace}</p>
+            )}
             <BeatRenderer
               key={`${visitId}:${phase}`}
               beats={beats}
@@ -845,21 +921,20 @@ export function ScenePlayer({
               reduceAnimations={reduced}
               paused={pause || settings}
               mode={
-                phase === 'outcome' || input.kind === 'passage'
-                  ? 'transition'
-                  : 'decision'
+                phase === 'outcome'
+                  ? cadence === 'rest'
+                    ? 'rest'
+                    : 'transition'
+                  : input.kind === 'passage'
+                    ? 'transition'
+                    : 'decision'
               }
-              instant={Boolean(
-                phase === 'outcome' &&
-                chosen !== null &&
-                save.events.some(
-                  (e) => e.type === 'choice_locked' && e.sceneId === scene.id,
-                ) &&
-                !outcome?.beats.length,
-              )}
+              instant={Boolean(phase === 'outcome' && !outcome?.beats.length)}
               onDone={
                 phase === 'outcome'
-                  ? () => void afterOutcome()
+                  ? cadence === 'rest'
+                    ? () => setResting(true)
+                    : () => void afterOutcome()
                   : input.kind === 'passage'
                     ? () => void advanceOnce()
                     : () => setReady(true)
@@ -869,6 +944,52 @@ export function ScenePlayer({
               <div ref={choiceArea} className="choice-area">
                 {inputControl()}
               </div>
+            )}
+            {phase === 'outcome' && resting && certaintyPending && (
+              <div className="choice-area certainty">
+                <p className="certainty-question serif">{copy.certainty}</p>
+                <div className="certainty-gauge">
+                  <span className="range-value" aria-live="polite">
+                    {value}
+                  </span>
+                  <span className="certainty-unit mono">/ 100</span>
+                </div>
+                <input
+                  className="range"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={value}
+                  aria-label={copy.certainty}
+                  onChange={(e) => setValue(Number(e.target.value))}
+                />
+                <div className="certainty-scale mono">
+                  <span>{copy.certaintyLow}</span>
+                  <span>{copy.certaintyHigh}</span>
+                </div>
+                <div className="home-actions">
+                  <Button
+                    onClick={() =>
+                      singleFlight(async () => {
+                        await append({
+                          type: 'certainty_given',
+                          sceneId: scene.id,
+                          value,
+                        });
+                        await moveOn();
+                      })
+                    }
+                  >
+                    {copy.confirm}
+                  </Button>
+                  <Button className="ghost" onClick={() => void afterOutcome()}>
+                    {copy.skip}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {phase === 'outcome' && resting && !certaintyPending && (
+              <RestAdvance onAdvance={() => void afterOutcome()} />
             )}
           </>
         )}

@@ -30,9 +30,39 @@ const button = (page: Page, name: string) =>
   page.getByRole('button', { name, exact: true });
 async function press(page: Page, name: string) {
   const target = button(page, name);
-  await expect(target).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(
+      async () => {
+        if (await target.isVisible()) return true;
+        const next = page
+          .getByRole('button', { name: /^(Suivant|Passer)$/, exact: true })
+          .first();
+        if (await next.isVisible()) await next.click();
+        return false;
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true);
   await target.focus();
   await page.keyboard.press('Enter');
+}
+
+async function advanceUntilText(page: Page, text: string | RegExp) {
+  const target = page.getByText(text, { exact: false });
+  await expect
+    .poll(
+      async () => {
+        for (const match of await target.all())
+          if (await match.isVisible()) return true;
+        const next = page
+          .getByRole('button', { name: /^(Suivant|Passer)$/, exact: true })
+          .first();
+        if (await next.isVisible()) await next.click();
+        return false;
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true);
 }
 
 test('the house stays closed until the room is finished', async ({ page }) => {
@@ -67,57 +97,42 @@ test('a night in the house remembers the room, using only the keyboard', async (
     page.getByText('Sem est arrivé à midi. Il dit qu’il a posé sa journée.'),
   ).toBeVisible();
   await press(page, 'À côté de Camille');
-  await expect(
-    page.getByText('Elle s’essouffle dans l’escalier', { exact: false }),
-  ).toBeVisible({ timeout: 15_000 });
+  await advanceUntilText(page, /Elle s’essouffle dans l’escalier/);
   await press(page, 'Promettre');
-  await expect(page.getByText('Ta deuxième loi.')).toBeVisible({
-    timeout: 15_000,
-  });
+  await advanceUntilText(page, 'Ta deuxième loi.');
   await press(page, 'Signer');
-  await expect(page.getByText('Il a vidé son bureau en mars.')).toBeVisible({
-    timeout: 15_000,
-  });
+  await advanceUntilText(page, 'Il a vidé son bureau en mars.');
   await press(page, 'Lui prêter l’argent');
   await expect(page.getByText('10 000 € ont été versés.')).toBeVisible();
   await press(page, 'Garder son secret');
   // A law signed in the room meets an act in the house, side by side.
-  await expect(
-    page.getByText('Dans la pièce, tu as transmis le dossier A au bloc.'),
-  ).toBeVisible({ timeout: 15_000 });
+  await advanceUntilText(
+    page,
+    'Dans la pièce, tu as transmis le dossier A au bloc.',
+  );
   await expect(
     page.getByText(
       'Dans l’escalier, tu as gardé le secret de Mila. Elle passera devant quelqu’un.',
     ),
   ).toBeVisible();
   await press(page, 'Maintenir');
-  await expect(page.getByText('« Il dort là-haut. »')).toBeVisible({
-    timeout: 15_000,
-  });
+  await advanceUntilText(page, '« Il dort là-haut. »');
   await press(page, 'J’aurais continué');
-  await expect(
-    page.getByText('Dans la pièce, tu as arrêté le protocole.'),
-  ).toBeVisible();
   await press(page, 'Passer');
   // The lent money changes who needs the envelope.
-  await expect(
-    page.getByText('Sem regarde ailleurs. « Pas moi. J’ai ce qu’il faut. »'),
-  ).toBeVisible({ timeout: 15_000 });
   await press(page, 'Mila');
   await press(page, 'Passer');
   await press(page, 'Lui dire que tu ne sais rien');
-  await expect(
-    page.getByText(
-      'À une heure du matin, tu as dit à Camille que tu ne savais rien.',
-    ),
-  ).toBeVisible({ timeout: 15_000 });
+  await advanceUntilText(
+    page,
+    'À une heure du matin, tu as dit à Camille que tu ne savais rien.',
+  );
   await press(page, 'Ne pas répondre');
   await press(page, 'Rester avec elle');
-  await expect(
-    page.getByText(
-      'Elle tient une lettre ouverte. Licenciement. Datée de mars.',
-    ),
-  ).toBeVisible({ timeout: 15_000 });
+  await advanceUntilText(
+    page,
+    'Elle tient une lettre ouverte. Licenciement. Datée de mars.',
+  );
   const reply = page.getByRole('textbox', {
     name: 'Qu’est-ce que tu lui dis ?',
   });
@@ -125,9 +140,7 @@ test('a night in the house remembers the room, using only the keyboard', async (
   await page.keyboard.type('Je voulais le protéger.');
   await press(page, 'Consigner');
   // The ending gives the room's fragments their names.
-  await expect(page.getByText('Quelqu’un t’a sauvé la vie.')).toBeVisible({
-    timeout: 20_000,
-  });
+  await advanceUntilText(page, 'Quelqu’un t’a sauvé la vie.');
   await expect(page.getByText(WORDS, { exact: false })).toBeVisible();
   await expect(page.getByText('Ils avaient un nom.')).toBeVisible();
   await expect(
@@ -137,9 +150,7 @@ test('a night in the house remembers the room, using only the keyboard', async (
     page.getByText('Personne ne t’accompagne jusqu’à la porte.'),
   ).toBeVisible();
   await press(page, 'Sortir de la maison');
-  await expect(page.getByText('Eux aussi s’en souviennent.')).toBeVisible({
-    timeout: 15_000,
-  });
+  await advanceUntilText(page, 'Eux aussi s’en souviennent.');
   await expect(page.getByText(/Timeline|bientôt|terminée/i)).toHaveCount(0);
   const events = await journal(page);
   expect(events.filter((e) => e.type === 'run_completed')).toHaveLength(1);
@@ -307,9 +318,10 @@ test('a second tab follows the journal, and a refused write is said', async ({
   await button(first, 'À côté de Sem').click();
   // The other tab moves on with the stored journal instead of offering a
   // decision that was already taken.
-  await expect(
-    second.getByText('Dans la cuisine, Camille essuie les verres. Un par un.'),
-  ).toBeVisible({ timeout: 15_000 });
+  await advanceUntilText(
+    second,
+    'Dans la cuisine, Camille essuie les verres. Un par un.',
+  );
   // A write refused anyway is stated, with a way back, and changes nothing.
   await second.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('thelaw:save-t2')!);

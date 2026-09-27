@@ -255,4 +255,78 @@ describe('the house remembers the room', () => {
     ]);
     expect(nextScene(state, contentT2)?.id).not.toBe('t2.confrontation-proche');
   });
+
+  const morning = (state: ReturnType<typeof house>) =>
+    resolvedBeats(
+      contentT2.scenes.find((s) => s.id === 't2.la-maison')!.beats,
+      state,
+    ).map((b) => renderText(b.text, state, contentT2));
+
+  it('never lets someone who already left walk the player to the door', () => {
+    const memory = buildMemory(room(), content, 'Dans la pièce');
+    const doorLines = (lines: string[]) =>
+      lines.filter((l) => l.includes('jusqu’à la porte'));
+    for (const seat of ['camille', 'sem', 'omar', 'mila'])
+      for (const night of [
+        [],
+        t2('t2.le-mensonge', 'mentir'),
+        t2('t2.le-mensonge', 'dire'),
+        [...t2('t2.mila-confie', 'garder'), ...t2('t2.retour-mila', 'rester')],
+        [
+          ...t2('t2.mila-confie', 'garder'),
+          ...t2('t2.retour-mila', 'reveiller'),
+        ],
+      ])
+        expect(
+          doorLines(
+            morning(house(memory, ...t2('t2.les-nouvelles', seat), ...night)),
+          ),
+        ).toHaveLength(1);
+    const left = morning(
+      house(
+        memory,
+        ...t2('t2.les-nouvelles', 'mila'),
+        ...t2('t2.mila-confie', 'garder'),
+        ...t2('t2.retour-mila', 'rester'),
+      ),
+    );
+    expect(left).toContain(
+      'Mila n’est pas là pour t’accompagner jusqu’à la porte.',
+    );
+    expect(left).not.toContain('Mila t’accompagne jusqu’à la porte.');
+    // The door comes first: nobody walks you out after leaving the house.
+    expect(
+      left.indexOf('Mila n’est pas là pour t’accompagner jusqu’à la porte.'),
+    ).toBe(1);
+  });
+
+  it('brings the envelope back the next morning, for the one not chosen too', () => {
+    const memory = buildMemory(room(), content, 'Dans la pièce');
+    expect(
+      morning(house(memory, ...t2('t2.ce-qu-on-protege', 'omar'))),
+    ).toContain(
+      'Pour la première fois depuis Yanis, Omar ne prend qu’une garde.',
+    );
+    expect(
+      morning(house(memory, ...t2('t2.ce-qu-on-protege', 'mila'))),
+    ).toContain('Omar a pris une deuxième garde.');
+  });
+
+  it('lets an answer on the balcony contradict the room only beside the name', () => {
+    const memory = buildMemory(signedInnocent(), content, 'Dans la pièce');
+    const state = house(memory, ...t2('t2.omar-histoire', 'aurais-continue'));
+    const balcony = contentT2.scenes.find((s) => s.id === 't2.omar-histoire')!;
+    const answer = balcony.outcomes.find(
+      (o) => 'optionId' in o.when && o.when.optionId === 'aurais-continue',
+    )!;
+    expect(
+      resolvedBeats(answer.beats, state)
+        .map((b) => b.text)
+        .join(' '),
+    ).not.toContain('Dans la pièce');
+    const lines = morning(state);
+    expect(lines[lines.indexOf('Yanis.') + 1]).toBe(
+      'Sur le balcon, tu as dit à Omar que tu aurais continué.',
+    );
+  });
 });

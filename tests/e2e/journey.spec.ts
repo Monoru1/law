@@ -9,13 +9,38 @@ async function commit(page: Page, name: string) {
 // meaningful action instead of manufacturing progress clicks.
 async function advanceUntil(page: Page, name: string) {
   const target = page.getByRole('button', { name, exact: true });
-  await expect(target).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(
+      async () => {
+        if (await target.isVisible()) return true;
+        const next = page
+          .getByRole('button', { name: /^(Suivant|Passer)$/, exact: true })
+          .first();
+        if (await next.isVisible()) await next.click();
+        return false;
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true);
 }
 // Advance through the final outcome screens until a narrative text is shown
 // (e.g. the ending, reached after the coda's outcome resolves).
 async function advanceUntilText(page: Page, text: string) {
   const target = page.getByText(text);
-  await expect(target).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(
+      async () => {
+        for (const match of await target.all())
+          if (await match.isVisible()) return true;
+        const next = page
+          .getByRole('button', { name: /^(Suivant|Passer)$/, exact: true })
+          .first();
+        if (await next.isVisible()) await next.click();
+        return false;
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true);
 }
 test('a full run records a signed law, contradicts it and remembers the written answer', async ({
   page,
@@ -62,9 +87,7 @@ test('a full run records a signed law, contradicts it and remembers the written 
   await commit(page, 'Ne rien donner');
   await advanceUntil(page, 'Arrêter le protocole');
   await commit(page, 'Arr\u00eater le protocole');
-  await expect(page.getByText('Tu l\u2019as sign\u00e9e.')).toBeVisible({
-    timeout: 15_000,
-  });
+  await advanceUntilText(page, 'Tu l\u2019as sign\u00e9e.');
   const recorded = await page.evaluate(
     () => JSON.parse(localStorage.getItem('thelaw:save')!).events,
   );

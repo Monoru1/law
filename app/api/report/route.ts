@@ -13,9 +13,26 @@ import {
 import type { SaveGame } from '../../../src/persistence/SaveAdapter';
 
 const MAX_BODY_BYTES = 512 * 1024; // 512 KB
+const JSON_CONTENT_TYPE = /^application\/(?:[a-z0-9.+-]+\+)?json(?:\s*;|$)/i;
+const SAVE_FIELDS = new Set([
+  'schemaVersion',
+  'timelineId',
+  'contentVersion',
+  'runId',
+  'createdAt',
+  'updatedAt',
+  'events',
+  'settings',
+  'pseudonym',
+  'reportingConsent',
+  'reportingStatus',
+]);
 
 function err(status: number, message: string): NextResponse {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json(
+    { error: message },
+    { status, headers: { 'cache-control': 'no-store' } },
+  );
 }
 
 const timelines: Record<string, Content> = { t1: content, t2: contentT2 };
@@ -25,6 +42,7 @@ function validatePayload(
   body: unknown,
 ): { save: SaveGame; content: Content } | null {
   if (typeof body !== 'object' || body === null) return null;
+  if (Object.keys(body).some((key) => !SAVE_FIELDS.has(key))) return null;
   const timeline =
     timelines[String((body as { timelineId?: unknown }).timelineId ?? 't1')];
   if (!timeline) return null;
@@ -97,6 +115,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return err(503, 'Service de rapport non configuré.');
   }
 
+  // Requiring JSON prevents a third-party page from issuing a CORS "simple"
+  // form POST with the player's browser. This endpoint never accepts forms.
+  if (!JSON_CONTENT_TYPE.test(req.headers.get('content-type') ?? ''))
+    return err(415, 'Type de contenu non pris en charge.');
+
   // Limit body size
   const contentLength = req.headers.get('content-length');
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
@@ -106,7 +129,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let rawBody: unknown;
   try {
     const text = await req.text();
-    if (text.length > MAX_BODY_BYTES) return err(413, 'Corps trop volumineux.');
+    if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES)
+      return err(413, 'Corps trop volumineux.');
     rawBody = JSON.parse(text);
   } catch {
     return err(400, 'JSON invalide.');
@@ -122,7 +146,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const key = `${save.timelineId}:${save.runId}`;
   const decision = limiter.check(key);
   if (decision === 'duplicate')
-    return NextResponse.json({ ok: true, duplicate: true }, { status: 200 });
+    return NextResponse.json(
+      { ok: true, duplicate: true },
+      { status: 200, headers: { 'cache-control': 'no-store' } },
+    );
   if (decision === 'limited')
     return err(429, 'Trop de rapports envoyés. Réessaie plus tard.');
 
@@ -156,7 +183,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   limiter.delivered(key);
-  return NextResponse.json({ ok: true }, { status: 200 });
+  return NextResponse.json(
+    { ok: true },
+    { status: 200, headers: { 'cache-control': 'no-store' } },
+  );
 }
 
 export async function GET(): Promise<NextResponse> {

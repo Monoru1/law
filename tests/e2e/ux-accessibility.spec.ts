@@ -179,28 +179,134 @@ test('touch can reveal text and commit a choice with a single tap', async ({
   await context.close();
 });
 
-test('a consequence flows into the next decision without a progress control', async ({
-  page,
+const count = async (page: Page, type: GameEvent['type']) =>
+  (await events(page)).filter((event) => event.type === type).length;
+
+test('a decision rests on its consequence until the player moves on, by touch', async ({
+  browser,
 }, testInfo) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  const context = await browser.newContext({
+    viewport: viewports[2],
+    hasTouch: true,
+    isMobile: true,
+    reducedMotion: 'no-preference',
+  });
+  const page = await context.newPage();
   await seed(page, 't1.dix-mille');
   const accept = page.getByRole('button', { name: 'Accepter', exact: true });
   await expect(accept).toBeVisible();
-  await accept.click();
+  await accept.tap();
+  // What was committed stays above its consequence.
+  await expect(page.locator('.lock-trace')).toHaveText('Accepter');
   await expect(
-    page.getByText('10 000 € ont été versés.', { exact: true }),
-  ).toBeVisible();
+    page.getByText('Un homme de cinquante-deux ans vide son bureau.'),
+  ).toBeVisible({ timeout: 15_000 });
+  const next = page.getByRole('button', { name: 'Suivant', exact: true });
+  await expect(next).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Continuer', exact: true }),
   ).toHaveCount(0);
-  await page.waitForTimeout(500);
+  // Nothing moves on by itself, however long the player stays.
+  await page.waitForTimeout(5_000);
+  await expect(next).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Appuyer', exact: true }),
+  ).toHaveCount(0);
+  expect(await count(page, 'scene_entered')).toBe(1);
   await page.screenshot({
-    path: testInfo.outputPath('automatic-outcome-mobile.png'),
+    path: testInfo.outputPath('resting-consequence-mobile.png'),
     fullPage: true,
   });
+  const box = await next.boundingBox();
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await next.tap();
   await expect(
     page.getByRole('button', { name: 'Appuyer', exact: true }),
   ).toBeVisible({ timeout: 15_000 });
+  // Moving on is not a decision.
+  expect(await count(page, 'choice_locked')).toBe(1);
+  expect(await count(page, 'scene_entered')).toBe(2);
+  await context.close();
+});
+
+test('the way on is focused for the keyboard and never advances twice', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await seed(page, 't1.dix-mille');
+  const refuse = page.getByRole('button', { name: 'Refuser', exact: true });
+  await expect(refuse).toBeVisible();
+  await refuse.focus();
+  await page.keyboard.press('Enter');
+  const next = page.getByRole('button', { name: 'Suivant', exact: true });
+  // Reduced motion shows the consequence at once; the way on still waits.
+  await expect(page.getByText('Tu as refusé.')).toBeVisible();
+  await expect(next).toBeFocused({ timeout: 5_000 });
+  await next.dblclick();
+  await expect(
+    page.getByRole('button', { name: 'Appuyer', exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(1_000);
+  const journal = await events(page);
+  expect(journal.filter((e) => e.type === 'choice_locked')).toHaveLength(1);
+  expect(
+    journal
+      .filter((e) => e.type === 'scene_entered')
+      .map((e) => e.type === 'scene_entered' && e.sceneId),
+  ).toEqual(['t1.dix-mille', 't1.bouton']);
+});
+
+test('a reload during the rest returns to the same consequence, unrecorded', async ({
+  page,
+}) => {
+  await seed(page, 't1.dix-mille');
+  await page.getByRole('button', { name: 'Refuser', exact: true }).click();
+  const next = page.getByRole('button', { name: 'Suivant', exact: true });
+  await expect(next).toBeVisible({ timeout: 15_000 });
+  const before = (await events(page)).length;
+  await page.reload();
+  await expect(page.locator('.lock-trace')).toHaveText('Refuser');
+  await expect(
+    page.getByText('Il ne saura jamais qu’il te doit quelque chose.'),
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(next).toBeVisible();
+  expect((await events(page)).length).toBe(before);
+  await next.click();
+  await expect(
+    page.getByRole('button', { name: 'Appuyer', exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
+});
+
+test('a signed law rests before the room goes on', async ({ page }) => {
+  await seed(page, 't1.chambre-froide');
+  await page.getByRole('button', { name: 'Dossier A', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Suivant', exact: true })
+    .click({ timeout: 15_000 });
+  await page.getByRole('button', { name: 'Signer', exact: true }).click();
+  await expect(page.getByText('Signée.', { exact: true })).toBeVisible();
+  await page.waitForTimeout(3_000);
+  await expect(page.locator('.stage')).toHaveAttribute('data-phase', 'sealed');
+  await page.getByRole('button', { name: 'Suivant', exact: true }).click();
+  await expect(page.locator('.stage')).toHaveAttribute('data-phase', 'scene');
+  expect(await count(page, 'law_signed')).toBe(1);
+  expect(await count(page, 'choice_locked')).toBe(1);
+});
+
+test('leaving the room is its own way out: no second act', async ({ page }) => {
+  await seed(page, 't1.coda');
+  const leave = page.getByRole('button', {
+    name: 'Sortir de la pièce',
+    exact: true,
+  });
+  await expect(leave).toBeVisible({ timeout: 20_000 });
+  await leave.click();
+  await expect(page.getByText('Elles étaient toutes les tiennes.')).toBeVisible(
+    { timeout: 15_000 },
+  );
+  await expect(
+    page.getByRole('button', { name: 'Suivant', exact: true }),
+  ).toHaveCount(0);
 });
 
 test('the room carries factual decision traces into a later scene', async ({
