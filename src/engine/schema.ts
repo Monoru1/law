@@ -45,6 +45,9 @@ const condition: z.ZodType<unknown> = z.lazy(() =>
     z.object({
       relation: z.object({ characterId: z.string(), kind: relationKind }),
     }),
+    z.object({
+      rule: z.object({ ruleId: z.string(), criterionId: z.string() }),
+    }),
   ]),
 );
 export const beatSchema = z.object({
@@ -123,6 +126,22 @@ const effect: z.ZodType<unknown> = z.lazy(() =>
     }),
     z.object({
       relationEvent: z.object({ characterId: z.string(), kind: relationKind }),
+    }),
+    z.object({
+      ruleEnacted: z.object({ ruleId: z.string(), criterionId: z.string() }),
+    }),
+    z.object({
+      ruleRevised: z.object({ ruleId: z.string(), criterionId: z.string() }),
+    }),
+    z.object({
+      ruleApplied: z.object({
+        ruleId: z.string(),
+        personId: z.string(),
+        outcome: z.string(),
+      }),
+    }),
+    z.object({
+      exceptionGranted: z.object({ ruleId: z.string(), personId: z.string() }),
     }),
     z.object({ if: condition, then: z.array(effect) }),
   ]),
@@ -229,6 +248,57 @@ const memorySchema = z.object({
     )
     .max(20),
   declinedLaws: z.array(z.string()).max(20),
+  relations: z
+    .array(
+      z.object({
+        characterId: z.string().max(64),
+        events: z
+          .array(
+            z.object({
+              kind: relationKind,
+              sceneId: z.string().max(64),
+              at: z.number(),
+              eventId: z.string().max(64),
+            }),
+          )
+          .max(40),
+      }),
+    )
+    .max(40),
+  rules: z
+    .array(
+      z.object({
+        ruleId: z.string().max(64),
+        events: z
+          .array(
+            z.object({
+              kind: z.enum(['enacted', 'revised', 'applied', 'exception']),
+              criterionId: z.string().max(64).optional(),
+              personId: z.string().max(64).optional(),
+              outcome: z.string().max(120).optional(),
+              sceneId: z.string().max(64),
+              at: z.number(),
+              eventId: z.string().max(64),
+            }),
+          )
+          .max(80),
+      }),
+    )
+    .max(20),
+  certainty: z
+    .record(z.string().max(64), z.number().min(0).max(100))
+    .refine((value) => Object.keys(value).length <= 40),
+  contradictions: z
+    .array(
+      z.object({
+        lawNumber: z.number().nullable(),
+        principleId: z.string(),
+        sceneId: z.string().max(64),
+        raised: z.boolean(),
+        answer: z.enum(['maintain', 'nuance', 'abandon', 'silence']).optional(),
+      }),
+    )
+    .max(40),
 });
 export const eventSchema = z.discriminatedUnion('type', [
   z.object({

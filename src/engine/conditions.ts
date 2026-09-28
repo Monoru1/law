@@ -46,6 +46,13 @@ export function evaluate(condition: Condition, state: GameState): boolean {
     return condition.contradiction === 'pending'
       ? state.pendingConfrontations.length > 0
       : state.pendingConfrontations.length === 0;
+  if ('rule' in condition) {
+    const record = state.rules.find((r) => r.ruleId === condition.rule.ruleId);
+    const current = record?.events.findLast(
+      (event) => event.kind === 'enacted' || event.kind === 'revised',
+    );
+    return current?.criterionId === condition.rule.criterionId;
+  }
   const law = state.laws.find(
     (l) => l.principleId === condition.law.principleId,
   );

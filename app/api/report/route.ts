@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { content } from '../../../src/content';
 import { contentT2 } from '../../../src/content/t2';
+import { contentT3 } from '../../../src/content/t3';
 import type { Content } from '../../../src/engine';
 import { migrateSave } from '../../../src/persistence/migrations';
 import { buildReport } from '../../../src/reporting/builder';
@@ -35,7 +36,11 @@ function err(status: number, message: string): NextResponse {
   );
 }
 
-const timelines: Record<string, Content> = { t1: content, t2: contentT2 };
+const timelines: Record<string, Content> = {
+  t1: content,
+  t2: contentT2,
+  t3: contentT3,
+};
 const limiter = createSendLimiter();
 
 function validatePayload(

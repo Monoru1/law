@@ -24,6 +24,8 @@ export const initialState = (): GameState => ({
   evidence: {},
   support: {},
   relations: [],
+  rules: [],
+  inheritedContradictions: [],
   completed: false,
   currentSceneId: null,
   decisions: 0,
@@ -66,6 +68,38 @@ export function reduce(
           inheritedFrom: event.fromTimelineId,
           origin: law.origin ? { ...law.origin, eventId: event.id } : undefined,
         });
+      Object.assign(next.certainty, memory.certainty);
+      for (const record of memory.relations) {
+        let existing = next.relations.find(
+          (r) => r.characterId === record.characterId,
+        );
+        if (!existing) {
+          existing = { characterId: record.characterId, events: [] };
+          next.relations.push(existing);
+        }
+        for (const item of record.events)
+          if (!existing.events.some((e) => e.eventId === item.eventId))
+            existing.events.push({ ...item });
+      }
+      for (const record of memory.rules) {
+        let existing = next.rules.find((r) => r.ruleId === record.ruleId);
+        if (!existing) {
+          existing = { ruleId: record.ruleId, events: [] };
+          next.rules.push(existing);
+        }
+        for (const item of record.events)
+          if (!existing.events.some((e) => e.eventId === item.eventId))
+            existing.events.push({ ...item });
+      }
+      for (const summary of memory.contradictions)
+        if (
+          !next.inheritedContradictions.some(
+            (c) =>
+              c.lawNumber === summary.lawNumber &&
+              c.sceneId === summary.sceneId,
+          )
+        )
+          next.inheritedContradictions.push({ ...summary });
       break;
     }
     case 'scene_entered':

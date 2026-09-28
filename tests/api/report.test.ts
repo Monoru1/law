@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { GET, POST } from '../../app/api/report/route';
 import { content } from '../../src/content';
 import { contentT2 } from '../../src/content/t2';
+import { contentT3 } from '../../src/content/t3';
 
 const ENV_KEYS = [
   'BREVO_API_KEY',
@@ -297,6 +298,10 @@ describe('POST /api/report — frontière de confiance', () => {
             evidence: {},
             laws: [],
             declinedLaws: [],
+            relations: [],
+            rules: [],
+            certainty: {},
+            contradictions: [],
           },
         }),
         ev({
@@ -339,6 +344,83 @@ describe('POST /api/report — frontière de confiance', () => {
     expect(sent.textContent).toContain('Lui prêter l’argent');
     expect(sent.textContent).toContain('Sem');
     expect(sent.textContent).toContain('Suite de : room-run');
+  });
+
+  it('construit un rapport de La Ville, avec la règle enregistrée comme une décision', async () => {
+    stubValidEnv();
+    const fetchMock = okFetch();
+    const scene = (id: string) =>
+      contentT3.scenes.find((s) => s.id === id)!.version;
+    const payload = {
+      ...validSavePayload(),
+      timelineId: 't3',
+      contentVersion: contentT3.version,
+      events: [
+        ev({ type: 'run_started', contentVersion: contentT3.version }),
+        ev({
+          type: 'memory_inherited',
+          fromTimelineId: 't2',
+          fromRunId: 'house-run',
+          memory: {
+            completedAt: 1,
+            decisions: 1,
+            choices: {},
+            justifications: {},
+            flags: [],
+            vars: {},
+            evidence: {},
+            laws: [],
+            declinedLaws: [],
+            relations: [],
+            rules: [],
+            certainty: {},
+            contradictions: [],
+          },
+        }),
+        ev({
+          type: 'scene_entered',
+          sceneId: 't3.premier-jour',
+          sceneVersion: scene('t3.premier-jour'),
+        }),
+        ev({
+          type: 'scene_entered',
+          sceneId: 't3.la-regle',
+          sceneVersion: scene('t3.la-regle'),
+        }),
+        ev({
+          type: 'choice_locked',
+          sceneId: 't3.la-regle',
+          sceneVersion: scene('t3.la-regle'),
+          input: 'choice',
+          value: 'urgence',
+          hesitationMs: 800,
+          selectionChanges: 0,
+        }),
+        ev({
+          type: 'scene_entered',
+          sceneId: 't3.la-fenetre',
+          sceneVersion: scene('t3.la-fenetre'),
+        }),
+        ev({
+          type: 'choice_locked',
+          sceneId: 't3.la-fenetre',
+          sceneVersion: scene('t3.la-fenetre'),
+          input: 'choice',
+          value: 'sortir',
+          hesitationMs: 800,
+          selectionChanges: 0,
+        }),
+        ev({ type: 'run_completed', timelineId: 't3' }),
+      ],
+    };
+    const res = await POST(postRequest(payload));
+    expect(res.status).toBe(200);
+    const [, init] = fetchMock.mock.calls[0]!;
+    const sent = JSON.parse((init as RequestInit).body as string) as {
+      textContent: string;
+    };
+    expect(sent.textContent).toContain('Par degré d’urgence');
+    expect(sent.textContent).toContain('Suite de : house-run');
   });
 
   it('n’envoie pas deux fois le même rapport livré, et retire les caractères de contrôle du sujet', async () => {

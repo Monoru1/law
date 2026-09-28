@@ -22,7 +22,10 @@ export type Condition =
     }
   | { contradiction: 'pending' | 'none' }
   | { visited: string }
-  | { relation: { characterId: string; kind: RelationEventKind } };
+  | { relation: { characterId: string; kind: RelationEventKind } }
+  // True when the given criterion is the one currently in force for that
+  // rule — its latest enactment or revision, never an earlier one.
+  | { rule: { ruleId: string; criterionId: string } };
 export type Effect =
   | { setFlag: string }
   | { setVar: string; value: Scalar }
@@ -30,6 +33,14 @@ export type Effect =
   | { schedule: { sceneId: string; when?: Condition } }
   | { proposeLaw: { principleId: string; statementId: string } }
   | { relationEvent: { characterId: string; kind: RelationEventKind } }
+  // A collective rule: enacted once, revised by a new entry that never
+  // overwrites the former one, applied to a named person, or excepted for
+  // one. All four are recorded the way a relation is — stamped with the
+  // choice that produced them, never rewritten afterward.
+  | { ruleEnacted: { ruleId: string; criterionId: string } }
+  | { ruleRevised: { ruleId: string; criterionId: string } }
+  | { ruleApplied: { ruleId: string; personId: string; outcome: string } }
+  | { exceptionGranted: { ruleId: string; personId: string } }
   // Conditional effects are evaluated against the state that already holds
   // the choice being applied; they never read a clock or the browser.
   | { if: Condition; then: Effect[] };
@@ -110,6 +121,30 @@ export type RelationRecord = {
     eventId: string;
   }[];
 };
+export type RuleEventKind = 'enacted' | 'revised' | 'applied' | 'exception';
+// A collective rule's whole history: which criterion was in force when, who
+// it was applied to, and every exception — never pruned, never rewritten.
+export type RuleRecord = {
+  ruleId: string;
+  events: {
+    kind: RuleEventKind;
+    criterionId?: string;
+    personId?: string;
+    outcome?: string;
+    sceneId: string;
+    at: number;
+    eventId: string;
+  }[];
+};
+// A closed, factual line for a resolved contradiction: what was signed, what
+// contradicted it, and how the player answered — no interpretation.
+export type ContradictionSummary = {
+  lawNumber: number | null;
+  principleId: string;
+  sceneId: string;
+  raised: boolean;
+  answer?: 'maintain' | 'nuance' | 'abandon' | 'silence';
+};
 export type Scene = {
   id: string;
   version: number;
@@ -149,7 +184,10 @@ export type InheritedLaw = {
   origin?: { sceneId: string; text: string };
 };
 // A frozen summary of a completed timeline, copied into the next journal at
-// its start. The next timeline never reads the earlier save again.
+// its start. The next timeline never reads the earlier save again. It carries
+// facts only — no score, no interpretation — so a future Tribunal can quote
+// them exactly, and each later timeline composes transitively: a memory built
+// after inheriting one already contains what it inherited.
 export type Memory = {
   completedAt: number;
   decisions: number;
@@ -160,6 +198,10 @@ export type Memory = {
   evidence: Record<string, number>;
   laws: InheritedLaw[];
   declinedLaws: string[];
+  relations: RelationRecord[];
+  rules: RuleRecord[];
+  certainty: Record<string, number>;
+  contradictions: ContradictionSummary[];
 };
 export type GameEvent =
   | { type: 'run_started'; id: string; at: number; contentVersion: string }
@@ -294,6 +336,11 @@ export type GameState = {
   // Last choice that gave positive evidence to each principle.
   support: Record<string, { sceneId: string; eventId: string }>;
   relations: RelationRecord[];
+  rules: RuleRecord[];
+  // Contradictions inherited from an earlier, already-closed timeline: kept
+  // apart from `contradictions` (this run's own, still-open bookkeeping) so
+  // this run's memory can carry both forward without re-raising the old ones.
+  inheritedContradictions: ContradictionSummary[];
   completed: boolean;
   currentSceneId: string | null;
   decisions: number;

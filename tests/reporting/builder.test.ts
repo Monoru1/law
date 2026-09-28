@@ -472,6 +472,10 @@ describe('buildReport — La Maison', () => {
               },
             ],
             declinedLaws: [],
+            relations: [],
+            rules: [],
+            certainty: {},
+            contradictions: [],
           },
         }),
         event({

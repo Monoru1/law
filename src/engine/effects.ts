@@ -61,6 +61,37 @@ export function applyEffects(
         at: origin.at,
         eventId: origin.eventId,
       });
+    } else if (
+      'ruleEnacted' in effect ||
+      'ruleRevised' in effect ||
+      'ruleApplied' in effect ||
+      'exceptionGranted' in effect
+    ) {
+      // A collective rule's whole history, appended fact by fact and never
+      // rewritten — the same pattern as a relation, one choice at a time.
+      if (!origin) continue;
+      const [kind, detail] =
+        'ruleEnacted' in effect
+          ? (['enacted', effect.ruleEnacted] as const)
+          : 'ruleRevised' in effect
+            ? (['revised', effect.ruleRevised] as const)
+            : 'ruleApplied' in effect
+              ? (['applied', effect.ruleApplied] as const)
+              : (['exception', effect.exceptionGranted] as const);
+      let record = state.rules.find((r) => r.ruleId === detail.ruleId);
+      if (!record) {
+        record = { ruleId: detail.ruleId, events: [] };
+        state.rules.push(record);
+      }
+      record.events.push({
+        kind,
+        ...('criterionId' in detail ? { criterionId: detail.criterionId } : {}),
+        ...('personId' in detail ? { personId: detail.personId } : {}),
+        ...('outcome' in detail ? { outcome: detail.outcome } : {}),
+        sceneId: origin.sceneId,
+        at: origin.at,
+        eventId: origin.eventId,
+      });
     }
   }
 }

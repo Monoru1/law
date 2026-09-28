@@ -1,5 +1,6 @@
 import { content } from '../../src/content';
 import { contentT2 } from '../../src/content/t2';
+import { contentT3 } from '../../src/content/t3';
 import {
   buildMemory,
   replay,
@@ -127,4 +128,41 @@ export function houseEvents(history: GameEvent[] = []): GameEvent[] {
   ];
 }
 
-export { content, contentT2 };
+/** A finished house: no side branch (retour-mila/camille-sait/sem) taken. */
+export function fullHouseEvents(): GameEvent[] {
+  return [
+    ...houseEvents([
+      ...decide('t2.les-nouvelles', 'camille', contentT2),
+      ...decide('t2.la-promesse', 'refuser', contentT2),
+      // t1's roomEvents() takes the money, so la-faveur's active variant
+      // asks for a loan (preter/refuser), not a name (nom/pas-de-nom).
+      ...decide('t2.la-faveur', 'refuser', contentT2),
+      ...decide('t2.mila-confie', 'prevenir', contentT2),
+      ...decide('t2.omar-histoire', 'se-taire', contentT2),
+      ...decide('t2.ce-qu-on-protege', 'mila', contentT2),
+      ...decide('t2.le-mensonge', 'refuser', contentT2),
+      ...decide('t2.la-maison', 'sortir', contentT2),
+    ]),
+    at({ type: 'run_completed', timelineId: 't2' }),
+  ];
+}
+
+export function cityEvents(history: GameEvent[] = []): GameEvent[] {
+  const house = fullHouseEvents();
+  return [
+    at({ type: 'run_started', contentVersion: contentT3.version }),
+    at({
+      type: 'memory_inherited',
+      fromTimelineId: 't2',
+      fromRunId: 'e2e-t2',
+      memory: buildMemory(
+        replay(house, contentT2),
+        contentT2,
+        'Dans la maison',
+      ),
+    }),
+    ...history,
+  ];
+}
+
+export { content, contentT2, contentT3 };

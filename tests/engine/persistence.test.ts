@@ -256,6 +256,10 @@ describe('Timeline II persistence', () => {
     evidence: {},
     laws: [],
     declinedLaws: [],
+    relations: [],
+    rules: [],
+    certainty: {},
+    contradictions: [],
   };
   const houseSave = () =>
     saveFixture(

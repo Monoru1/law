@@ -263,3 +263,27 @@ export function simulateJourney(
   });
   return { room, house, memory };
 }
+
+// The same chain, one timeline further: T3 reads only T2's memory, which
+// already carries T1's — simulateRun never needs to know that.
+export function simulateJourney3(
+  t1: Content,
+  t2: Content,
+  t3: Content,
+  rand: Rand,
+  clock: { at: number },
+  skipRate?: number,
+) {
+  const {
+    room,
+    house,
+    memory: roomMemory,
+  } = simulateJourney(t1, t2, rand, clock, skipRate);
+  const houseMemory = buildMemory(house.state, t2, t3.inherits!.place);
+  const city = simulateRun(t3, rand, {
+    clock,
+    skipRate,
+    memory: { fromRunId: `run-${clock.at}`, memory: houseMemory },
+  });
+  return { room, house, city, roomMemory, houseMemory };
+}

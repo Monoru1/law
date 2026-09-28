@@ -1,6 +1,10 @@
 import { lawOriginFact, lawStatement } from './laws';
 import { renderText } from './text';
-import type { Content, GameState, Memory } from './types';
+import type { Content, GameEvent, GameState, Memory } from './types';
+type ConfrontationAnswered = Extract<
+  GameEvent,
+  { type: 'confrontation_answered' }
+>;
 
 const lowerFirst = (text: string) =>
   text.charAt(0).toLocaleLowerCase('fr-FR') + text.slice(1);
@@ -55,5 +59,35 @@ export function buildMemory(
           : {}),
       };
     }),
+    relations: state.relations.map((record) => ({
+      characterId: record.characterId,
+      events: record.events.map((event) => ({ ...event })),
+    })),
+    rules: state.rules.map((record) => ({
+      ruleId: record.ruleId,
+      events: record.events.map((event) => ({ ...event })),
+    })),
+    certainty: { ...state.certainty },
+    // Every contradiction this run closed, plus whatever it had already
+    // inherited: the chain composes without this timeline knowing where an
+    // earlier one came from.
+    contradictions: [
+      ...state.inheritedContradictions,
+      ...state.contradictions.map((c) => {
+        const answered = c.answerEventId
+          ? state.events.find(
+              (e): e is ConfrontationAnswered =>
+                e.id === c.answerEventId && e.type === 'confrontation_answered',
+            )
+          : undefined;
+        return {
+          lawNumber: c.lawNumber,
+          principleId: c.principleId,
+          sceneId: c.sceneId,
+          raised: c.raised,
+          ...(answered ? { answer: answered.answer } : {}),
+        };
+      }),
+    ],
   };
 }

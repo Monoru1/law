@@ -89,6 +89,15 @@ export const copy = {
     { text: '—' },
     { text: 'Eux aussi s’en souviennent.' },
   ],
+  // A milestone close, not the end of La Ville: Actes I-II only. No count of
+  // decisions here — the point is precisely that most of them were not yours
+  // alone to see through.
+  endT3: [
+    { text: 'LA VILLE' },
+    { text: 'Un critère est écrit.' },
+    { text: '—' },
+    { text: 'Il continuera de s’appliquer que tu sois là ou non.' },
+  ],
   certainty: 'Quelle est ta certitude ?',
   certaintyLow: 'Aucune',
   certaintyHigh: 'Absolue',
@@ -104,6 +113,7 @@ export const copy = {
   ],
   return: 'Lire ma loi',
   toHouse: 'Entrer dans la maison',
+  toCity: 'Entrer dans la ville',
   confirm: 'Confirmer',
   // The way on from a consequence that rests; never a decision.
   next: 'Suivant',
@@ -172,5 +182,15 @@ export const copy = {
       'Comme pour La Pièce, un rapport factuel sera transmis à la fin de La Maison.',
     unreadable:
       'La pièce n’a pas pu être relue. La maison attend qu’elle le soit.',
+  },
+  threshold3: {
+    locked: 'La ville s’ouvre après la maison.',
+    toRoom: 'Aller à la maison',
+    enter: 'Entrer dans la ville',
+    enterWithoutReport: 'Entrer sans rapport',
+    reportNote:
+      'Comme pour La Maison, un rapport factuel sera transmis à la fin de La Ville.',
+    unreadable:
+      'La maison n’a pas pu être relue. La ville attend qu’elle le soit.',
   },
 } as const;

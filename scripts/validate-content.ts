@@ -1,5 +1,6 @@
 import { content, copy } from '../src/content';
 import { contentT2 } from '../src/content/t2';
+import { contentT3 } from '../src/content/t3';
 import registry from '../src/content/contracts.json';
 import {
   sceneSchema,
@@ -21,14 +22,17 @@ import {
 } from '../src/engine';
 import { migrateSave } from '../src/persistence/migrations';
 import { defaultSettings } from '../src/persistence/SaveAdapter';
-import { seeded, simulateJourney } from './simulation';
+import { seeded, simulateJourney3 } from './simulation';
 
 const fail = (message: string): never => {
   throw new Error(message);
 };
 const RUNS = Number(process.env.LAW_RUNS ?? 2000);
 const allScenes = new Map<string, Scene>(
-  [...content.scenes, ...contentT2.scenes].map((scene) => [scene.id, scene]),
+  [...content.scenes, ...contentT2.scenes, ...contentT3.scenes].map((scene) => [
+    scene.id,
+    scene,
+  ]),
 );
 const characters = new Set(Object.keys(copy.people));
 
@@ -166,12 +170,13 @@ function validateTimeline(timeline: Content) {
 
 validateTimeline(content);
 validateTimeline(contentT2);
+validateTimeline(contentT3);
 copy.onboarding.forEach((b) => {
   if (/"/.test(b.text)) fail(`Straight quote: ${b.text}`);
 });
 
 // Append-only scene contracts: rules never change under a recorded version.
-const drift = registryDrift(registry, [content, contentT2]);
+const drift = registryDrift(registry, [content, contentT2, contentT3]);
 if (drift.changed.length)
   fail(`Scene contracts changed without a version bump: ${drift.changed}`);
 if (drift.missing.length)
@@ -188,26 +193,33 @@ let confrontationsT2 = 0;
 let inheritedConfrontations = 0;
 const rand = seeded(571);
 const clock = { at: 0 };
-const save = (timelineId: 't1' | 't2', events: GameEvent[]) => ({
+const save = (timelineId: 't1' | 't2' | 't3', events: GameEvent[]) => ({
   schemaVersion: 4,
   timelineId,
-  contentVersion: timelineId === 't1' ? content.version : contentT2.version,
+  contentVersion:
+    timelineId === 't1'
+      ? content.version
+      : timelineId === 't2'
+        ? contentT2.version
+        : contentT3.version,
   runId: `run-${clock.at}`,
   createdAt: 1,
   updatedAt: 1,
   events,
   settings: defaultSettings,
 });
+let rulesEnacted = 0;
 for (let run = 0; run < RUNS; run++) {
   const skipRate = run % 10 === 0 ? 0.35 : 0.04;
-  const { room, house } = simulateJourney(
+  const { room, house, city } = simulateJourney3(
     content,
     contentT2,
+    contentT3,
     rand,
     clock,
     skipRate,
   );
-  for (const result of [room, house]) {
+  for (const result of [room, house, city]) {
     for (const id of result.visited) hits[id] = (hits[id] ?? 0) + 1;
     for (const id of result.variants)
       variantHits[id] = (variantHits[id] ?? 0) + 1;
@@ -226,6 +238,8 @@ for (let run = 0; run < RUNS; run++) {
   if (room.state.visited.at(-1) !== 't1.coda') fail(`T1 coda not final ${run}`);
   if (house.state.visited.at(-1) !== 't2.la-maison')
     fail(`T2 ending not final ${run}`);
+  if (city.state.visited.at(-1) !== 't3.la-fenetre')
+    fail(`T3 ending not final ${run}`);
   confrontationsT2 += house.state.contradictions.length;
   inheritedConfrontations += house.state.contradictions.filter((c) =>
     house.state.laws.some((l) => l.number === c.lawNumber && l.inheritedFrom),
@@ -233,13 +247,29 @@ for (let run = 0; run < RUNS; run++) {
   // A seat always decides who walks the player out, or that nobody does.
   const seat = house.state.choices['t2.les-nouvelles'];
   if (seat) endings.add(String(seat));
-  // Persistence accepts exactly what the player flow produces, both journals.
+  // A rule, once enacted, is never overwritten — only ever added beside.
+  const rule = city.state.rules.find((r) => r.ruleId === 'attribution');
+  if (rule) {
+    if (rule.events[0]?.kind !== 'enacted')
+      fail(`Rule attribution did not start with enactment in run ${run}`);
+    rulesEnacted++;
+  }
+  // Persistence accepts exactly what the player flow produces, all three journals.
   migrateSave(save('t1', room.events), content);
   migrateSave(save('t2', house.events), contentT2);
+  migrateSave(save('t3', city.events), contentT3);
 }
-for (const scene of [...content.scenes, ...contentT2.scenes])
+for (const scene of [
+  ...content.scenes,
+  ...contentT2.scenes,
+  ...contentT3.scenes,
+])
   if (!hits[scene.id]) fail(`Unreachable scene ${scene.id}`);
-for (const scene of [...content.scenes, ...contentT2.scenes])
+for (const scene of [
+  ...content.scenes,
+  ...contentT2.scenes,
+  ...contentT3.scenes,
+])
   for (const variant of scene.variants ?? [])
     if (!variantHits[`${scene.id}:${variant.id}`])
       fail(`Unreachable variant ${scene.id}:${variant.id}`);
@@ -247,9 +277,10 @@ for (const [timeline, set] of Object.entries(answers))
   if (set.size !== 4) fail(`${timeline}: some confrontation answers never ran`);
 if (!inheritedConfrontations)
   fail('No law signed in the room was ever confronted in the house');
+if (!rulesEnacted) fail('The attribution rule was never enacted in the city');
 
 // Totality of transitions: leaving every scene must still reach a final gesture.
-for (const timeline of [content, contentT2]) {
+for (const timeline of [content, contentT2, contentT3]) {
   let serial = 0;
   let skipped = initialState();
   const push = (draft: Record<string, unknown>) => {
@@ -273,6 +304,10 @@ for (const timeline of [content, contentT2]) {
         evidence: {},
         laws: [],
         declinedLaws: [],
+        relations: [],
+        rules: [],
+        certainty: {},
+        contradictions: [],
       },
     });
   for (let step = 0; step < 40; step++) {
@@ -294,7 +329,7 @@ for (const timeline of [content, contentT2]) {
 }
 
 console.log(
-  `Validated ${content.scenes.length + contentT2.scenes.length} scenes, ${Object.keys(registry).length} registered contracts, ${RUNS} seeded T1→T2 journeys (${rendered} rendered texts, ${confrontationsT2} confrontations in the house, ${inheritedConfrontations} of laws signed in the room).`,
+  `Validated ${content.scenes.length + contentT2.scenes.length + contentT3.scenes.length} scenes, ${Object.keys(registry).length} registered contracts, ${RUNS} seeded T1→T2→T3 journeys (${rendered} rendered texts, ${confrontationsT2} confrontations in the house, ${inheritedConfrontations} of laws signed in the room, ${rulesEnacted} rules enacted in the city).`,
 );
 console.log('Scene coverage:', hits);
 console.log('Variant coverage:', variantHits);

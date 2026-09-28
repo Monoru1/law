@@ -6,6 +6,7 @@ export default defineConfig({
       'tests/content/**/*.test.ts',
       'tests/reporting/**/*.test.ts',
       'tests/api/**/*.test.ts',
+      'tests/audio/**/*.test.ts',
     ],
   },
 });

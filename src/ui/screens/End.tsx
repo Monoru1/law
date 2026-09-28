@@ -17,7 +17,12 @@ export function End({
   content: Content;
   reporting?: ReactNode;
 }) {
-  const ending = content.timelineId === 't2' ? copy.endT2 : copy.end;
+  const ending =
+    content.timelineId === 't2'
+      ? copy.endT2
+      : content.timelineId === 't3'
+        ? copy.endT3
+        : copy.end;
   return (
     <main className="end-screen">
       <div className="end-inner">
@@ -44,6 +49,11 @@ export function End({
           {content.timelineId === 't1' && (
             <Link className="law-button ghost" href="/jouer/t2">
               {copy.toHouse}
+            </Link>
+          )}
+          {content.timelineId === 't2' && (
+            <Link className="law-button ghost" href="/jouer/t3">
+              {copy.toCity}
             </Link>
           )}
           {reporting}
