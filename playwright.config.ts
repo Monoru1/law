@@ -1,9 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+
+const localPort = process.env.LAW_E2E_PORT ?? '3000';
+const localBaseUrl = `http://127.0.0.1:${localPort}`;
+
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 60000,
   use: {
-    baseURL: process.env.LAW_BASE_URL ?? 'http://127.0.0.1:3000',
+    baseURL: process.env.LAW_BASE_URL ?? localBaseUrl,
     ...devices['Desktop Chrome'],
     launchOptions: process.env.LAW_CHROME_PATH
       ? {
@@ -15,8 +19,10 @@ export default defineConfig({
   webServer: process.env.LAW_BASE_URL
     ? undefined
     : {
-        command: 'pnpm dev --hostname 127.0.0.1',
-        url: 'http://127.0.0.1:3000',
+        command: process.env.CI
+          ? `pnpm start --hostname 127.0.0.1 --port ${localPort}`
+          : `pnpm dev --hostname 127.0.0.1 --port ${localPort}`,
+        url: localBaseUrl,
         reuseExistingServer: !process.env.CI,
         timeout: 120000,
       },

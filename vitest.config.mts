@@ -7,6 +7,7 @@ export default defineConfig({
       'tests/reporting/**/*.test.ts',
       'tests/api/**/*.test.ts',
       'tests/audio/**/*.test.ts',
+      'tests/qa/**/*.test.ts',
     ],
   },
 });

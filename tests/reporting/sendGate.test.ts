@@ -52,13 +52,17 @@ describe('submitReport', () => {
   const save = { runId: 'run-1' } as unknown as SaveGame;
 
   it('passe par sending puis sent sur une réponse 2xx (Brevo simulé succès)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true } as Response));
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true } as Response);
+    vi.stubGlobal('fetch', fetchMock);
     const statuses: string[] = [];
     const result = await submitReport(save, async (s) => {
       statuses.push(s);
     });
     expect(statuses).toEqual(['sending', 'sent']);
     expect(result).toBe('sent');
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).signal).toBeInstanceOf(
+      AbortSignal,
+    );
   });
 
   it('passe par sending puis failed sur une réponse non-2xx (Brevo simulé échec)', async () => {

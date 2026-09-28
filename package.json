@@ -12,6 +12,7 @@
     "test": "vitest run",
     "validate:content": "node --import tsx scripts/validate-content.ts",
     "test:e2e": "playwright test",
+    "release:check": "node scripts/release-check.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "contracts": "node --import tsx scripts/contracts.ts"

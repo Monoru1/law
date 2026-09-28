@@ -43,6 +43,13 @@ const timelines: Record<string, Content> = {
 };
 const limiter = createSendLimiter();
 
+class ProviderResponseError extends Error {
+  constructor(readonly status: number) {
+    super('Email provider rejected the request.');
+    this.name = 'ProviderResponseError';
+  }
+}
+
 function validatePayload(
   body: unknown,
 ): { save: SaveGame; content: Content } | null {
@@ -98,15 +105,19 @@ async function sendViaBrevo(
   });
 
   if (!response.ok) {
-    let brevoMsg = 'Erreur Brevo non spécifiée.';
-    try {
-      const json = (await response.json()) as { message?: string };
-      if (typeof json.message === 'string') brevoMsg = json.message;
-    } catch {
-      // ignore JSON parse failure
-    }
-    throw new Error(`Brevo ${response.status}: ${brevoMsg}`);
+    throw new ProviderResponseError(response.status);
   }
+}
+
+function deliveryFailureCode(error: unknown): string {
+  if (error instanceof ProviderResponseError)
+    return `provider_http_${error.status}`;
+  if (
+    error instanceof Error &&
+    (error.name === 'TimeoutError' || error.name === 'AbortError')
+  )
+    return 'provider_timeout';
+  return 'provider_network_error';
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -179,11 +190,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       textContent,
     );
   } catch (error) {
-    // Log server-side only — the thrown message never contains the API key.
-    console.error(
-      '[api/report] Brevo send failed:',
-      error instanceof Error ? error.message : 'erreur inconnue',
-    );
+    // Stable category only: never log the report, provider body, addresses or key.
+    console.error('[api/report] delivery failed', {
+      code: deliveryFailureCode(error),
+    });
     return err(502, 'Échec de l\u2019envoi du rapport.');
   }
 

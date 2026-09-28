@@ -36,6 +36,7 @@ export async function submitReport(
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(save),
+      signal: AbortSignal.timeout(15_000),
     });
     const status: ReportingStatus = res.ok ? 'sent' : 'failed';
     await setStatus(status);

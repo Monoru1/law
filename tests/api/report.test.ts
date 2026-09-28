@@ -101,6 +101,7 @@ function postWithContentType(body: unknown, contentType: string): NextRequest {
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('GET /api/report', () => {
@@ -210,6 +211,9 @@ describe('POST /api/report — intégration Brevo (toujours simulée)', () => {
 
   it('502 quand Brevo répond en échec (mock), sans fuite de secret dans la réponse', async () => {
     stubValidEnv();
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -222,10 +226,17 @@ describe('POST /api/report — intégration Brevo (toujours simulée)', () => {
     expect(res.status).toBe(502);
     const json = await res.json();
     expect(JSON.stringify(json)).not.toMatch(/test-not-a-real-key/);
+    expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
+      /Key not found|test-not-a-real-key|creator@example\.test/,
+    );
+    expect(consoleError).toHaveBeenCalledWith('[api/report] delivery failed', {
+      code: 'provider_http_401',
+    });
   });
 
   it('502 quand le fetch vers Brevo rejette (offline/timeout simulé)', async () => {
     stubValidEnv();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('timeout')));
     const res = await POST(postRequest(validSavePayload()));
     expect(res.status).toBe(502);
