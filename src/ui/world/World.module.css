@@ -1,0 +1,740 @@
+.world {
+  --wall: #151619;
+  --wall-lit: #202125;
+  --edge: rgba(239, 236, 228, 0.13);
+  --edge-faint: rgba(239, 236, 228, 0.065);
+  --light: rgba(224, 226, 220, 0.16);
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #09090b;
+  perspective: 1100px;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 6vh clamp(14px, 4vw, 68px) 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.5),
+      transparent 18% 82%,
+      rgba(0, 0, 0, 0.5)
+    ),
+    radial-gradient(
+      ellipse at calc(50% + var(--world-bias)) 4%,
+      var(--light),
+      transparent 48%
+    ),
+    linear-gradient(180deg, var(--wall-lit), var(--wall) 55%, #0c0d0f);
+  border-inline: 1px solid var(--edge-faint);
+  box-shadow: inset 0 30px 80px rgba(0, 0, 0, 0.48);
+  transition:
+    filter 1.2s ease,
+    transform 1.2s ease;
+}
+
+.backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(
+      91deg,
+      transparent 49.7%,
+      rgba(255, 255, 255, 0.025) 50%,
+      transparent 50.3%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 7px,
+      rgba(255, 255, 255, 0.012) 8px
+    );
+}
+
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 31%;
+  border-top: 1px solid var(--edge);
+  background:
+    linear-gradient(
+      90deg,
+      transparent 49.8%,
+      var(--edge-faint) 50%,
+      transparent 50.2%
+    ),
+    repeating-linear-gradient(0deg, transparent 0 54px, var(--edge-faint) 55px),
+    linear-gradient(180deg, #111216, #09090b);
+  transform: perspective(430px) rotateX(35deg) scaleX(0.94);
+  transform-origin: bottom;
+}
+
+.corridor {
+  position: absolute;
+  inset: 8vh 8vw 0;
+  opacity: 0.76;
+  transform: translateX(var(--world-bias));
+  transition:
+    transform 1.3s ease,
+    opacity 1s ease;
+}
+
+.corridor span {
+  position: absolute;
+  display: block;
+}
+
+.corridorCeiling {
+  inset: 0 15% auto;
+  height: 14%;
+  border-bottom: 1px solid var(--edge-faint);
+  clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
+  background: linear-gradient(180deg, #08090a, #121317);
+}
+
+.corridorLeft,
+.corridorRight {
+  top: 0;
+  bottom: 0;
+  width: 34%;
+  background: linear-gradient(90deg, #0c0d0f, rgba(28, 29, 33, 0.75));
+}
+
+.corridorLeft {
+  left: 0;
+  clip-path: polygon(0 0, 100% 14%, 100% 72%, 0 100%);
+  border-right: 1px solid var(--edge-faint);
+}
+
+.corridorRight {
+  right: 0;
+  clip-path: polygon(0 14%, 100% 0, 100% 100%, 0 72%);
+  border-left: 1px solid var(--edge-faint);
+  transform: scaleX(-1);
+}
+
+.corridorFloor {
+  inset: 72% 0 0;
+  clip-path: polygon(34% 0, 66% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, #121317, #08090a);
+  border-top: 1px solid var(--edge-faint);
+}
+
+.officeLight {
+  position: absolute;
+  top: 8.4vh;
+  left: calc(50% + var(--world-bias));
+  width: clamp(130px, 18vw, 280px);
+  height: 2px;
+  transform: translateX(-50%);
+  background: rgba(234, 235, 226, 0.54);
+  box-shadow:
+    0 12px 34px rgba(222, 224, 216, 0.2),
+    0 70px 120px rgba(222, 224, 216, 0.07);
+  animation: fluorescent-breathe 9s ease-in-out infinite;
+}
+
+.officeLight span {
+  position: absolute;
+  inset: -5px -18px;
+  border: 1px solid var(--edge-faint);
+}
+
+.door {
+  position: absolute;
+  left: calc(50% + var(--world-bias));
+  bottom: 26%;
+  width: clamp(145px, 17vw, 250px);
+  height: clamp(255px, 47vh, 460px);
+  transform: translateX(-50%);
+  perspective: 900px;
+  transition:
+    left 1.2s ease,
+    opacity 1s ease;
+}
+
+.doorFrame {
+  position: absolute;
+  inset: 0;
+  padding: clamp(7px, 0.8vw, 13px);
+  border: 1px solid rgba(239, 236, 228, 0.24);
+  border-bottom-width: 3px;
+  background: #0c0d0f;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 4px rgba(239, 236, 228, 0.025);
+}
+
+.doorSlab {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(239, 236, 228, 0.12);
+  background:
+    linear-gradient(93deg, transparent 74%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(180deg, #1b1c20, #111216 62%, #0d0e10);
+  box-shadow: inset -16px 0 22px rgba(0, 0, 0, 0.24);
+  transform-origin: left center;
+  transition:
+    transform 1.6s cubic-bezier(0.55, 0, 0.18, 1),
+    box-shadow 1.6s ease;
+}
+
+.doorInset {
+  position: absolute;
+  inset: 8% 9%;
+  border: 1px solid rgba(239, 236, 228, 0.045);
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.32);
+}
+
+.doorHandle {
+  position: absolute;
+  right: 10%;
+  top: 53%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #77756d;
+  box-shadow:
+    0 0 0 4px #1b1b1d,
+    -7px 1px 0 1px #5e5c56;
+}
+
+.doorSpill {
+  position: absolute;
+  inset: 4% -22% -2%;
+  opacity: 0.24;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(216, 218, 207, 0.22),
+    transparent
+  );
+  filter: blur(9px);
+  transition: opacity 1.3s ease;
+}
+
+.door[data-open='true'] .doorSlab {
+  transform: rotateY(-66deg);
+  box-shadow: 18px 0 30px rgba(0, 0, 0, 0.6);
+}
+
+.door[data-open='true'] .doorSpill {
+  opacity: 0.72;
+}
+
+.window {
+  position: absolute;
+  top: 13vh;
+  right: clamp(26px, 8vw, 150px);
+  width: clamp(175px, 25vw, 390px);
+  height: clamp(230px, 46vh, 430px);
+  overflow: hidden;
+  border: clamp(7px, 0.8vw, 12px) solid #151619;
+  box-shadow:
+    0 0 0 1px rgba(239, 236, 228, 0.14),
+    0 28px 70px rgba(0, 0, 0, 0.48),
+    -60px 25px 120px rgba(108, 117, 126, 0.08);
+  background: #090c11;
+}
+
+.windowOutside {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 18% 30%,
+      rgba(198, 174, 119, 0.4) 0 1px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 73% 62%,
+      rgba(198, 174, 119, 0.22) 0 1px,
+      transparent 2px
+    ),
+    linear-gradient(180deg, #0f141b, #090b0f 60%, #131316);
+}
+
+.neighbourOne,
+.neighbourTwo {
+  position: absolute;
+  bottom: 0;
+  background: #090a0d;
+  border-top: 1px solid rgba(176, 184, 190, 0.09);
+}
+
+.neighbourOne {
+  left: 5%;
+  width: 44%;
+  height: 54%;
+}
+
+.neighbourTwo {
+  right: -8%;
+  width: 50%;
+  height: 72%;
+}
+
+.rain {
+  position: absolute;
+  inset: -20%;
+  opacity: 0.28;
+  transform: rotate(8deg);
+}
+
+.rain span {
+  --rain-x: calc((var(--rain-line) * 9%) + 2%);
+  position: absolute;
+  left: var(--rain-x);
+  top: calc((var(--rain-line) % 4) * 21%);
+  width: 1px;
+  height: calc(18% + (var(--rain-line) % 3) * 6%);
+  background: linear-gradient(
+    transparent,
+    rgba(216, 224, 229, 0.7),
+    transparent
+  );
+  animation: rain-fall calc(5s + (var(--rain-line) % 4) * 0.8s) linear infinite;
+}
+
+.windowFrameV,
+.windowFrameH {
+  position: absolute;
+  background: #191a1d;
+  box-shadow: 0 0 0 1px rgba(239, 236, 228, 0.08);
+}
+
+.windowFrameV {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  transform: translateX(-50%);
+}
+
+.windowFrameH {
+  left: 0;
+  right: 0;
+  top: 54%;
+  height: 7px;
+}
+
+.windowSill {
+  position: absolute;
+  inset: auto -5% -9px;
+  height: 13px;
+  background: #222327;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.curtainLeft,
+.curtainRight {
+  position: absolute;
+  inset-block: -2%;
+  width: 22%;
+  opacity: 0.88;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.035) 0 7px,
+      transparent 8px 15px
+    ),
+    linear-gradient(90deg, #18191c, #0e0f11);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.52);
+}
+
+.curtainLeft {
+  left: -5%;
+  clip-path: polygon(0 0, 100% 2%, 82% 100%, 0 98%);
+}
+
+.curtainRight {
+  right: -5%;
+  transform: scaleX(-1);
+  clip-path: polygon(0 0, 100% 2%, 82% 100%, 0 98%);
+}
+
+.furniture {
+  position: absolute;
+  left: clamp(12px, 4vw, 70px);
+  bottom: 5%;
+  width: clamp(210px, 34vw, 520px);
+  height: 31%;
+  opacity: 0.68;
+  filter: drop-shadow(20px 20px 22px rgba(0, 0, 0, 0.7));
+}
+
+.furniture span {
+  position: absolute;
+  display: block;
+  background: #101113;
+  border: 1px solid rgba(239, 236, 228, 0.055);
+}
+
+.tableTop {
+  left: 0;
+  right: 0;
+  top: 23%;
+  height: 12%;
+  transform: skewX(-9deg);
+}
+
+.tableLegLeft,
+.tableLegRight {
+  top: 34%;
+  bottom: 0;
+  width: 4%;
+}
+
+.tableLegLeft {
+  left: 9%;
+}
+.tableLegRight {
+  right: 13%;
+}
+
+.chairBack {
+  left: 61%;
+  top: 0;
+  width: 21%;
+  height: 58%;
+  transform: skewX(-4deg);
+}
+
+.world[data-world='house'] {
+  --wall: #171616;
+  --wall-lit: #252321;
+  --light: rgba(183, 169, 141, 0.17);
+}
+
+.world[data-world='house'][data-light='night'] {
+  --wall: #101114;
+  --wall-lit: #191a1f;
+  --light: rgba(110, 124, 142, 0.15);
+}
+
+.world[data-world='house'][data-light='dawn'] {
+  --wall: #1b1b1d;
+  --wall-lit: #2d2b28;
+  --light: rgba(202, 193, 171, 0.24);
+}
+
+.world[data-world='house'] .door {
+  left: clamp(72px, 17vw, 260px);
+  bottom: 25%;
+  transform: none;
+  opacity: 0.56;
+}
+
+.city {
+  position: absolute;
+  inset: 12vh 4vw 0 43%;
+  opacity: 0.12;
+  transform: perspective(700px) rotateY(-4deg);
+  transform-origin: right center;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 18%,
+    #000 92%,
+    transparent
+  );
+  transition:
+    opacity 1.6s ease,
+    transform 1.6s ease;
+}
+
+.world[data-world='city'][data-act='2'] .city {
+  opacity: 0.34;
+}
+
+.world[data-world='city'][data-focus='windows'] .city {
+  opacity: 0.64;
+  transform: perspective(700px) rotateY(-2deg) scale(1.025);
+}
+
+.world[data-world='city'] .door {
+  left: 79%;
+  bottom: 22%;
+  opacity: 0.54;
+  transform: translateX(-50%) scale(0.78);
+  transform-origin: bottom center;
+}
+
+.world[data-world='city'][data-act='2'] .files {
+  opacity: 0.82;
+}
+
+.city svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cityCell {
+  fill: rgba(190, 194, 188, 0.08);
+  stroke: rgba(239, 236, 228, 0.08);
+  stroke-width: 0.12;
+}
+
+.cityLit rect {
+  fill: rgba(204, 193, 160, 0.43);
+  animation: window-breathe 13s ease-in-out infinite;
+}
+
+.cityLit rect:nth-child(even) {
+  animation-delay: -7s;
+}
+
+.files {
+  position: absolute;
+  left: 5%;
+  bottom: 4%;
+  width: min(30vw, 360px);
+  height: 31%;
+  opacity: 0.72;
+}
+
+.files span {
+  position: absolute;
+  left: calc(var(--file, 0) * 5%);
+  right: 0;
+  bottom: calc(var(--file, 0) * 17%);
+  height: 18%;
+  border: 1px solid var(--edge-faint);
+  background: #141519;
+  box-shadow: 12px 11px 20px rgba(0, 0, 0, 0.35);
+  transform: rotate(calc((var(--file, 0) - 1.5) * 0.7deg));
+}
+
+.files span:nth-child(1) {
+  --file: 0;
+}
+.files span:nth-child(2) {
+  --file: 1;
+}
+.files span:nth-child(3) {
+  --file: 2;
+}
+.files span:nth-child(4) {
+  --file: 3;
+}
+
+.traces {
+  position: absolute;
+  inset: 9% 14% 30%;
+  z-index: 2;
+}
+
+.traces > span {
+  position: absolute;
+  left: var(--trace-x);
+  top: var(--trace-y);
+  width: var(--trace-length);
+  height: 1px;
+  background: rgba(239, 236, 228, 0.16);
+  transform: rotate(var(--trace-angle));
+  transform-origin: left;
+}
+
+.traces > span[data-latest='true'] {
+  opacity: 0.62;
+  background: #efece4;
+  animation: trace-register 260ms ease-out;
+}
+
+.reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.reveal span {
+  position: absolute;
+  inset-block: 0;
+  width: 51%;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.025),
+      transparent
+    ),
+    #0b0b0d;
+  box-shadow: 0 0 42px rgba(0, 0, 0, 0.82);
+  animation-duration: 1.15s;
+  animation-timing-function: cubic-bezier(0.55, 0, 0.18, 1);
+  animation-fill-mode: both;
+}
+
+.revealLeft {
+  left: 0;
+  transform-origin: left;
+  animation-name: panel-left;
+}
+
+.revealRight {
+  right: 0;
+  transform-origin: right;
+  animation-name: panel-right;
+}
+
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  opacity: calc(0.035 + var(--world-memory) * 0.025);
+  background-image: url('/grain.svg');
+  mix-blend-mode: soft-light;
+}
+
+.world[data-phase='outcome'] .backdrop {
+  filter: brightness(0.78);
+}
+
+.world[data-regression='1'] .backdrop {
+  transform: translateX(-1vw) scale(1.02);
+}
+.world[data-regression='2'] .backdrop {
+  transform: translateX(1.4vw) scale(1.045);
+}
+.world[data-regression='3'] .backdrop {
+  transform: scale(1.08);
+  filter: brightness(0.62);
+}
+.world[data-regression='3'] .corridor,
+.world[data-regression='3'] .furniture {
+  opacity: 0.35;
+}
+
+@keyframes panel-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-96%);
+  }
+}
+
+@keyframes panel-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(96%);
+  }
+}
+
+@keyframes fluorescent-breathe {
+  0%,
+  44%,
+  47%,
+  100% {
+    opacity: 0.9;
+  }
+  45% {
+    opacity: 0.73;
+  }
+  46% {
+    opacity: 0.84;
+  }
+}
+
+@keyframes rain-fall {
+  from {
+    transform: translateY(-20%);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(260%);
+    opacity: 0;
+  }
+}
+
+@keyframes window-breathe {
+  0%,
+  48%,
+  100% {
+    opacity: 0.82;
+  }
+  55% {
+    opacity: 0.48;
+  }
+}
+
+@keyframes trace-register {
+  from {
+    opacity: 0;
+    transform: rotate(var(--trace-angle)) scaleX(0);
+  }
+  to {
+    opacity: 0.62;
+    transform: rotate(var(--trace-angle)) scaleX(1);
+  }
+}
+
+@media (max-width: 650px) {
+  .backdrop {
+    inset-inline: 8px;
+  }
+  .corridor {
+    inset-inline: 2vw;
+    opacity: 0.5;
+  }
+  .door {
+    left: 54%;
+    bottom: 25%;
+    width: clamp(118px, 34vw, 155px);
+    height: clamp(220px, 42vh, 330px);
+  }
+  .world[data-world='house'] .door {
+    left: -4%;
+    opacity: 0.38;
+  }
+  .window {
+    top: 12vh;
+    right: -9%;
+    width: 56vw;
+    height: 43vh;
+  }
+  .furniture {
+    left: -12%;
+    width: 66vw;
+    opacity: 0.48;
+  }
+  .city {
+    left: 25%;
+  }
+  .files {
+    width: 45vw;
+    opacity: 0.48;
+  }
+  .traces {
+    inset-inline: 8%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world *,
+  .world *::before,
+  .world *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:global(.stage[data-reduce='true']) .world *,
+:global(.stage[data-reduce='true']) .world *::before,
+:global(.stage[data-reduce='true']) .world *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
