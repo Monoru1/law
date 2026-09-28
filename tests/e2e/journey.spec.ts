@@ -1,47 +1,12 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { content } from '../../src/content';
 import { lawStatement, replay } from '../../src/engine';
-// A committed choice is now a single deliberate click — no hold gesture.
-async function commit(page: Page, name: string) {
-  await page.getByRole('button', { name, exact: true }).click();
-}
-// Narrative and consequences advance on their own. Tests wait for the next
-// meaningful action instead of manufacturing progress clicks.
-async function advanceUntil(page: Page, name: string) {
-  const target = page.getByRole('button', { name, exact: true });
-  await expect
-    .poll(
-      async () => {
-        if (await target.isVisible()) return true;
-        const next = page
-          .getByRole('button', { name: /^(Suivant|Passer)$/, exact: true })
-          .first();
-        if (await next.isVisible()) await next.click();
-        return false;
-      },
-      { timeout: 30_000 },
-    )
-    .toBe(true);
-}
-// Advance through the final outcome screens until a narrative text is shown
-// (e.g. the ending, reached after the coda's outcome resolves).
-async function advanceUntilText(page: Page, text: string) {
-  const target = page.getByText(text);
-  await expect
-    .poll(
-      async () => {
-        for (const match of await target.all())
-          if (await match.isVisible()) return true;
-        const next = page
-          .getByRole('button', { name: /^(Suivant|Passer)$/, exact: true })
-          .first();
-        if (await next.isVisible()) await next.click();
-        return false;
-      },
-      { timeout: 30_000 },
-    )
-    .toBe(true);
-}
+import {
+  activateWithKeyboard,
+  advanceToAction,
+  advanceToText,
+  exactButton,
+} from './harness';
 test('a full run records a signed law, contradicts it and remembers the written answer', async ({
   page,
 }) => {
@@ -64,13 +29,13 @@ test('a full run records a signed law, contradicts it and remembers the written 
     .fill('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).click();
   await page.getByRole('button', { name: 'J’accepte et je commence' }).click();
-  await advanceUntil(page, 'Appuyer');
-  await page.getByRole('button', { name: 'Appuyer', exact: true }).click();
-  await advanceUntil(page, 'Refuser');
-  await commit(page, 'Refuser');
-  await advanceUntil(page, 'Les sauver');
-  await commit(page, 'Les sauver');
-  await advanceUntil(page, 'Passer');
+  await advanceToAction(page, 'Appuyer');
+  await exactButton(page, 'Appuyer').click();
+  await advanceToAction(page, 'Refuser');
+  await exactButton(page, 'Refuser').click();
+  await advanceToAction(page, 'Les sauver');
+  await exactButton(page, 'Les sauver').click();
+  await advanceToAction(page, 'Passer');
   await page.getByRole('button', { name: 'Passer' }).click();
   await expect(page.getByRole('textbox', { name: 'Pourquoi ?' })).toBeVisible({
     timeout: 15_000,
@@ -79,15 +44,15 @@ test('a full run records a signed law, contradicts it and remembers the written 
     .getByRole('textbox', { name: 'Pourquoi ?' })
     .fill('Pour rentrer chez moi.');
   await page.getByRole('button', { name: 'Consigner' }).click();
-  await advanceUntil(page, 'Dossier B');
-  await commit(page, 'Dossier B');
-  await advanceUntil(page, 'Signer');
-  await commit(page, 'Signer');
-  await advanceUntil(page, 'Ne rien donner');
-  await commit(page, 'Ne rien donner');
-  await advanceUntil(page, 'Arrêter le protocole');
-  await commit(page, 'Arr\u00eater le protocole');
-  await advanceUntilText(page, 'Tu l\u2019as sign\u00e9e.');
+  await advanceToAction(page, 'Dossier B');
+  await exactButton(page, 'Dossier B').click();
+  await advanceToAction(page, 'Signer');
+  await exactButton(page, 'Signer').click();
+  await advanceToAction(page, 'Ne rien donner');
+  await exactButton(page, 'Ne rien donner').click();
+  await advanceToAction(page, 'Arrêter le protocole');
+  await exactButton(page, 'Arr\u00eater le protocole').click();
+  await advanceToText(page, 'Tu l\u2019as sign\u00e9e.');
   const recorded = await page.evaluate(
     () => JSON.parse(localStorage.getItem('thelaw:save')!).events,
   );
@@ -101,12 +66,12 @@ test('a full run records a signed law, contradicts it and remembers the written 
     page.getByText(`\u00ab\u00a0${statement}\u00a0\u00bb`, { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Abandonner' }).click();
-  await advanceUntil(page, 'Oui');
+  await advanceToAction(page, 'Oui');
   await expect(page.getByText(/Pour rentrer chez moi/)).toBeVisible();
   await page.getByRole('button', { name: 'Oui' }).click();
-  await advanceUntil(page, 'Sortir de la pi\u00e8ce');
+  await advanceToAction(page, 'Sortir de la pi\u00e8ce');
   await page.getByRole('button', { name: 'Sortir de la pi\u00e8ce' }).click();
-  await advanceUntilText(page, 'Elles \u00e9taient toutes les tiennes.');
+  await advanceToText(page, 'Elles \u00e9taient toutes les tiennes.');
   await expect(
     page.getByText('Elles \u00e9taient toutes les tiennes.'),
   ).toBeVisible();
@@ -125,53 +90,49 @@ test('keyboard operation and resume from a saved scene', async ({ page }) => {
   await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'J’accepte et je commence' }).focus();
   await page.keyboard.press('Enter');
-  await advanceUntil(page, 'Ne pas appuyer');
+  await advanceToAction(page, 'Ne pas appuyer');
   await page.getByRole('button', { name: 'Ne pas appuyer' }).focus();
   await page.keyboard.press('Enter');
   await page.reload();
   await expect(page.getByText('Tu ne sauras jamais.')).toBeVisible();
-  await advanceUntil(page, 'Refuser');
-  await commit(page, 'Refuser');
+  await advanceToAction(page, 'Refuser');
+  await exactButton(page, 'Refuser').click();
   await expect(page.getByText('Tu as refus\u00e9.')).toBeVisible();
 });
 test('the complete story is playable using only the keyboard', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const activate = async (name: string) => {
-    const button = page.getByRole('button', { name, exact: true });
-    await button.focus();
-    await page.keyboard.press('Enter');
-  };
+  const activate = (name: string) => activateWithKeyboard(page, name);
   await page.goto('/');
   await activate('Commencer');
   await page.getByRole('textbox', { name: 'Ton nom ou pseudonyme' }).focus();
   await page.keyboard.type('Testeur');
   await activate('Entrer');
   await activate('J’accepte et je commence');
-  await advanceUntil(page, 'Appuyer');
+  await advanceToAction(page, 'Appuyer');
   await activate('Appuyer');
-  await advanceUntil(page, 'Refuser');
+  await advanceToAction(page, 'Refuser');
   await activate('Refuser');
-  await advanceUntil(page, 'Les sauver');
+  await advanceToAction(page, 'Les sauver');
   await activate('Les sauver');
-  await advanceUntil(page, 'Passer');
+  await advanceToAction(page, 'Passer');
   await activate('Passer');
-  await advanceUntil(page, 'Je pr\u00e9f\u00e8re ne pas r\u00e9pondre');
+  await advanceToAction(page, 'Je pr\u00e9f\u00e8re ne pas r\u00e9pondre');
   await activate('Je pr\u00e9f\u00e8re ne pas r\u00e9pondre');
-  await advanceUntil(page, 'Dossier A');
+  await advanceToAction(page, 'Dossier A');
   await activate('Dossier A');
-  await advanceUntil(page, 'Ne pas signer');
+  await advanceToAction(page, 'Ne pas signer');
   await activate('Ne pas signer');
-  await advanceUntil(page, 'Ne rien donner');
+  await advanceToAction(page, 'Ne rien donner');
   await activate('Ne rien donner');
-  await advanceUntil(page, 'Continuer le protocole');
+  await advanceToAction(page, 'Continuer le protocole');
   await activate('Continuer le protocole');
-  await advanceUntil(page, 'Oui');
+  await advanceToAction(page, 'Oui');
   await activate('Oui');
-  await advanceUntil(page, 'Sortir de la pi\u00e8ce');
+  await advanceToAction(page, 'Sortir de la pi\u00e8ce');
   await activate('Sortir de la pi\u00e8ce');
-  await advanceUntilText(page, 'Elles \u00e9taient toutes les tiennes.');
+  await advanceToText(page, 'Elles \u00e9taient toutes les tiennes.');
   await expect(
     page.getByText('Elles \u00e9taient toutes les tiennes.'),
   ).toBeVisible();
