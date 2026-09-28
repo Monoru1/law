@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { OfflineStatus } from './offline-status';
 import './globals.css';
 const display = localFont({
   src: '../node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2',
@@ -16,9 +17,47 @@ const body = localFont({
   variable: '--font-body',
   display: 'swap',
 });
+const canonicalSiteUrl = process.env.SITE_URL || process.env.URL;
+const deploymentUrl = process.env.DEPLOY_PRIME_URL || canonicalSiteUrl;
+const metadataBase = new URL(deploymentUrl || 'http://localhost:3000');
+
+const description =
+  'Une fiction interactive où chaque choix devient loi. Every choice becomes law.';
+
 export const metadata: Metadata = {
-  title: 'THE LAW — La Pièce',
-  description: 'Chaque choix laisse une trace.',
+  metadataBase,
+  ...(canonicalSiteUrl
+    ? { alternates: { canonical: new URL('/', canonicalSiteUrl) } }
+    : {}),
+  applicationName: 'THE LAW',
+  title: {
+    default: 'THE LAW',
+    template: '%s — THE LAW',
+  },
+  description,
+  manifest: '/manifest.webmanifest',
+  openGraph: {
+    type: 'website',
+    locale: 'fr_FR',
+    siteName: 'THE LAW',
+    title: 'THE LAW',
+    description,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'THE LAW',
+    description,
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'THE LAW',
+    statusBarStyle: 'black-translucent',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0d0d10',
+  colorScheme: 'dark',
 };
 export default function RootLayout({
   children,
@@ -30,7 +69,10 @@ export default function RootLayout({
       lang="fr"
       className={`${display.variable} ${meta.variable} ${body.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <OfflineStatus />
+        {children}
+      </body>
     </html>
   );
 }
