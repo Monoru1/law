@@ -49,13 +49,16 @@ test('a decision in the city rests on its consequence, whatever the player picks
   await expect(
     page.getByText('Ton badge ne fonctionne pas du premier coup.'),
   ).toBeVisible({ timeout: 15_000 });
-  // premier-jour is a passage: it flows on by itself, no click asked.
+  // A narrative passage reveals its beats automatically, but never decides
+  // that the player has finished reading them.
   await expect(page.getByText('Il y en a beaucoup.')).toBeVisible({
     timeout: 15_000,
   });
-  await expect(
-    page.getByRole('button', { name: 'Suivant', exact: true }),
-  ).toHaveCount(0);
+  const passageNext = button(page, 'Suivant');
+  await expect(passageNext).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(2_000);
+  await expect(page.getByText('Il y en a beaucoup.')).toBeVisible();
+  await passageNext.click();
   // First real decision: whichever request is picked, its consequence rests.
   await expect(page.getByText('Deux dossiers.')).toBeVisible({
     timeout: 20_000,
@@ -68,8 +71,11 @@ test('a decision in the city rests on its consequence, whatever the player picks
   const next = button(page, 'Suivant');
   await expect(next).toBeVisible();
   // No timer moves the game on, however long the player stays.
-  await page.waitForTimeout(4_000);
+  const beforeHold = await journal(page);
+  await page.waitForTimeout(8_000);
   await expect(next).toBeVisible();
+  const afterHold = await journal(page);
+  expect(afterHold).toEqual(beforeHold);
   await expect(page.getByText('La machine à café')).toHaveCount(0);
   await next.click();
   await expect(page.getByText('La machine à café')).toBeVisible({
@@ -87,8 +93,11 @@ test('the rule is enacted without confirmation, rests, and its criterion is neve
     [CITY]: saveOf(contentT3, cityEvents([]), { reportingConsent: false }),
   });
   await page.goto('/jouer/t3');
-  // Two passages (premier-jour, la-pause) lead on by themselves; only the two
-  // real decisions need a click and their rest, exactly as in the store.
+  const advancePassage = async () => {
+    const next = button(page, 'Suivant');
+    await expect(next).toBeVisible({ timeout: 20_000 });
+    await next.click();
+  };
   const advance = async (name: string) => {
     const target = button(page, name);
     await expect(target).toBeVisible({ timeout: 20_000 });
@@ -98,8 +107,11 @@ test('the rule is enacted without confirmation, rests, and its criterion is neve
     await expect(next).toBeVisible({ timeout: 15_000 });
     await next.click();
   };
+  await advancePassage();
   await advance('La première demande');
+  await advancePassage();
   await advance('Respecter l’ordre d’arrivée');
+  await advancePassage();
   await expect(page.getByText('Une seule case à remplir.')).toBeVisible({
     timeout: 20_000,
   });

@@ -136,6 +136,25 @@ function RestAdvance({ onAdvance }: { onAdvance: () => void }) {
     ref.current?.focus({ preventScroll: true });
     ref.current?.scrollIntoView({ block: 'nearest' });
   }, []);
+  const advance = () => {
+    // A browser double-click can retarget its second press after this button
+    // unmounts. Swallow only that immediate pointer press so it cannot select
+    // or activate the next scene; normal narrative selection remains intact.
+    const blockRetargetedPress = (event: PointerEvent) => {
+      event.preventDefault();
+      window.getSelection()?.removeAllRanges();
+    };
+    document.addEventListener('pointerdown', blockRetargetedPress, {
+      capture: true,
+      once: true,
+    });
+    window.setTimeout(
+      () =>
+        document.removeEventListener('pointerdown', blockRetargetedPress, true),
+      600,
+    );
+    onAdvance();
+  };
   return (
     <div className="rest">
       <button
@@ -143,7 +162,7 @@ function RestAdvance({ onAdvance }: { onAdvance: () => void }) {
         type="button"
         className="rest-advance mono"
         aria-label={copy.next}
-        onClick={onAdvance}
+        onClick={advance}
       >
         {copy.next}
         <span aria-hidden="true">{'\u00a0→'}</span>
@@ -505,6 +524,7 @@ export function ScenePlayer({
   }
   if (!scene) return <main className="end-screen mono">THE LAW</main>;
   const input = scene.input;
+  const manualPassage = content.timelineId === 't3' && input.kind === 'passage';
   const choiceOptions =
     input.kind === 'binary' || input.kind === 'choice' || input.kind === 'glyph'
       ? input.options
@@ -748,11 +768,21 @@ export function ScenePlayer({
     <main
       className={`stage reg-${scene.regression}${pulse ? ' stage--pulse' : ''}`}
       data-reduce={reduced}
+      data-timeline={content.timelineId}
+      data-scene={scene.id}
       data-phase={phase}
       data-input={input.kind}
       style={{ fontSize: `${textScale}rem` }}
     >
-      <Room decisions={roomDecisions} regression={scene.regression} />
+      <Room
+        key={visitId}
+        timelineId={content.timelineId}
+        sceneId={scene.id}
+        phase={phase}
+        ambience={scene.audio?.ambience}
+        decisions={roomDecisions}
+        regression={scene.regression}
+      />
       <header className="player-top">
         <span className="mono" aria-live="polite">
           {scene.title}
@@ -936,7 +966,9 @@ export function ScenePlayer({
                     ? () => setResting(true)
                     : () => void afterOutcome()
                   : input.kind === 'passage'
-                    ? () => void advanceOnce()
+                    ? manualPassage
+                      ? () => setResting(true)
+                      : () => void advanceOnce()
                     : () => setReady(true)
               }
             />
@@ -944,6 +976,9 @@ export function ScenePlayer({
               <div ref={choiceArea} className="choice-area">
                 {inputControl()}
               </div>
+            )}
+            {phase === 'scene' && manualPassage && resting && (
+              <RestAdvance onAdvance={() => void advanceOnce()} />
             )}
             {phase === 'outcome' && resting && certaintyPending && (
               <div className="choice-area certainty">
