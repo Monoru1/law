@@ -20,6 +20,7 @@ export const contractKey = (sceneId: string, version: number): string =>
 function talkContract(talk: TalkSpec) {
   return {
     start: talk.start,
+    clock: talk.clock,
     nodes: talk.nodes.map((node) => ({
       id: node.id,
       effects: node.effects,

@@ -121,10 +121,16 @@ export function auditTalk(scene: Scene): string[] {
       at(`${node.id} leads nowhere`);
     return out;
   };
+  if (talk.clock && !ids.has(talk.clock.onEnd))
+    at(`clock ends on unknown node ${talk.clock.onEnd}`);
   const edges = new Map<string, string[]>();
   talk.nodes.forEach((node, index) =>
     edges.set(node.id, successors(node, index)),
   );
+  // A clock can end the conversation from any waiting node.
+  if (talk.clock && ids.has(talk.clock.onEnd))
+    for (const node of talk.nodes)
+      if (node.ask || node.write) edges.get(node.id)?.push(talk.clock.onEnd);
   const reachable = new Set<string>();
   const queue = [talk.start];
   while (queue.length) {

@@ -51,6 +51,29 @@ export function applyEffects(
         ...(text ? { text } : {}),
         stance: 'open',
       });
+    } else if ('declareLaw' in effect) {
+      if (!origin?.text) continue;
+      const number = Math.max(0, ...state.laws.map((l) => l.number)) + 1;
+      const text = origin.text;
+      state.laws.push({
+        number,
+        principleId: effect.declareLaw.principleId,
+        statementId: null,
+        statementText: text,
+        customText: text,
+        status: 'signed',
+        revisions: [
+          {
+            at: origin.at,
+            statementId: null,
+            statementText: text,
+            customText: text,
+            status: 'signed',
+          },
+        ],
+        signedAtDecision: state.decisions,
+        sourceEventId: origin.eventId,
+      });
     } else if ('stance' in effect) {
       const target = state.notes.findLast((n) =>
         n.tags.includes(effect.stance.tag),

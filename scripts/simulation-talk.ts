@@ -2,6 +2,7 @@
 // interface records, validating each before reducing it, so a journal it makes
 // is one the real game could have made.
 import {
+  clockStart,
   initialState,
   nextScene,
   reduce,
@@ -46,6 +47,11 @@ export function simulateTalkRun(
     timeoutRate?: number;
     // Chance of picking an explicit silence when one is offered.
     silenceRate?: number;
+    // Chance, at each step of a timed conversation, that its clock runs out.
+    clockRate?: number;
+    // Nodes already reached by earlier runs: a curious player prefers a reply
+    // that leads somewhere new, so coverage does not depend on luck.
+    seen?: Set<string>;
     inherit?: { timelineId: string; memory: never };
   } = {},
 ): TalkRun {
@@ -78,7 +84,10 @@ export function simulateTalkRun(
       const talk = talkOf(resolved);
       if (!talk) break;
       const track = state.talk[scene.id]!;
-      for (const item of track.trail) nodes.add(`${scene.id}/${item.nodeId}`);
+      for (const item of track.trail) {
+        nodes.add(`${scene.id}/${item.nodeId}`);
+        options.seen?.add(`${scene.id}/${item.nodeId}`);
+      }
       if (track.cursor === null) {
         if (track.end === null) throw new Error(`${scene.id} ended nowhere`);
         push({
@@ -93,6 +102,24 @@ export function simulateTalkRun(
         break;
       }
       const node = talkNode(talk, track.cursor)!;
+      // A clock that has run out: the journal records the wait as it happened.
+      if (
+        talk.clock &&
+        clockStart(state, resolved) !== null &&
+        rand() < (options.clockRate ?? 0.12)
+      ) {
+        clock.at += talk.clock.ms;
+        push({
+          type: 'line_chosen',
+          sceneId: scene.id,
+          sceneVersion: scene.version,
+          nodeId: node.id,
+          optionId: 'timeout',
+          mode: 'timeout',
+          hesitationMs: 0,
+        });
+        continue;
+      }
       const base = {
         type: 'line_chosen' as const,
         sceneId: scene.id,
@@ -120,10 +147,18 @@ export function simulateTalkRun(
         if (!replies.length)
           throw new Error(`${scene.id}/${node.id} offers no reply`);
         const silent = replies.filter((r) => r.silent);
+        const fresh = replies.filter(
+          (r) =>
+            options.seen &&
+            r.next &&
+            !options.seen.has(`${scene.id}/${r.next}`),
+        );
         const chosen =
           silent.length && rand() < (options.silenceRate ?? 0.2)
             ? pick(silent)
-            : pick(replies);
+            : fresh.length && rand() < 0.75
+              ? pick(fresh)
+              : pick(replies);
         push({
           ...base,
           optionId: chosen.id,

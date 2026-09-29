@@ -89,6 +89,14 @@ const condition: z.ZodType<unknown> = z.lazy(() =>
       }),
     }),
     z.object({
+      hesitation: z.object({
+        sceneId: z.string(),
+        nodeId: z.string(),
+        op: z.enum(['<', '>=']),
+        ms: z.number(),
+      }),
+    }),
+    z.object({
       said: z.object({
         sceneId: z.string(),
         nodeId: z.string(),
@@ -197,7 +205,17 @@ export const inputSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('confrontation') }),
   z.object({
     kind: z.literal('talk'),
-    talk: z.object({ start: z.string(), nodes: z.array(talkNode).min(1) }),
+    talk: z.object({
+      start: z.string(),
+      nodes: z.array(talkNode).min(1),
+      clock: z
+        .object({
+          ms: z.number().int().positive(),
+          onEnd: z.string(),
+          startsOn: z.object({ nodeId: z.string(), optionId: z.string() }),
+        })
+        .optional(),
+    }),
   }),
 ]);
 const effect: z.ZodType<unknown> = z.lazy(() =>
@@ -249,6 +267,7 @@ const effect: z.ZodType<unknown> = z.lazy(() =>
       }),
     }),
     z.object({ stance: z.object({ tag: z.string(), stance: noteStance }) }),
+    z.object({ declareLaw: z.object({ principleId: z.string() }) }),
     z.object({ if: condition, then: z.array(effect) }),
   ]),
 );

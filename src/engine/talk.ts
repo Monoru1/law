@@ -22,6 +22,33 @@ export const talkOf = (scene: Scene): TalkSpec | null =>
 export const talkNode = (talk: TalkSpec, id: string): TalkNode | undefined =>
   talk.nodes.find((node) => node.id === id);
 
+/**
+ * When the scene's clock started, and whether it has run out by the time of an
+ * event. Both are read from the journal like everything else.
+ */
+export function clockStart(state: GameState, scene: Scene): number | null {
+  const clock = talkOf(scene)?.clock;
+  if (!clock) return null;
+  return (
+    state.lines.find(
+      (l) =>
+        l.sceneId === scene.id &&
+        l.nodeId === clock.startsOn.nodeId &&
+        l.optionId === clock.startsOn.optionId,
+    )?.at ?? null
+  );
+}
+
+export function clockExpired(
+  state: GameState,
+  scene: Scene,
+  at: number,
+): boolean {
+  const clock = talkOf(scene)?.clock;
+  const started = clockStart(state, scene);
+  return Boolean(clock && started !== null && at - started >= clock.ms - 2500);
+}
+
 /** The node that follows in authored order, used when nothing else is named. */
 const following = (talk: TalkSpec, node: TalkNode) =>
   talk.nodes[talk.nodes.findIndex((n) => n.id === node.id) + 1]?.id;
@@ -113,7 +140,9 @@ export function applyLine(
   let next: string | undefined;
   let effects: Effect[] = [];
   let evidence: Evidence[] = [];
-  if (node.ask) {
+  if (event.mode === 'timeout' && clockExpired(state, scene, event.at)) {
+    next = talk.clock!.onEnd;
+  } else if (node.ask) {
     if (event.mode === 'timeout') next = node.ask.onTimeout;
     else {
       const reply = node.ask.replies.find((r) => r.id === event.optionId);

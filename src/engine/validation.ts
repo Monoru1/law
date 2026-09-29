@@ -1,6 +1,6 @@
 import { eventSchema } from './schema';
 import { resolveScene } from './flow';
-import { talkNode, talkOf, visibleReplies } from './talk';
+import { clockExpired, talkNode, talkOf, visibleReplies } from './talk';
 import type { Content, GameEvent, GameState } from './types';
 
 // Events that can only be recorded while the player is inside that scene.
@@ -162,7 +162,11 @@ export function validateEvent(
             invalid();
         }
       } else if (event.mode === 'timeout') {
-        if (!node.ask?.timeoutMs || event.optionId !== 'timeout' || event.text)
+        if (
+          !(node.ask?.timeoutMs || clockExpired(state, scene, event.at)) ||
+          event.optionId !== 'timeout' ||
+          event.text
+        )
           invalid();
       } else {
         // 'reply' or 'silence': a visible reply of the node, of matching kind.

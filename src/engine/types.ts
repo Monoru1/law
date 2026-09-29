@@ -29,6 +29,15 @@ export type Condition =
   // A note LAW holds, optionally narrowed by what kind of knowledge it is and
   // whether the player accepted, nuanced, refused or withdrew it.
   | { noted: { tag: string; status?: NoteStatus; stance?: NoteStance } }
+  // How long the player took at one point of a conversation, as recorded.
+  | {
+      hesitation: {
+        sceneId: string;
+        nodeId: string;
+        op: '<' | '>=';
+        ms: number;
+      };
+    }
   // What the player actually did at a point of a conversation.
   | {
       said: {
@@ -57,6 +66,8 @@ export type Effect =
   | { note: NoteSpec }
   // The player answers a note LAW holds: the latest note with this tag.
   | { stance: { tag: string; stance: NoteStance } }
+  // The words the player just wrote become a law of their own.
+  | { declareLaw: { principleId: string } }
   // Conditional effects are evaluated against the state that already holds
   // the choice being applied; they never read a clock or the browser.
   | { if: Condition; then: Effect[] };
@@ -252,7 +263,18 @@ export type TalkNode = {
   // Ends the conversation on that outcome of the scene.
   end?: string;
 };
-export type TalkSpec = { start: string; nodes: TalkNode[] };
+export type TalkSpec = {
+  start: string;
+  nodes: TalkNode[];
+  // A time that runs out on its own: it starts at one recorded line and, once
+  // it has run out, whatever was awaited is recorded as a timeout and the
+  // conversation goes to `onEnd`.
+  clock?: {
+    ms: number;
+    onEnd: string;
+    startsOn: { nodeId: string; optionId: string };
+  };
+};
 export type TalkTrailItem = {
   nodeId: string;
   reply?: { optionId: string; mode: LineMode; text?: string };

@@ -55,6 +55,14 @@ export function evaluate(condition: Condition, state: GameState): boolean {
         (!stance || n.stance === stance),
     );
   }
+  if ('hesitation' in condition) {
+    const { sceneId, nodeId, op, ms } = condition.hesitation;
+    const line = state.lines.findLast(
+      (l) => l.sceneId === sceneId && l.nodeId === nodeId,
+    );
+    if (!line) return false;
+    return op === '<' ? line.hesitationMs < ms : line.hesitationMs >= ms;
+  }
   if ('said' in condition) {
     const { sceneId, nodeId, optionId, mode } = condition.said;
     return state.lines.some(
