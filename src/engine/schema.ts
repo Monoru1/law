@@ -12,6 +12,39 @@ export const relationKind = z.enum([
   'protected',
   'sacrificed',
 ]);
+export const noteStatus = z.enum([
+  'fact',
+  'observation',
+  'inference',
+  'declared',
+]);
+export const noteStance = z.enum([
+  'open',
+  'accepted',
+  'nuanced',
+  'refused',
+  'withdrawn',
+]);
+export const noteKind = z.enum([
+  'justification',
+  'intention',
+  'silence',
+  'promise',
+  'question',
+  'reversal',
+  'curiosity',
+  'refusal',
+  'quote',
+  'interpretation',
+  'declared',
+]);
+export const lineMode = z.enum([
+  'reply',
+  'silence',
+  'timeout',
+  'written',
+  'declined',
+]);
 const condition: z.ZodType<unknown> = z.lazy(() =>
   z.union([
     z.object({ all: z.array(condition) }),
@@ -48,6 +81,29 @@ const condition: z.ZodType<unknown> = z.lazy(() =>
     z.object({
       rule: z.object({ ruleId: z.string(), criterionId: z.string() }),
     }),
+    z.object({
+      noted: z.object({
+        tag: z.string(),
+        status: noteStatus.optional(),
+        stance: noteStance.optional(),
+      }),
+    }),
+    z.object({
+      hesitation: z.object({
+        sceneId: z.string(),
+        nodeId: z.string(),
+        op: z.enum(['<', '>=']),
+        ms: z.number(),
+      }),
+    }),
+    z.object({
+      said: z.object({
+        sceneId: z.string(),
+        nodeId: z.string(),
+        optionId: z.string().optional(),
+        mode: lineMode.optional(),
+      }),
+    }),
   ]),
 );
 export const beatSchema = z.object({
@@ -67,6 +123,50 @@ const option = z.object({
   evidence: z.array(evidence).optional(),
 });
 const confirm = z.enum(['tap', 'hold']);
+const talkLine = z.object({
+  who: z.string(),
+  text: z.string(),
+  pauseMs: z.number().optional(),
+  style: z.enum(['normal', 'whisper', 'meta', 'emphasis']).optional(),
+  requires: condition.optional(),
+});
+const talkReply = z.object({
+  id: z.string(),
+  label: z.string(),
+  next: z.string().optional(),
+  effects: z.array(z.lazy(() => effect)).optional(),
+  evidence: z.array(evidence).optional(),
+  requires: condition.optional(),
+  once: z.boolean().optional(),
+  silent: z.boolean().optional(),
+  hold: z.boolean().optional(),
+});
+const talkNode = z.object({
+  id: z.string(),
+  lines: z.array(talkLine).optional(),
+  effects: z.array(z.lazy(() => effect)).optional(),
+  ask: z
+    .object({
+      replies: z.array(talkReply).min(1),
+      timeoutMs: z.number().int().positive().optional(),
+      onTimeout: z.string().optional(),
+    })
+    .optional(),
+  write: z
+    .object({
+      prompt: z.string(),
+      placeholder: z.string(),
+      maxLength: z.number().int().positive().max(280),
+      next: z.string().optional(),
+      declineNext: z.string().optional(),
+      declineLabel: z.string().optional(),
+      effects: z.array(z.lazy(() => effect)).optional(),
+    })
+    .optional(),
+  route: z.array(z.object({ when: condition, next: z.string() })).optional(),
+  next: z.string().optional(),
+  end: z.string().optional(),
+});
 export const inputSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('binary'),
@@ -103,6 +203,20 @@ export const inputSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('passage') }),
   z.object({ kind: z.literal('lawProposal') }),
   z.object({ kind: z.literal('confrontation') }),
+  z.object({
+    kind: z.literal('talk'),
+    talk: z.object({
+      start: z.string(),
+      nodes: z.array(talkNode).min(1),
+      clock: z
+        .object({
+          ms: z.number().int().positive(),
+          onEnd: z.string(),
+          startsOn: z.object({ nodeId: z.string(), optionId: z.string() }),
+        })
+        .optional(),
+    }),
+  }),
 ]);
 const effect: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -143,13 +257,24 @@ const effect: z.ZodType<unknown> = z.lazy(() =>
     z.object({
       exceptionGranted: z.object({ ruleId: z.string(), personId: z.string() }),
     }),
+    z.object({
+      note: z.object({
+        kind: noteKind,
+        status: noteStatus.optional(),
+        tags: z.array(z.string()).min(1),
+        fromText: z.boolean().optional(),
+        text: z.string().max(280).optional(),
+      }),
+    }),
+    z.object({ stance: z.object({ tag: z.string(), stance: noteStance }) }),
+    z.object({ declareLaw: z.object({ principleId: z.string() }) }),
     z.object({ if: condition, then: z.array(effect) }),
   ]),
 );
 export const sceneSchema = z.object({
-  id: z.string().regex(/^t[1-4]\.[a-z-]+$/),
+  id: z.string().regex(/^t[0-4]\.[a-z-]+$/),
   version: z.number().int().positive(),
-  timelineId: z.enum(['t1', 't2', 't3', 't4']),
+  timelineId: z.enum(['t0', 't1', 't2', 't3', 't4']),
   title: z.string(),
   regression: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
   contentFlags: z.array(z.string()),
@@ -288,6 +413,37 @@ const memorySchema = z.object({
   certainty: z
     .record(z.string().max(64), z.number().min(0).max(100))
     .refine((value) => Object.keys(value).length <= 40),
+  notes: z
+    .array(
+      z.object({
+        id: z.string().max(80),
+        kind: noteKind,
+        status: noteStatus,
+        tags: z.array(z.string().max(64)).max(8),
+        sceneId: z.string().max(64),
+        eventId: z.string().max(64),
+        at: z.number(),
+        text: z.string().max(280).optional(),
+        stance: noteStance,
+      }),
+    )
+    .max(200)
+    .optional(),
+  lines: z
+    .array(
+      z.object({
+        sceneId: z.string().max(64),
+        nodeId: z.string().max(64),
+        optionId: z.string().max(64),
+        mode: lineMode,
+        text: z.string().max(280).optional(),
+        eventId: z.string().max(64),
+        at: z.number(),
+        hesitationMs: z.number().nonnegative(),
+      }),
+    )
+    .max(400)
+    .optional(),
   contradictions: z
     .array(
       z.object({
@@ -328,10 +484,23 @@ export const eventSchema = z.discriminatedUnion('type', [
       'glyph',
       'lawProposal',
       'confrontation',
+      'talk',
     ]),
     value: z.union([z.string(), z.number()]),
     hesitationMs: z.number().nonnegative(),
     selectionChanges: z.number().nonnegative(),
+  }),
+  z.object({
+    type: z.literal('line_chosen'),
+    id: z.string(),
+    at: z.number(),
+    sceneId: z.string(),
+    sceneVersion: z.number(),
+    nodeId: z.string().max(64),
+    optionId: z.string().max(64),
+    mode: lineMode,
+    text: z.string().max(280).optional(),
+    hesitationMs: z.number().nonnegative(),
   }),
   z.object({
     type: z.literal('certainty_given'),
@@ -442,12 +611,12 @@ export const legacySaveSchema = z.object({
 // against the append-only contract registry.
 export const saveSchema = z.object({
   schemaVersion: z.number().int(),
-  timelineId: z.enum(['t1', 't2', 't3', 't4']),
+  timelineId: z.enum(['t0', 't1', 't2', 't3', 't4']),
   contentVersion: z.string().max(32),
   runId: z.string().min(1).max(64),
   createdAt: z.number(),
   updatedAt: z.number(),
-  events: z.array(eventSchema).max(2000),
+  events: z.array(eventSchema).max(4000),
   settings: settingsSchema,
   pseudonym: z.string().max(64).optional(),
   reportingConsent: z.boolean().optional(),

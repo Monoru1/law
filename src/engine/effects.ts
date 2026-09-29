@@ -17,7 +17,13 @@ export function matchOutcome(outcome: Outcome, value: ChoiceValue): boolean {
   );
 }
 /** The choice that produced an effect; relations inherit its identity. */
-export type EffectOrigin = { sceneId: string; eventId: string; at: number };
+export type EffectOrigin = {
+  sceneId: string;
+  eventId: string;
+  at: number;
+  // What the player wrote at the line that produced the effect, if anything.
+  text?: string;
+};
 export function applyEffects(
   state: GameState,
   effects: Effect[],
@@ -28,6 +34,51 @@ export function applyEffects(
     if ('if' in effect) {
       if (evaluate(effect.if, state))
         applyEffects(state, effect.then, choices, origin);
+    } else if ('note' in effect) {
+      // Notes, like relations, are consequences of a recorded line.
+      if (!origin) continue;
+      const spec = effect.note;
+      const text = spec.fromText ? origin.text : spec.text;
+      if (spec.fromText && !text) continue;
+      state.notes.push({
+        id: `${origin.eventId}#${state.notes.length}`,
+        kind: spec.kind,
+        status: spec.status ?? 'fact',
+        tags: [...spec.tags],
+        sceneId: origin.sceneId,
+        eventId: origin.eventId,
+        at: origin.at,
+        ...(text ? { text } : {}),
+        stance: 'open',
+      });
+    } else if ('declareLaw' in effect) {
+      if (!origin?.text) continue;
+      const number = Math.max(0, ...state.laws.map((l) => l.number)) + 1;
+      const text = origin.text;
+      state.laws.push({
+        number,
+        principleId: effect.declareLaw.principleId,
+        statementId: null,
+        statementText: text,
+        customText: text,
+        status: 'signed',
+        revisions: [
+          {
+            at: origin.at,
+            statementId: null,
+            statementText: text,
+            customText: text,
+            status: 'signed',
+          },
+        ],
+        signedAtDecision: state.decisions,
+        sourceEventId: origin.eventId,
+      });
+    } else if ('stance' in effect) {
+      const target = state.notes.findLast((n) =>
+        n.tags.includes(effect.stance.tag),
+      );
+      if (target) target.stance = effect.stance.stance;
     } else if ('setFlag' in effect) {
       if (!state.flags.includes(effect.setFlag))
         state.flags.push(effect.setFlag);

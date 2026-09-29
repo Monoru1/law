@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { content } from '../src/content';
 import { contentT2 } from '../src/content/t2';
 import { contentT3 } from '../src/content/t3';
+import { contentT0 } from '../src/content/t0';
 import { contentContracts, registryDrift } from '../src/engine';
 
 const path = new URL('../src/content/contracts.json', import.meta.url);
@@ -13,7 +14,7 @@ try {
 } catch {
   registry = {};
 }
-const contents = [content, contentT2, contentT3];
+const contents = [contentT0, content, contentT2, contentT3];
 const { missing, changed } = registryDrift(registry, contents);
 if (changed.length) {
   console.error(

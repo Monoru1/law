@@ -1,0 +1,542 @@
+/* T0 — L'Examen. One stage, one voice. Nothing here is a card: the room is the
+   background, the words are the interface, the replies are lines you can say.
+   Motion is CSS only (transform / opacity), so it costs nothing to keep. */
+
+.frame {
+  --scale: 1;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: #050506;
+  color: var(--law-paper);
+  font-size: calc(1rem * var(--scale));
+  animation: enter 1.6s ease both;
+}
+.frame[data-leaving='true'] {
+  animation: leave 0.7s ease forwards;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes leave {
+  to {
+    opacity: 0;
+  }
+}
+
+/* --- Places ------------------------------------------------------------- */
+
+.place {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #050506;
+}
+.place[data-env='salle'] {
+  background:
+    radial-gradient(
+      ellipse 55% 46% at 50% -6%,
+      rgba(236, 228, 208, 0.13),
+      transparent 72%
+    ),
+    linear-gradient(to top, #0e0d10 0%, transparent 38%), #070709;
+}
+.place[data-env='rue'] {
+  background:
+    radial-gradient(
+      ellipse 70% 40% at 50% 110%,
+      rgba(70, 92, 120, 0.16),
+      transparent 70%
+    ),
+    linear-gradient(#0a0f16 0%, #06090e 62%, #030405 100%);
+}
+.place[data-env='maison'] {
+  background:
+    radial-gradient(
+      ellipse 50% 44% at 50% 8%,
+      rgba(238, 190, 120, 0.15),
+      transparent 74%
+    ),
+    linear-gradient(to top, #120d0a 0%, transparent 42%), #0a0807;
+}
+.place[data-env='couloir'] {
+  background:
+    linear-gradient(90deg, #0b0c0d 0 12%, transparent 12% 88%, #0b0c0d 88%),
+    radial-gradient(
+      ellipse 40% 60% at 50% 30%,
+      rgba(190, 210, 200, 0.11),
+      transparent 75%
+    ),
+    #060707;
+}
+.place[data-env='noir'] {
+  background: #000;
+}
+/* A traffic light that never turns green: a slow, small red, low in the frame. */
+.signal {
+  position: absolute;
+  right: clamp(1.5rem, 12vw, 9rem);
+  top: 18%;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #d24a3c;
+  box-shadow:
+    0 0 1.4rem 0.35rem rgba(210, 74, 60, 0.32),
+    0 0 6rem 2.5rem rgba(210, 74, 60, 0.1);
+  animation: breathe 6s ease-in-out infinite;
+}
+@keyframes breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+.rain,
+.rain::after {
+  position: absolute;
+  inset: -20% 0 0;
+  background-image: repeating-linear-gradient(
+    102deg,
+    transparent 0 6px,
+    rgba(170, 195, 225, 0.16) 6px 7px,
+    transparent 7px 19px,
+    rgba(170, 195, 225, 0.09) 19px 20px,
+    transparent 20px 33px
+  );
+  background-size: 33px 100%;
+  animation: fall 0.55s linear infinite;
+  will-change: transform;
+}
+.rain::after {
+  content: '';
+  inset: 0;
+  background-size: 51px 100%;
+  opacity: 0.6;
+  animation-duration: 0.9s;
+}
+@keyframes fall {
+  to {
+    transform: translate3d(-1.4rem, 12%, 0);
+  }
+}
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 80% at 50% 45%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.62) 100%
+  );
+}
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url('/grain.svg');
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}
+
+/* --- The conversation --------------------------------------------------- */
+
+.log {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(4.5rem, 12vh, 8rem) clamp(1.25rem, 5vw, 3rem) 2rem;
+  scroll-padding-bottom: 2rem;
+  /* Older words fall away into the dark above. */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 9rem);
+}
+.inner {
+  width: min(34rem, 100%);
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.line {
+  margin: 0 0 0.95rem;
+  animation: appear 0.9s ease both;
+  transition: opacity 1.2s ease;
+}
+.line[data-age='1'] {
+  opacity: 0.72;
+}
+.line[data-age='2'] {
+  opacity: 0.5;
+}
+.line[data-age='3'] {
+  opacity: 0.3;
+}
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(0.45rem);
+  }
+}
+.law,
+.person {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.55rem, 1.05rem + 1.9vw, 2.25rem);
+  line-height: 1.22;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
+}
+.person {
+  color: #dcd0bd;
+}
+.narrator {
+  font-family: var(--font-meta), monospace;
+  font-size: 0.78em;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: var(--law-ink-3);
+  margin-bottom: 1.15rem;
+  text-wrap: pretty;
+}
+.emphasis {
+  color: #fff;
+}
+.whisper {
+  opacity: 0.66;
+}
+.year {
+  margin: 3.5rem 0 2rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(3.2rem, 1.5rem + 9vw, 6.5rem);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: rgba(239, 236, 228, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+.notif {
+  margin: 0.4rem 0 1rem;
+  padding: 0.85rem 1rem 0.95rem;
+  border: 1px solid var(--law-line-strong);
+  background: rgba(20, 20, 24, 0.7);
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 1.02em;
+  line-height: 1.45;
+  color: var(--law-paper);
+}
+.notif span {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-family: var(--font-meta), monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--law-ink-3);
+}
+.clock {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  font-family: var(--font-meta), monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0.22em;
+  color: var(--law-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.speaker {
+  display: block;
+  margin: 1.4rem 0 0.35rem;
+  font-family: var(--font-meta), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--law-ink-3);
+}
+.echo {
+  position: relative;
+  margin: 0.4rem 0 1.5rem;
+  padding-left: 1.4rem;
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 1.02em;
+  line-height: 1.5;
+  color: var(--law-ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.echo::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--law-ink-3);
+}
+.echo[data-silent='true'] {
+  color: var(--law-ink-3);
+}
+
+/* --- Controls: things you can say --------------------------------------- */
+
+.controls {
+  position: relative;
+  /* The words never jump when the replies arrive: their room is kept. */
+  min-height: min(14rem, 36svh);
+  padding: 0.75rem clamp(1.25rem, 5vw, 3rem)
+    calc(1.1rem + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, rgba(3, 3, 4, 0.94) 55%, transparent);
+}
+.controls > * {
+  width: min(34rem, 100%);
+  margin-inline: auto;
+}
+.replies {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  animation: appear 0.7s ease both;
+}
+.reply {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.7rem 1fr;
+  align-items: baseline;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.6rem 0.25rem;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--law-line-faint);
+  color: var(--law-ink-2);
+  font-size: 1.05em;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    transform 0.25s ease;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.reply:hover,
+.reply:focus-visible {
+  color: var(--law-paper);
+  transform: translateX(0.25rem);
+}
+.reply:focus-visible {
+  outline-offset: -2px;
+}
+.idx {
+  font-family: var(--font-meta), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: var(--law-ink-3);
+}
+.reply[data-silent='true'] {
+  color: var(--law-ink-3);
+}
+.reply[data-hold='true'] {
+  color: #eab0a8;
+}
+.reply[data-hold='true']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: calc(var(--held, 0) * 100%);
+  background: var(--law-signal-bright);
+}
+.hint {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--font-meta), monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--law-ink-3);
+}
+.timer {
+  height: 1px;
+  margin-top: 0.85rem;
+  background: rgba(239, 236, 228, 0.4);
+  transform-origin: left center;
+  animation: drain linear forwards;
+}
+@keyframes drain {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.write {
+  animation: appear 0.7s ease both;
+}
+.write label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-meta), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--law-ink-3);
+}
+.write textarea {
+  width: 100%;
+  min-height: 4.2rem;
+  max-height: 32svh;
+  padding: 0.4rem 0;
+  resize: none;
+  border: 0;
+  border-bottom: 1px solid var(--law-line-strong);
+  background: transparent;
+  color: var(--law-paper);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.55rem);
+  line-height: 1.3;
+  caret-color: var(--law-paper);
+  outline: none;
+}
+.write textarea:focus {
+  border-bottom-color: var(--law-paper);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin-top: 0.75rem;
+}
+.quiet {
+  min-height: 2.75rem;
+  padding: 0 0.1rem;
+  background: none;
+  border: 0;
+  color: var(--law-ink-3);
+  font-size: 0.95em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.quiet:hover,
+.quiet:focus-visible {
+  color: var(--law-paper);
+}
+.quiet[data-primary='true'] {
+  color: var(--law-paper);
+  border-bottom: 1px solid var(--law-line-strong);
+}
+.count {
+  align-self: center;
+  margin-left: auto;
+  font-family: var(--font-meta), monospace;
+  font-size: 0.66rem;
+  color: var(--law-ink-3);
+}
+
+/* --- Title card, and the way out ---------------------------------------- */
+
+.card {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  background: #000;
+  text-align: center;
+  padding: 2rem;
+  animation: enter 0.9s ease both;
+}
+.card p {
+  margin: 0;
+  font-family: var(--font-meta), monospace;
+  font-size: clamp(0.85rem, 0.7rem + 0.8vw, 1.15rem);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  animation: card 2.4s ease both;
+}
+@keyframes card {
+  from {
+    opacity: 0;
+    letter-spacing: 0.5em;
+  }
+}
+.pause {
+  position: absolute;
+  top: max(0.9rem, env(safe-area-inset-top, 0px));
+  right: 1rem;
+  z-index: 4;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.6rem;
+  background: none;
+  border: 0;
+  font-family: var(--font-meta), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  color: var(--law-ink-3);
+  cursor: pointer;
+}
+.pause:hover,
+.pause:focus-visible {
+  color: var(--law-paper);
+}
+.end {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 2rem;
+  padding: 2rem;
+  text-align: center;
+  background: #000;
+}
+.end a {
+  color: var(--law-ink-3);
+  font-family: var(--font-meta), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .line,
+  .replies,
+  .write,
+  .card p {
+    animation: none;
+  }
+  .rain,
+  .rain::after,
+  .signal {
+    animation: none;
+  }
+  .reply,
+  .line {
+    transition: none;
+  }
+}
+.frame[data-reduced='true'] .line,
+.frame[data-reduced='true'] .replies,
+.frame[data-reduced='true'] .write,
+.frame[data-reduced='true'] .card p,
+.frame[data-reduced='true'] .rain,
+.frame[data-reduced='true'] .rain::after,
+.frame[data-reduced='true'] .signal {
+  animation: none;
+}
+.frame[data-reduced='true'] .reply {
+  transition: none;
+}

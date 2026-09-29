@@ -35,6 +35,27 @@ export function renderText(
         return principle?.statements[0]?.text ?? fallback;
       }
       if (source === 'var') return String(state.vars[name] ?? fallback);
+      // The exact words of the latest note carrying that tag.
+      if (source === 'note') {
+        const note = state.notes.findLast((n) => n.tags.includes(name));
+        return note?.text ? escapePlayerText(note.text) : fallback;
+      }
+      // Seconds the player took at one point of a conversation: scene/node.
+      if (source === 'secs') {
+        const [sceneId, nodeId] = name.split('/');
+        const line = state.lines.findLast(
+          (l) => l.sceneId === sceneId && l.nodeId === nodeId,
+        );
+        return line ? String(Math.max(1, Math.round(line.hesitationMs / 1000))) : fallback;
+      }
+      // What the player wrote at one point of a conversation: scene.node.
+      if (source === 'said') {
+        const [sceneId, nodeId] = name.split('/');
+        const line = state.lines.findLast(
+          (l) => l.sceneId === sceneId && l.nodeId === nodeId && l.text,
+        );
+        return line?.text ? escapePlayerText(line.text) : fallback;
+      }
       if (source === 'value') return String(state.choices[name] ?? fallback);
       if (source === 'text')
         return name in state.justifications

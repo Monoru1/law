@@ -1,10 +1,12 @@
 import { eventSchema } from './schema';
 import { resolveScene } from './flow';
+import { clockExpired, talkNode, talkOf, visibleReplies } from './talk';
 import type { Content, GameEvent, GameState } from './types';
 
 // Events that can only be recorded while the player is inside that scene.
 const IN_SCENE = new Set<GameEvent['type']>([
   'choice_locked',
+  'line_chosen',
   'certainty_given',
   'justification_given',
   'justification_declined',
@@ -33,8 +35,24 @@ export function validateEvent(
     )
       invalid();
   if (event.type === 'memory_inherited') {
-    if (!content.inherits || state.events.length !== 1) invalid();
-    const known = new Set(content.inherits?.sceneIds ?? []);
+    const primary = content.inherits;
+    const source = [primary, ...(content.alsoInherits ?? [])].find(
+      (s) => s?.timelineId === event.fromTimelineId,
+    );
+    const inherited = state.events.filter((e) => e.type === 'memory_inherited');
+    // Memories are copied in before the first scene, once per source, the
+    // primary one first.
+    if (
+      !source ||
+      state.events.length < 1 ||
+      !state.events.every(
+        (e) => e.type === 'run_started' || e.type === 'memory_inherited',
+      ) ||
+      inherited.some((e) => e.fromTimelineId === event.fromTimelineId) ||
+      (source !== primary && primary && inherited.length === 0)
+    )
+      invalid();
+    const known = new Set(source?.sceneIds ?? []);
     const memory = event.memory;
     if (
       Object.keys(memory.choices).some((id) => !known.has(id)) ||
@@ -109,6 +127,59 @@ export function validateEvent(
       )
         invalid();
       if (input.kind === 'passage') invalid();
+      if (input.kind === 'talk') {
+        const track = state.talk[event.sceneId];
+        // A conversation is locked only once it has reached an end, and on
+        // exactly the outcome it ended on.
+        if (!track || track.cursor !== null || track.end !== event.value)
+          invalid();
+      }
+    }
+    if (event.type === 'line_chosen') {
+      const scene = resolveScene(raw, state);
+      const talk = talkOf(scene);
+      const track = state.talk[event.sceneId];
+      const node =
+        talk && track?.cursor ? talkNode(talk, track.cursor) : undefined;
+      if (!talk || !track || !node || node.id !== event.nodeId)
+        return invalid();
+      if (event.sceneId in state.choices) invalid();
+      if (event.mode === 'written' || event.mode === 'declined') {
+        if (!node.write) invalid();
+        if (
+          event.mode === 'declined' &&
+          (event.text || event.optionId !== 'declined')
+        )
+          invalid();
+        if (event.mode === 'written') {
+          const text = event.text?.trim() ?? '';
+          if (
+            event.optionId !== 'written' ||
+            !text ||
+            text !== event.text ||
+            text.length > (node.write?.maxLength ?? 0)
+          )
+            invalid();
+        }
+      } else if (event.mode === 'timeout') {
+        if (
+          !(node.ask?.timeoutMs || clockExpired(state, scene, event.at)) ||
+          event.optionId !== 'timeout' ||
+          event.text
+        )
+          invalid();
+      } else {
+        // 'reply' or 'silence': a visible reply of the node, of matching kind.
+        const reply = visibleReplies(state, scene, node).find(
+          (r) => r.id === event.optionId,
+        );
+        if (
+          !reply ||
+          Boolean(reply.silent) !== (event.mode === 'silence') ||
+          event.text
+        )
+          invalid();
+      }
     }
   }
   if ('principleId' in event) {

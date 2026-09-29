@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '../src/store/gameStore';
+import { useT0GameStore } from '../src/store/gameStoreT0';
 import { useT2GameStore } from '../src/store/gameStoreT2';
 import { useT3GameStore } from '../src/store/gameStoreT3';
 import { content, copy } from '../src/content';
+import { contentT0 } from '../src/content/t0';
 import { contentT2 } from '../src/content/t2';
 import { contentT3 } from '../src/content/t3';
 import { replay, getTimelineDoors } from '../src/engine';
@@ -14,12 +16,17 @@ import { Dialog } from '../src/ui/primitives/Dialog';
 export default function Home() {
   const router = useRouter();
   const { save, loaded, error, hydrate } = useGameStore();
+  const exam = useT0GameStore();
   const house = useT2GameStore();
   const city = useT3GameStore();
   const [presentingId, setPresentingId] = useState<string | null>(null);
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
+  const hydrateExam = exam.hydrate;
+  useEffect(() => {
+    if (!exam.loaded) void hydrateExam();
+  }, [exam.loaded, hydrateExam]);
   const hydrateHouse = house.hydrate;
   useEffect(() => {
     if (!house.loaded) void hydrateHouse();
@@ -29,6 +36,10 @@ export default function Home() {
     if (!city.loaded) void hydrateCity();
   }, [city.loaded, hydrateCity]);
   const state = useMemo(() => replay(save?.events ?? [], content), [save]);
+  const examState = useMemo(
+    () => replay(exam.save?.events ?? [], contentT0),
+    [exam.save],
+  );
   const houseState = useMemo(
     () => replay(house.save?.events ?? [], contentT2),
     [house.save],
@@ -40,13 +51,15 @@ export default function Home() {
   const doors = useMemo(
     () =>
       getTimelineDoors({
+        t0: { state: examState, content: contentT0 },
         t1: { state, content },
         t2: { state: houseState, content: contentT2 },
         t3: { state: cityState, content: contentT3 },
       }),
-    [state, houseState, cityState],
+    [examState, state, houseState, cityState],
   );
   const routes: Record<string, string> = {
+    t0: '/jouer/t0',
     t1: '/jouer',
     t2: '/jouer/t2',
     t3: '/jouer/t3',
@@ -67,11 +80,13 @@ export default function Home() {
       <div className="home-body">
         <h1 className="serif">THE LAW</h1>
         <p className="serif">{copy.home.tagline}</p>
-        {[error, house.error, city.error].filter(Boolean).map((message, i) => (
-          <p key={i} role="alert" style={{ fontSize: '1rem' }}>
-            {message}
-          </p>
-        ))}
+        {[error, exam.error, house.error, city.error]
+          .filter(Boolean)
+          .map((message, i) => (
+            <p key={i} role="alert" style={{ fontSize: '1rem' }}>
+              {message}
+            </p>
+          ))}
         <div className="home-doors">
           {doors.map((door) => {
             const meta = copy.doors.find(
@@ -94,7 +109,7 @@ export default function Home() {
                   >
                     {copy.enter}
                   </Button>
-                ) : loaded && house.loaded && city.loaded ? (
+                ) : loaded && exam.loaded && house.loaded && city.loaded ? (
                   <Button onClick={() => router.push(routes[door.timelineId]!)}>
                     {door.status === 'in_progress'
                       ? copy.home.resume
@@ -107,7 +122,7 @@ export default function Home() {
             );
           })}
         </div>
-        {(save || house.save || city.save) && (
+        {(save || exam.save || house.save || city.save) && (
           <div className="home-actions">
             <Link href="/ma-loi" className="law-button ghost">
               {copy.home.laws}

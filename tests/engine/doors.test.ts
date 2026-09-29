@@ -11,7 +11,11 @@ const statuses = (
   getTimelineDoors({
     t1: { state: t1, content },
     t2: { state: t2, content: contentT2 },
-  }).map((door) => door.status);
+  })
+    .map((door) => door.status)
+    // The examination door (t0) has its own test; these are the doors that
+    // follow it.
+    .slice(1);
 const empty = replay([], content);
 const finished = replay(
   saveFixture([
@@ -40,6 +44,11 @@ it('opens the house only after the room, and never unlocks presentation doors', 
     'presentation',
     'presentation',
   ]);
+});
+
+it('shows the examination door as a presentation until its content is provided', () => {
+  const doors = getTimelineDoors({ t1: { state: empty, content } });
+  expect(doors[0]).toMatchObject({ timelineId: 't0', status: 'presentation' });
 });
 
 it('keeps a started house resumable even if the room is erased later', () => {

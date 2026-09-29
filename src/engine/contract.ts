@@ -1,4 +1,4 @@
-import type { Content, InputSpec, Scene } from './types';
+import type { Content, InputSpec, Scene, TalkSpec } from './types';
 
 // Exact canonical form, without probabilistic hashes or browser globals.
 export function canonical(value: unknown): string {
@@ -15,6 +15,42 @@ export function canonical(value: unknown): string {
 export const contractKey = (sceneId: string, version: number): string =>
   `${sceneId}@${version}`;
 
+// A conversation is interpreted through its graph: who answers what, where it
+// goes and what it records. What is said aloud, labels and prompts are not.
+function talkContract(talk: TalkSpec) {
+  return {
+    start: talk.start,
+    clock: talk.clock,
+    nodes: talk.nodes.map((node) => ({
+      id: node.id,
+      effects: node.effects,
+      next: node.next,
+      end: node.end,
+      route: node.route,
+      ask: node.ask && {
+        timeoutMs: node.ask.timeoutMs,
+        onTimeout: node.ask.onTimeout,
+        replies: node.ask.replies.map((reply) => ({
+          id: reply.id,
+          next: reply.next,
+          effects: reply.effects,
+          evidence: reply.evidence,
+          requires: reply.requires,
+          once: reply.once,
+          silent: reply.silent,
+          hold: reply.hold,
+        })),
+      },
+      write: node.write && {
+        maxLength: node.write.maxLength,
+        next: node.write.next,
+        declineNext: node.write.declineNext,
+        effects: node.write.effects,
+      },
+    })),
+  };
+}
+
 function inputContract(input: Partial<InputSpec> | undefined) {
   if (!input) return undefined;
   const options =
@@ -30,6 +66,7 @@ function inputContract(input: Partial<InputSpec> | undefined) {
     min: 'min' in input ? input.min : undefined,
     max: 'max' in input ? input.max : undefined,
     step: 'step' in input ? input.step : undefined,
+    talk: 'talk' in input && input.talk ? talkContract(input.talk) : undefined,
   };
 }
 

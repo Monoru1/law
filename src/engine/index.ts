@@ -13,3 +13,5 @@ export * from './validation';
 export * from './pacing';
 export * from './contract';
 export * from './memory';
+export * from './talk';
+export * from './audit';

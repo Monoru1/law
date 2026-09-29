@@ -55,11 +55,28 @@ const SCENE_GAINS: Partial<Record<string, LayerGains>> = {
   't3.sortie': { drone: 0.012, pulse: 0, texture: 0.022 },
 };
 
+// The examination has no acts: each place has its own air. Rain leans on the
+// filtered-noise layer; the room is nearly silent; silence is exactly zero.
+const AMBIENCE_GAINS: Record<string, LayerGains> = {
+  rain: { drone: 0.02, pulse: 0, texture: 0.075 },
+  room: { drone: 0.03, pulse: 0, texture: 0.01 },
+  corridor: { drone: 0.026, pulse: 0, texture: 0.02 },
+  // A lived-in room: a low warmth and almost nothing else.
+  home: { drone: 0.022, pulse: 0, texture: 0.008 },
+  silence: { drone: 0, pulse: 0, texture: 0 },
+};
+
 export function soundscapeFor(
   sceneId: string,
   ambience: string | undefined,
   currentAct: number,
 ): Soundscape {
   const act = actFor(ambience, currentAct);
-  return { act, gains: SCENE_GAINS[sceneId] ?? gainsForAct(act) };
+  return {
+    act,
+    gains:
+      (ambience ? AMBIENCE_GAINS[ambience] : undefined) ??
+      SCENE_GAINS[sceneId] ??
+      gainsForAct(act),
+  };
 }

@@ -1,5 +1,6 @@
 import { applyEffects, choiceEvidence, matchOutcome } from './effects';
 import { resolveScene } from './flow';
+import { applyLine, enterTalk } from './talk';
 import type {
   Content,
   GameEvent,
@@ -26,6 +27,9 @@ export const initialState = (): GameState => ({
   relations: [],
   rules: [],
   inheritedContradictions: [],
+  notes: [],
+  lines: [],
+  talk: {},
   completed: false,
   currentSceneId: null,
   decisions: 0,
@@ -56,7 +60,10 @@ export function reduce(
           next.declinedLaws.push(principleId);
       for (const law of memory.laws)
         next.laws.push({
-          number: law.number,
+          // A second memory may reuse a number: the later law takes the next.
+          number: next.laws.some((l) => l.number === law.number)
+            ? Math.max(0, ...next.laws.map((l) => l.number)) + 1
+            : law.number,
           principleId: law.principleId,
           statementId: law.statementId,
           statementText: law.statementText,
@@ -69,6 +76,16 @@ export function reduce(
           origin: law.origin ? { ...law.origin, eventId: event.id } : undefined,
         });
       Object.assign(next.certainty, memory.certainty);
+      for (const note of memory.notes ?? [])
+        if (!next.notes.some((n) => n.id === note.id))
+          next.notes.push(structuredClone(note));
+      for (const line of memory.lines ?? [])
+        if (
+          !next.lines.some(
+            (l) => l.eventId === line.eventId && l.nodeId === line.nodeId,
+          )
+        )
+          next.lines.push(structuredClone(line));
       for (const record of memory.relations) {
         let existing = next.relations.find(
           (r) => r.characterId === record.characterId,
@@ -106,6 +123,15 @@ export function reduce(
       if (!next.visited.includes(event.sceneId))
         next.visited.push(event.sceneId);
       next.currentSceneId = event.sceneId;
+      {
+        const entered = content.scenes.find((s) => s.id === event.sceneId);
+        if (entered)
+          enterTalk(next, resolveScene(entered, next), {
+            sceneId: event.sceneId,
+            eventId: event.id,
+            at: event.at,
+          });
+      }
       // A confrontation can be visited again; only its current answer resets.
       if (event.sceneId === flow.confrontationSceneId)
         delete next.choices[event.sceneId];
@@ -165,6 +191,12 @@ export function reduce(
           if (raised) next.pendingConfrontations.push(pending);
         }
       }
+      break;
+    }
+    case 'line_chosen': {
+      const raw = content.scenes.find((s) => s.id === event.sceneId);
+      // Deleted content must never destroy an existing save.
+      if (raw) applyLine(next, resolveScene(raw, next), event);
       break;
     }
     case 'certainty_given':

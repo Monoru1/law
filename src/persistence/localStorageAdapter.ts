@@ -1,10 +1,12 @@
 import { content } from '../content';
 import { contentT2 } from '../content/t2';
 import { contentT3 } from '../content/t3';
+import { contentT0 } from '../content/t0';
 import type { Content } from '../engine';
 import { IncompatibleSaveError, migrateSave } from './migrations';
 import type { RecoveryCopy, SaveAdapter, SaveGame } from './SaveAdapter';
 export const SAVE_KEY = 'thelaw:save';
+export const SAVE_KEY_T0 = 'thelaw:save-t0';
 export const SAVE_KEY_T2 = 'thelaw:save-t2';
 export const SAVE_KEY_T3 = 'thelaw:save-t3';
 export const MAX_RECOVERY_COPIES = 5;
@@ -136,7 +138,7 @@ export function listRecoveryCopies(saveKey = SAVE_KEY): RecoveryCopy[] {
 }
 export function exportRecoveryCopy(key: string): string {
   if (
-    ![SAVE_KEY, SAVE_KEY_T2, SAVE_KEY_T3].some((saveKey) =>
+    ![SAVE_KEY_T0, SAVE_KEY, SAVE_KEY_T2, SAVE_KEY_T3].some((saveKey) =>
       listRecoveryCopies(saveKey).some((copy) => copy.key === key),
     )
   )
@@ -147,6 +149,10 @@ export function exportStoredSave(saveKey = SAVE_KEY): string | null {
   return localStorage.getItem(saveKey);
 }
 export const localStorageAdapter = createLocalStorageAdapter(SAVE_KEY, content);
+export const t0LocalStorageAdapter = createLocalStorageAdapter(
+  SAVE_KEY_T0,
+  contentT0,
+);
 export const t2LocalStorageAdapter = createLocalStorageAdapter(
   SAVE_KEY_T2,
   contentT2,
