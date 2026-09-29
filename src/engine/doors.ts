@@ -2,7 +2,7 @@ import type { Content, GameState } from './types';
 
 // A timeline is playable only when content provides it; adding scenes alone
 // never unlocks a door. Timeline II also needs a completed Timeline I.
-export const TIMELINE_IDS = ['t1', 't2', 't3', 't4'] as const;
+export const TIMELINE_IDS = ['t0', 't1', 't2', 't3', 't4'] as const;
 export type TimelineId = (typeof TIMELINE_IDS)[number];
 export type DoorStatus =
   'available' | 'in_progress' | 'completed' | 'presentation';

@@ -13,7 +13,7 @@ import registry from '../content/contracts.json';
 import type { SaveGame } from './SaveAdapter';
 import legacyContent from './legacy-content-v1.json';
 
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 // Kept for reading schema 2–3 saves, which embedded this canonical form.
 export const contentIdentity = (data: unknown): string => canonical(data);
@@ -115,6 +115,9 @@ const migrations: Record<number, (data: unknown) => unknown> = {
   },
   2: (raw) => fromEmbeddedIdentity(raw),
   3: (raw) => fromEmbeddedIdentity(raw),
+  // Schema 5 adds conversations, notes and Timeline 0. An older journal has
+  // none of them: its events replay unchanged, only the label moves.
+  4: (raw) => ({ ...(raw as object), schemaVersion: 5 }),
 };
 function fromEmbeddedIdentity(raw: unknown) {
   const old = legacySaveSchema.parse(raw);

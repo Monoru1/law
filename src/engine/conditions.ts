@@ -46,6 +46,25 @@ export function evaluate(condition: Condition, state: GameState): boolean {
     return condition.contradiction === 'pending'
       ? state.pendingConfrontations.length > 0
       : state.pendingConfrontations.length === 0;
+  if ('noted' in condition) {
+    const { tag, status, stance } = condition.noted;
+    return state.notes.some(
+      (n) =>
+        n.tags.includes(tag) &&
+        (!status || n.status === status) &&
+        (!stance || n.stance === stance),
+    );
+  }
+  if ('said' in condition) {
+    const { sceneId, nodeId, optionId, mode } = condition.said;
+    return state.lines.some(
+      (l) =>
+        l.sceneId === sceneId &&
+        l.nodeId === nodeId &&
+        (!optionId || l.optionId === optionId) &&
+        (!mode || l.mode === mode),
+    );
+  }
   if ('rule' in condition) {
     const record = state.rules.find((r) => r.ruleId === condition.rule.ruleId);
     const current = record?.events.findLast(

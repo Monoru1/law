@@ -161,7 +161,7 @@ describe('save compatibility is decided per scene contract', () => {
     const migrated = migrateSave(v1, content);
     expect(migrated).toEqual({
       ...v1,
-      schemaVersion: 4,
+      schemaVersion: 5,
       timelineId: 't1',
     });
     expect(legacyContent.version).toBe('1.0.0');
@@ -182,7 +182,7 @@ describe('save compatibility is decided per scene contract', () => {
     expect(migrated.events).toContainEqual({ ...visit, sceneVersion: 2 });
     for (const item of kept) expect(migrated.events).toContainEqual(item);
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 5,
       timelineId: 't1',
       runId: 'legacy-17c614d',
       createdAt: 1,
@@ -230,7 +230,7 @@ describe('save compatibility is decided per scene contract', () => {
     );
   });
 
-  it.each([0, 5, -1, '4'])(
+  it.each([0, 6, -1, '4'])(
     'retains unsupported schema %s without calling it corruption',
     async (schemaVersion) => {
       const { map } = storageFixture();

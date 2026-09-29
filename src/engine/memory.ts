@@ -68,6 +68,8 @@ export function buildMemory(
       events: record.events.map((event) => ({ ...event })),
     })),
     certainty: { ...state.certainty },
+    notes: state.notes.map((note) => structuredClone(note)),
+    lines: state.lines.map((line) => structuredClone(line)),
     // Every contradiction this run closed, plus whatever it had already
     // inherited: the chain composes without this timeline knowing where an
     // earlier one came from.
