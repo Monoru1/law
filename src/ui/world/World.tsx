@@ -24,6 +24,23 @@ type Location =
   | 'garden'
   | 'balcony'
   | 'office'
+  | 'counter'
+  | 'break-room'
+  | 'meeting-room'
+  | 'rule-desk'
+  | 'workstation'
+  | 'archive'
+  | 'report-desk'
+  | 'waiting-room'
+  | 'case-desk'
+  | 'exception-desk'
+  | 'private-office'
+  | 'pressure-office'
+  | 'quiet-office'
+  | 'strike-hall'
+  | 'memory-office'
+  | 'register'
+  | 'exit'
   | 'city';
 
 type WorldStyle = CSSProperties & {
@@ -79,7 +96,44 @@ function sceneLocation(timelineId: string, sceneId: string): Location {
   if (sceneId === 't2.les-nouvelles' || sceneId === 't2.ce-qu-on-protege')
     return 'dining';
   if (timelineId === 't2') return 'house';
-  return sceneId === 't3.la-fenetre' ? 'city' : 'office';
+  const cityLocations: Partial<Record<string, Location>> = {
+    't3.premier-jour': 'office',
+    't3.dossier-anciennete': 'counter',
+    't3.la-pause': 'break-room',
+    't3.dossier-urgence': 'counter',
+    't3.reunion-service': 'meeting-room',
+    't3.la-regle': 'rule-desk',
+    't3.la-fenetre': 'city',
+    't3.le-cafe': 'break-room',
+    't3.premiere-application': 'workstation',
+    't3.la-routine': 'archive',
+    't3.consequence-differee': 'counter',
+    't3.le-rapport': 'report-desk',
+    't3.nadia': 'waiting-room',
+    't3.nadia-dossier': 'case-desk',
+    't3.exception': 'exception-desk',
+    't3.precedent': 'archive',
+    't3.farid-le-sait': 'private-office',
+    't3.la-pression': 'pressure-office',
+    't3.fausse-accalmie': 'quiet-office',
+    't3.la-greve': 'strike-hall',
+    't3.retour-connu': 'memory-office',
+    't3.retour-inconnu': 'archive',
+    't3.la-liste': 'register',
+    't3.apres-la-liste': 'quiet-office',
+    't3.quatre-cent-dix-sept': 'city',
+    't3.ce-qui-reste': 'break-room',
+    't3.le-registre': 'register',
+    't3.sortie': 'exit',
+  };
+  return cityLocations[sceneId] ?? 'office';
+}
+
+function cityFocus(sceneId: string) {
+  if (sceneId === 't3.la-fenetre') return 'windows';
+  if (sceneId === 't3.quatre-cent-dix-sept') return '417';
+  if (sceneId === 't3.sortie') return 'exit';
+  return undefined;
 }
 
 function ArchitecturalDoor({ open }: { open: boolean }) {
@@ -204,6 +258,12 @@ function CityWindows() {
             <stop offset="1" stopColor="rgba(7,7,9,.88)" />
           </linearGradient>
         </defs>
+        <g className={styles.cityFacades}>
+          <rect x="2" y="29" width="25" height="71" />
+          <rect x="29" y="13" width="30" height="87" />
+          <rect x="61" y="24" width="18" height="76" />
+          <rect x="81" y="7" width="17" height="93" />
+        </g>
         <rect width="100" height="100" fill="url(#law-city-windows)" />
         <g className={styles.cityLit}>
           <rect x="12.7" y="18.2" width="2.6" height="3" />
@@ -214,6 +274,23 @@ function CityWindows() {
         </g>
         <rect width="100" height="100" fill="url(#law-city-depth)" />
       </svg>
+    </div>
+  );
+}
+
+function AdministrativeSpace() {
+  return (
+    <div className={styles.administration} data-primitive="administration">
+      <span className={styles.serviceCounter} />
+      <span className={styles.deskPlane} />
+      <span className={styles.partitionOne} />
+      <span className={styles.partitionTwo} />
+      <span className={styles.waitingSeatOne} />
+      <span className={styles.waitingSeatTwo} />
+      <span className={styles.coffeeMachine} />
+      <span className={styles.noticeBoard} />
+      <span className={styles.documentPlane} />
+      <span className={styles.stairRail} />
     </div>
   );
 }
@@ -274,6 +351,7 @@ export function World({
     '--world-memory': String(Math.min(visible.length, 12) / 12),
   };
   const light = kind === 'house' ? houseLight(sceneId) : 'cold';
+  const focus = kind === 'city' ? cityFocus(sceneId) : undefined;
 
   return (
     <div
@@ -284,7 +362,7 @@ export function World({
       data-location={location}
       data-light={light}
       data-act={kind === 'city' ? actNumber(ambience) : undefined}
-      data-focus={sceneId === 't3.la-fenetre' ? 'windows' : undefined}
+      data-focus={focus}
       data-phase={phase}
       data-regression={regression}
       style={style}
@@ -311,8 +389,9 @@ export function World({
       {kind === 'city' && (
         <>
           <Corridor />
-          <ArchitecturalDoor open={phase === 'sealed'} />
+          <ArchitecturalDoor open={phase === 'sealed' || location === 'exit'} />
           <CityWindows />
+          <AdministrativeSpace />
           <FileStack />
           <OfficeLight />
         </>

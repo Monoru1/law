@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { content, copy } from '../../src/content';
 import { contentT2 } from '../../src/content/t2';
+import { contentT3 } from '../../src/content/t3';
 import {
   choiceFact,
   lawStatement,
@@ -16,6 +17,7 @@ import {
 import type { SaveGame } from '../../src/persistence/SaveAdapter';
 import { useGameStore } from '../../src/store/gameStore';
 import { useT2GameStore } from '../../src/store/gameStoreT2';
+import { useT3GameStore } from '../../src/store/gameStoreT3';
 import { Button } from '../../src/ui/primitives/Button';
 
 const answers = {
@@ -80,6 +82,42 @@ function Decisions({ state, content }: { state: GameState; content: Content }) {
   });
 }
 
+const CITY_TRACE_SCENES = new Set([
+  't3.la-regle',
+  't3.nadia-dossier',
+  't3.exception',
+  't3.precedent',
+  't3.la-liste',
+  't3.le-registre',
+]);
+
+function CityTraces({ state }: { state: GameState }) {
+  const events = state.events.filter(
+    (
+      event,
+    ): event is Extract<
+      (typeof state.events)[number],
+      { type: 'choice_locked' }
+    > => event.type === 'choice_locked' && CITY_TRACE_SCENES.has(event.sceneId),
+  );
+  return events.map((event) => {
+    const scene = contentT3.scenes.find((item) => item.id === event.sceneId);
+    const fact = choiceFact(event.sceneId, state, contentT3);
+    return (
+      <article key={event.id}>
+        <span className="mono">{scene?.title ?? event.sceneId}</span>
+        {fact && <p className="serif">{renderText(fact, state, contentT3)}</p>}
+      </article>
+    );
+  });
+}
+
+function sceneTitle(sceneId: string) {
+  return [...content.scenes, ...contentT2.scenes, ...contentT3.scenes].find(
+    (scene) => scene.id === sceneId,
+  )?.title;
+}
+
 export default function MyLaw() {
   const save = useGameStore((s) => s.save);
   const loaded = useGameStore((s) => s.loaded);
@@ -87,6 +125,7 @@ export default function MyLaw() {
   const hydrate = useGameStore((s) => s.hydrate);
   const clear = useGameStore((s) => s.clear);
   const house = useT2GameStore();
+  const city = useT3GameStore();
   const [erasing, setErasing] = useState(false);
   useEffect(() => {
     if (!loaded) void hydrate();
@@ -95,18 +134,30 @@ export default function MyLaw() {
   useEffect(() => {
     if (!house.loaded) void hydrateHouse();
   }, [house.loaded, hydrateHouse]);
+  const hydrateCity = city.hydrate;
+  useEffect(() => {
+    if (!city.loaded) void hydrateCity();
+  }, [city.loaded, hydrateCity]);
   const state = useMemo(() => replay(save?.events ?? [], content), [save]);
   const houseState = useMemo(
     () => replay(house.save?.events ?? [], contentT2),
     [house.save],
   );
-  // The house carries the laws forward; its journal holds their latest form.
-  const latest = house.save
-    ? { state: houseState, content: contentT2 }
-    : { state, content };
+  const cityState = useMemo(
+    () => replay(city.save?.events ?? [], contentT3),
+    [city.save],
+  );
+  // Each threshold copies the complete document forward. The latest journal
+  // therefore contains every earlier law without rewriting its history.
+  const latest = city.save
+    ? { state: cityState, content: contentT3 }
+    : house.save
+      ? { state: houseState, content: contentT2 }
+      : { state, content };
   const contradictions = [
     { state, content },
     ...(house.save ? [{ state: houseState, content: contentT2 }] : []),
+    ...(city.save ? [{ state: cityState, content: contentT3 }] : []),
   ].flatMap((run) =>
     run.state.contradictions.map((c) => {
       const answer = run.state.events.find((e) => e.id === c.answerEventId);
@@ -123,7 +174,9 @@ export default function MyLaw() {
       };
     }),
   );
-  const exists = Boolean(save || house.save);
+  const exists = Boolean(save || house.save || city.save);
+  const people = city.save ? cityState : houseState;
+  const errors = [error, house.error, city.error].filter(Boolean);
   return (
     <main className="law-page">
       <header className="site-top mono">
@@ -132,20 +185,26 @@ export default function MyLaw() {
         </Link>
         <Link
           className="law-button ghost"
-          href={house.save ? '/jouer/t2' : '/jouer'}
+          href={city.save ? '/jouer/t3' : house.save ? '/jouer/t2' : '/jouer'}
         >
-          {house.save ? 'RETOUR À LA MAISON ↗' : 'RETOUR À LA PIÈCE ↗'}
+          {city.save
+            ? 'RETOUR À LA VILLE ↗'
+            : house.save
+              ? 'RETOUR À LA MAISON ↗'
+              : 'RETOUR À LA PIÈCE ↗'}
         </Link>
       </header>
       <h1 className="serif">Ma loi.</h1>
-      {[error, house.error].filter(Boolean).map((message, i) => (
+      {errors.map((message, i) => (
         <p key={i} role="alert">
           {message}
         </p>
       ))}
       {!exists ? (
-        !error &&
-        loaded && <p className="serif beat">Aucune partie enregistrée.</p>
+        errors.length === 0 &&
+        loaded &&
+        house.loaded &&
+        city.loaded && <p className="serif beat">Aucune partie enregistrée.</p>
       ) : (
         <>
           <p
@@ -201,6 +260,12 @@ export default function MyLaw() {
                 <Decisions state={houseState} content={contentT2} />
               </>
             )}
+            {city.save && (
+              <>
+                <h3 className="mono">LA VILLE — TRACES STRUCTURANTES</h3>
+                <CityTraces state={cityState} />
+              </>
+            )}
           </section>
           <section>
             <h2 className="mono">03 / OBSERVATIONS</h2>
@@ -230,10 +295,10 @@ export default function MyLaw() {
               </article>
             ))}
           </section>
-          {houseState.relations.length > 0 && (
+          {people.relations.length > 0 && (
             <section>
               <h2 className="mono">05 / PERSONNES</h2>
-              {houseState.relations.map((record) => (
+              {people.relations.map((record) => (
                 <article key={record.characterId}>
                   <span className="mono">
                     {copy.people[record.characterId] ?? record.characterId}
@@ -241,8 +306,7 @@ export default function MyLaw() {
                   {record.events.map((item) => (
                     <p key={`${item.eventId}:${item.kind}`} className="serif">
                       {copy.relations[item.kind] ?? item.kind} —{' '}
-                      {contentT2.scenes.find((s) => s.id === item.sceneId)
-                        ?.title ?? ''}
+                      {sceneTitle(item.sceneId) ?? ''}
                     </p>
                   ))}
                 </article>
@@ -258,6 +322,11 @@ export default function MyLaw() {
                 {copy.exportHouse}
               </Button>
             )}
+            {city.save && (
+              <Button onClick={() => exportJson(city.save!)}>
+                Exporter La Ville
+              </Button>
+            )}
             {erasing ? (
               <>
                 <Button
@@ -265,6 +334,7 @@ export default function MyLaw() {
                   onClick={async () => {
                     await clear();
                     await house.clear();
+                    await city.clear();
                     setErasing(false);
                   }}
                 >

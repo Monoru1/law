@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import type { StoreApi, UseBoundStore } from 'zustand';
-import { actFor } from '../../audio/actAudio';
+import { soundscapeFor } from '../../audio/actAudio';
 import { createProceduralAudioManager } from '../../audio/AudioManager';
 import { replay, resolveScene, type Content } from '../../engine';
 import type { GameStore } from '../../store/createGameStore';
@@ -48,8 +48,13 @@ export function AudioDirector({
     const raw = content.scenes.find((s) => s.id === state.currentSceneId);
     if (!raw) return;
     const scene = resolveScene(raw, state);
-    act.current = actFor(scene.audio?.ambience, act.current);
-    manager.current.setAct(act.current);
+    const soundscape = soundscapeFor(
+      scene.id,
+      scene.audio?.ambience,
+      act.current,
+    );
+    act.current = soundscape.act;
+    manager.current.setProfile(soundscape.gains);
   }, [save, content]);
 
   useEffect(() => {

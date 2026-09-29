@@ -40,8 +40,8 @@ function houseScene(sceneId = 't2.le-mensonge') {
   });
 }
 
-function cityScene() {
-  return saveOf(contentT3, cityEvents([enter('t3.la-fenetre', contentT3)]), {
+function cityScene(sceneId = 't3.la-fenetre') {
+  return saveOf(contentT3, cityEvents([enter(sceneId, contentT3)]), {
     reportingConsent: false,
   });
 }
@@ -156,6 +156,63 @@ test('La Ville turns its declared act into architecture without 417 DOM nodes', 
   await captureCheckpoint(page, testInfo, 'world-t3-city-windows');
 });
 
+test('La Ville gives its late scenes distinct physical states', async ({
+  browser,
+}, testInfo) => {
+  const checkpoints = [
+    ['t3.le-cafe', 'break-room'],
+    ['t3.la-routine', 'archive'],
+    ['t3.le-rapport', 'report-desk'],
+    ['t3.nadia', 'waiting-room'],
+    ['t3.nadia-dossier', 'case-desk'],
+    ['t3.exception', 'exception-desk'],
+    ['t3.farid-le-sait', 'private-office'],
+    ['t3.la-pression', 'pressure-office'],
+    ['t3.fausse-accalmie', 'quiet-office'],
+    ['t3.la-greve', 'strike-hall'],
+    ['t3.la-liste', 'register'],
+    ['t3.apres-la-liste', 'quiet-office'],
+    ['t3.quatre-cent-dix-sept', 'city'],
+    ['t3.le-registre', 'register'],
+    ['t3.sortie', 'exit'],
+  ] as const;
+
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    reducedMotion: 'reduce',
+  });
+  const page = await context.newPage();
+  for (const [sceneId, location] of checkpoints) {
+    const save = cityScene(sceneId);
+    if (page.url() === 'about:blank') {
+      await seedStorage(page, { 'thelaw:save-t3': save });
+      await page.goto('/jouer/t3');
+    } else {
+      await page.evaluate(
+        ([key, value]) => localStorage.setItem(key, JSON.stringify(value)),
+        ['thelaw:save-t3', save] as const,
+      );
+      await page.reload();
+    }
+    const world = page.locator(`[data-location="${location}"]`);
+    await expect(world).toBeVisible();
+    await expect(
+      page.locator('[data-primitive="administration"]'),
+    ).toBeVisible();
+    if (sceneId === 't3.quatre-cent-dix-sept')
+      await expect(world).toHaveAttribute('data-focus', '417');
+    if (sceneId === 't3.sortie') {
+      await expect(world).toHaveAttribute('data-focus', 'exit');
+      await expect(page.locator('[data-primitive="door"]')).toHaveAttribute(
+        'data-open',
+        'true',
+      );
+    }
+    await captureCheckpoint(page, testInfo, `world-${sceneId.slice(3)}`);
+  }
+  await context.close();
+});
+
 for (const viewport of MOBILE_VIEWPORTS) {
   test(`world composition fits ${viewport.width}×${viewport.height}`, async ({
     page,
@@ -187,17 +244,20 @@ for (const viewport of MOBILE_VIEWPORTS) {
   test(`city architecture fits ${viewport.width}×${viewport.height}`, async ({
     page,
   }, testInfo) => {
+    const lateScene =
+      viewport.width === 360 ? 't3.quatre-cent-dix-sept' : 't3.sortie';
+    const focus = viewport.width === 360 ? '417' : 'exit';
     await page.setViewportSize(viewport);
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await seedStorage(page, { 'thelaw:save-t3': cityScene() });
+    await seedStorage(page, { 'thelaw:save-t3': cityScene(lateScene) });
     await page.goto('/jouer/t3');
-    await expect(exactButton(page, 'Sortir du bureau')).toBeVisible({
+    await expect(page.locator('.beat').first()).toBeVisible({
       timeout: 15_000,
     });
     await assertNoHorizontalOverflow(page, viewport.width);
     await expect(page.locator('[data-world="city"]')).toHaveAttribute(
       'data-focus',
-      'windows',
+      focus,
     );
     await captureCheckpoint(
       page,

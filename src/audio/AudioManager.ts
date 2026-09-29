@@ -1,4 +1,4 @@
-import { gainsForAct } from './actAudio';
+import { gainsForAct, type LayerGains } from './actAudio';
 
 export interface AudioManager {
   play(cue: string): void;
@@ -20,6 +20,7 @@ export const silentAudio: AudioManager = {
 export interface ActAudioDirector extends AudioManager {
   /** Cross-fades to the given act's layers over a few seconds. */
   setAct(act: number): void;
+  setProfile(gains: LayerGains): void;
   setMuted(muted: boolean): void;
   /** Starts the engine; must follow a real user gesture per browser policy. */
   resume(): void;
@@ -46,6 +47,7 @@ export function createProceduralAudioManager(): ActAudioDirector {
   let pulseGain: GainNode | null = null;
   let textureGain: GainNode | null = null;
   let currentAct = 0;
+  let currentGains = gainsForAct(0);
   let muted = false;
   let started = false;
 
@@ -59,7 +61,7 @@ export function createProceduralAudioManager(): ActAudioDirector {
 
   function applyGains(): void {
     if (!context || !droneGain || !pulseGain || !textureGain) return;
-    const gains = gainsForAct(currentAct);
+    const gains = currentGains;
     const now = context.currentTime;
     const factor = muted ? 0 : 1;
     for (const [node, value] of [
@@ -138,6 +140,11 @@ export function createProceduralAudioManager(): ActAudioDirector {
     },
     setAct(act: number) {
       currentAct = act;
+      currentGains = gainsForAct(currentAct);
+      safe(applyGains);
+    },
+    setProfile(gains: LayerGains) {
+      currentGains = gains;
       safe(applyGains);
     },
     setMuted(next: boolean) {

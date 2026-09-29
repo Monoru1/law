@@ -22,6 +22,7 @@ export function actFor(
 }
 
 export type LayerGains = { drone: number; pulse: number; texture: number };
+export type Soundscape = { act: number; gains: LayerGains };
 
 // Each layer enters gradually and never all at once: the drone carries the
 // whole piece, the pulse arrives at the rule, the texture only once the
@@ -36,4 +37,29 @@ const TABLE: LayerGains[] = [
 
 export function gainsForAct(act: number): LayerGains {
   return TABLE[Math.min(Math.max(act, 0), TABLE.length - 1)]!;
+}
+
+const SCENE_GAINS: Partial<Record<string, LayerGains>> = {
+  // Human pauses leave more air than the act around them.
+  't3.le-cafe': { drone: 0.034, pulse: 0.008, texture: 0.006 },
+  't3.nadia': { drone: 0.038, pulse: 0.012, texture: 0.014 },
+  // The false calm must actually sound calm, not merely less tense.
+  't3.fausse-accalmie': { drone: 0.016, pulse: 0, texture: 0.003 },
+  // An occupied system turned empty: room tone and distant material only.
+  't3.la-greve': { drone: 0.025, pulse: 0, texture: 0.042 },
+  // Signing and registration carry no musical verdict.
+  't3.la-liste': { drone: 0.012, pulse: 0, texture: 0 },
+  't3.le-registre': { drone: 0.018, pulse: 0, texture: 0.008 },
+  // At 417 the filtered city texture enters, still below the reading voice.
+  't3.quatre-cent-dix-sept': { drone: 0.045, pulse: 0.008, texture: 0.09 },
+  't3.sortie': { drone: 0.012, pulse: 0, texture: 0.022 },
+};
+
+export function soundscapeFor(
+  sceneId: string,
+  ambience: string | undefined,
+  currentAct: number,
+): Soundscape {
+  const act = actFor(ambience, currentAct);
+  return { act, gains: SCENE_GAINS[sceneId] ?? gainsForAct(act) };
 }

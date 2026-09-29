@@ -409,6 +409,20 @@ describe('POST /api/report — frontière de confiance', () => {
         }),
         ev({
           type: 'scene_entered',
+          sceneId: 't3.la-liste',
+          sceneVersion: scene('t3.la-liste'),
+        }),
+        ev({
+          type: 'choice_locked',
+          sceneId: 't3.la-liste',
+          sceneVersion: scene('t3.la-liste'),
+          input: 'binary',
+          value: 'signer',
+          hesitationMs: 900,
+          selectionChanges: 0,
+        }),
+        ev({
+          type: 'scene_entered',
           sceneId: 't3.sortie',
           sceneVersion: scene('t3.sortie'),
         }),
@@ -422,6 +436,7 @@ describe('POST /api/report — frontière de confiance', () => {
       textContent: string;
     };
     expect(sent.textContent).toContain('Par degré d’urgence');
+    expect(sent.textContent).toContain('Signer la liste');
     expect(sent.textContent).toContain('Suite de : house-run');
   });
 

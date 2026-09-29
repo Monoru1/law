@@ -1,6 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import type { GameEvent } from '../../src/engine';
-import { cityEvents, contentT3, fullHouseEvents, saveOf } from './journeys';
+import {
+  cityEvents,
+  contentT3,
+  decide,
+  enter,
+  fullHouseEvents,
+  saveOf,
+} from './journeys';
 import { content, contentT2, roomEvents } from './journeys';
 
 const ROOM = 'thelaw:save';
@@ -168,4 +175,107 @@ test('a night — a day — in the city keeps mute persistent and works on mobil
   await page.getByRole('button', { name: 'Quitter', exact: true }).click();
   await page.getByRole('button', { name: 'Paramètres', exact: true }).click();
   await expect(page.getByRole('checkbox')).toBeChecked({ timeout: 15_000 });
+});
+
+test('three late decisions keep their consequence indefinitely and advance once', async ({
+  browser,
+}) => {
+  const cases = [
+    {
+      sceneId: 't3.nadia-dossier',
+      option: 'Appliquer strictement la règle',
+      nextSceneId: 't3.precedent',
+    },
+    {
+      sceneId: 't3.la-liste',
+      option: 'Signer la liste',
+      nextSceneId: 't3.apres-la-liste',
+    },
+    {
+      sceneId: 't3.le-registre',
+      option: 'Maintenir',
+      nextSceneId: 't3.sortie',
+    },
+  ] as const;
+
+  for (const item of cases) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const sceneIndex = contentT3.order.indexOf(item.sceneId);
+    const history = contentT3.order
+      .slice(0, sceneIndex)
+      .map((sceneId) => enter(sceneId, contentT3));
+    await seed(page, {
+      [CITY]: saveOf(
+        contentT3,
+        cityEvents([...history, enter(item.sceneId, contentT3)]),
+        { reportingConsent: false },
+      ),
+    });
+    await page.goto('/jouer/t3');
+    await button(page, item.option).click();
+    const next = button(page, 'Suivant');
+    await expect(next).toBeVisible({ timeout: 20_000 });
+    const beforeHold = await journal(page);
+    await page.waitForTimeout(8_000);
+    await expect(next).toBeVisible();
+    expect(await journal(page)).toEqual(beforeHold);
+
+    await next.click();
+    await expect
+      .poll(async () => {
+        const events = await journal(page);
+        return events.filter(
+          (event) =>
+            event.type === 'scene_entered' &&
+            event.sceneId === item.nextSceneId,
+        ).length;
+      })
+      .toBe(1);
+    await context.close();
+  }
+});
+
+test('Ma loi keeps La Ville structural traces without turning every click into a record', async ({
+  page,
+}) => {
+  await seed(page, {
+    [CITY]: saveOf(
+      contentT3,
+      cityEvents([
+        ...decide('t3.la-regle', 'urgence', contentT3),
+        ...decide('t3.nadia-dossier', 'envisager-exception', contentT3),
+        ...decide('t3.exception', 'accorder', contentT3),
+        ...decide('t3.precedent', 'expliquer', contentT3),
+        ...decide('t3.la-liste', 'signer', contentT3),
+        ...decide('t3.le-registre', 'reviser', contentT3),
+      ]),
+      { reportingConsent: false },
+    ),
+  });
+  await page.goto('/ma-loi');
+  await expect(
+    page.getByRole('heading', { name: 'LA VILLE — TRACES STRUCTURANTES' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Tu as fixé le critère d’attribution du bureau à l’urgence.',
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Tu as accordé une exception au dossier de Nadia.'),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Tu as signé la liste définitive des critères et précédents.',
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Tu as ouvert une révision du registre du bureau.'),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'RETOUR À LA VILLE ↗' }),
+  ).toBeVisible();
+  await expect(page.getByText(/Mila se confie/).first()).toBeVisible();
 });

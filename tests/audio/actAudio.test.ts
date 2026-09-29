@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { actFor, gainsForAct, ACT_AMBIENCE } from '../../src/audio/actAudio';
+import {
+  actFor,
+  gainsForAct,
+  soundscapeFor,
+  ACT_AMBIENCE,
+} from '../../src/audio/actAudio';
 
 describe('act audio direction', () => {
   it('maps every declared ambience to its act, from near-silence to tension', () => {
@@ -47,5 +52,19 @@ describe('act audio direction', () => {
   it('clamps out-of-range acts instead of throwing', () => {
     expect(gainsForAct(-3)).toEqual(gainsForAct(0));
     expect(gainsForAct(99)).toEqual(gainsForAct(4));
+  });
+
+  it('lets human pauses, the list, 417 and the exit breathe differently', () => {
+    const pressure = soundscapeFor('t3.la-pression', 'act-5', 0);
+    const calm = soundscapeFor('t3.fausse-accalmie', 'act-5', pressure.act);
+    const list = soundscapeFor('t3.la-liste', 'act-5', calm.act);
+    const city = soundscapeFor('t3.quatre-cent-dix-sept', 'act-6', list.act);
+    const exit = soundscapeFor('t3.sortie', 'act-6', city.act);
+
+    expect(calm.gains.pulse).toBe(0);
+    expect(calm.gains.drone).toBeLessThan(pressure.gains.drone);
+    expect(list.gains.texture).toBe(0);
+    expect(city.gains.texture).toBeGreaterThan(pressure.gains.texture);
+    expect(exit.gains.drone).toBeLessThan(city.gains.drone);
   });
 });
