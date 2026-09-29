@@ -23,5 +23,6 @@ export const timeline = {
     't0.la-seconde-chance',
     't0.la-douleur',
     't0.le-trajet',
+    't0.les-vingt-annees',
   ],
 } as const;

@@ -349,6 +349,16 @@ describe('narrative audit', () => {
 });
 
 describe('Timeline 0 played by a seeded player', () => {
+  it('continues from the trip into the twenty years', () => {
+    expect(contentT0.order.slice(-2)).toEqual([
+      't0.le-trajet',
+      't0.les-vingt-annees',
+    ]);
+    expect(
+      contentT0.scenes.find((scene) => scene.id === 't0.les-vingt-annees'),
+    ).toBeDefined();
+  });
+
   it('always completes, and every journal validates', () => {
     const clock = { at: 0 };
     const nodes = new Set<string>();

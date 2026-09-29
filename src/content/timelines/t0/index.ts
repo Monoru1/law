@@ -19,6 +19,7 @@ import { leBoutonInutile } from './scenes/le-bouton-inutile';
 import { laSecondeChance } from './scenes/la-seconde-chance';
 import { laDouleur } from './scenes/la-douleur';
 import { leTrajet } from './scenes/le-trajet';
+import { lesVingtAnnees } from './scenes/les-vingt-annees';
 
 export const scenes = [
   prologue,
@@ -42,4 +43,5 @@ export const scenes = [
   laSecondeChance,
   laDouleur,
   leTrajet,
+  lesVingtAnnees,
 ];
