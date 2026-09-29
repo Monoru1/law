@@ -18,7 +18,7 @@ import {
   saveOf,
 } from './journeys';
 
-function roomScene() {
+function roomScene(sceneId = 't1.dix-mille') {
   return saveOf(
     content,
     [
@@ -28,14 +28,14 @@ function roomScene() {
         at: 1,
         contentVersion: content.version,
       },
-      enter('t1.dix-mille'),
+      enter(sceneId),
     ],
     { reportingConsent: false },
   );
 }
 
-function houseScene() {
-  return saveOf(contentT2, houseEvents([enter('t2.le-mensonge', contentT2)]), {
+function houseScene(sceneId = 't2.le-mensonge') {
+  return saveOf(contentT2, houseEvents([enter(sceneId, contentT2)]), {
     reportingConsent: false,
   });
 }
@@ -90,10 +90,48 @@ test('La Maison exposes an inhabited night without covering its choices', async 
   await expect(exactButton(page, 'Lui dire ce que Sem cache')).toBeVisible();
   const house = page.locator('[data-world="house"]');
   await expect(house).toBeVisible();
+  await expect(house).toHaveAttribute('data-location', 'kitchen');
   await expect(house).toHaveAttribute('data-light', 'night');
   await expect(page.locator('[data-primitive="window"]')).toHaveCount(1);
   await expectReadingFrameStable(page);
   await captureCheckpoint(page, testInfo, 'world-t2-house-night');
+});
+
+test('World separates the cold room, garden and balcony', async ({
+  browser,
+}, testInfo) => {
+  for (const checkpoint of [
+    {
+      route: ROOM_TARGET.route,
+      key: ROOM_TARGET.storageKey,
+      save: roomScene('t1.chambre-froide'),
+      location: 'clinical',
+    },
+    {
+      route: HOUSE_TARGET.route,
+      key: HOUSE_TARGET.storageKey,
+      save: houseScene('t2.la-faveur'),
+      location: 'garden',
+    },
+    {
+      route: HOUSE_TARGET.route,
+      key: HOUSE_TARGET.storageKey,
+      save: houseScene('t2.omar-histoire'),
+      location: 'balcony',
+    },
+  ] as const) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await seedStorage(page, { [checkpoint.key]: checkpoint.save });
+    await page.goto(checkpoint.route);
+    const world = page.locator(`[data-location="${checkpoint.location}"]`);
+    await expect(world).toBeVisible();
+    if (checkpoint.location === 'garden' || checkpoint.location === 'balcony')
+      await expect(page.locator('[data-primitive="exterior"]')).toBeVisible();
+    await page.waitForTimeout(1_200);
+    await captureCheckpoint(page, testInfo, `world-${checkpoint.location}`);
+    await context.close();
+  }
 });
 
 test('La Ville turns its declared act into architecture without 417 DOM nodes', async ({

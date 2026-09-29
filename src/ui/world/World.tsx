@@ -15,6 +15,16 @@ export type WorldProps = {
 
 type WorldKind = 'room' | 'house' | 'city';
 type LightState = 'cold' | 'evening' | 'night' | 'dawn';
+type Location =
+  | 'room'
+  | 'clinical'
+  | 'house'
+  | 'dining'
+  | 'kitchen'
+  | 'garden'
+  | 'balcony'
+  | 'office'
+  | 'city';
 
 type WorldStyle = CSSProperties & {
   '--world-bias': string;
@@ -57,6 +67,19 @@ function houseLight(sceneId: string): LightState {
 function actNumber(ambience: string | undefined) {
   const match = /^act-([1-6])$/.exec(ambience ?? '');
   return match?.[1] ?? '1';
+}
+
+function sceneLocation(timelineId: string, sceneId: string): Location {
+  if (sceneId === 't1.chambre-froide') return 'clinical';
+  if (timelineId === 't1') return 'room';
+  if (sceneId === 't2.la-faveur') return 'garden';
+  if (sceneId === 't2.omar-histoire') return 'balcony';
+  if (sceneId === 't2.la-promesse' || sceneId === 't2.le-mensonge')
+    return 'kitchen';
+  if (sceneId === 't2.les-nouvelles' || sceneId === 't2.ce-qu-on-protege')
+    return 'dining';
+  if (timelineId === 't2') return 'house';
+  return sceneId === 't3.la-fenetre' ? 'city' : 'office';
 }
 
 function ArchitecturalDoor({ open }: { open: boolean }) {
@@ -134,6 +157,21 @@ function HouseFurniture() {
       <span className={styles.tableLegLeft} />
       <span className={styles.tableLegRight} />
       <span className={styles.chairBack} />
+    </div>
+  );
+}
+
+function ExteriorLandscape({ elevated }: { elevated: boolean }) {
+  return (
+    <div
+      className={styles.exterior}
+      data-elevated={elevated || undefined}
+      data-primitive="exterior"
+    >
+      <span className={styles.exteriorHouse} />
+      <span className={styles.exteriorGlow} />
+      <span className={styles.exteriorHedge} />
+      <span className={styles.exteriorRail} />
     </div>
   );
 }
@@ -227,6 +265,7 @@ export function World({
   decisions,
 }: WorldProps) {
   const kind = worldKind(timelineId);
+  const location = sceneLocation(timelineId, sceneId);
   const visible = decisions.slice(-14);
   const last = visible.at(-1);
   const lastHash = last ? hash(`${last.sceneId}:${String(last.value)}`) : 0;
@@ -242,6 +281,7 @@ export function World({
       aria-hidden="true"
       data-memory={visible.length}
       data-world={kind}
+      data-location={location}
       data-light={light}
       data-act={kind === 'city' ? actNumber(ambience) : undefined}
       data-focus={sceneId === 't3.la-fenetre' ? 'windows' : undefined}
@@ -260,7 +300,11 @@ export function World({
       {kind === 'house' && (
         <>
           <HouseWindow />
-          <HouseFurniture />
+          {location === 'garden' || location === 'balcony' ? (
+            <ExteriorLandscape elevated={location === 'balcony'} />
+          ) : (
+            <HouseFurniture />
+          )}
           <ArchitecturalDoor open={phase === 'sealed'} />
         </>
       )}

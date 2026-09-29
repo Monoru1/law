@@ -524,6 +524,7 @@ export function ScenePlayer({
   }
   if (!scene) return <main className="end-screen mono">THE LAW</main>;
   const input = scene.input;
+  const manualPassage = content.timelineId === 't3' && input.kind === 'passage';
   const choiceOptions =
     input.kind === 'binary' || input.kind === 'choice' || input.kind === 'glyph'
       ? input.options
@@ -965,7 +966,9 @@ export function ScenePlayer({
                     ? () => setResting(true)
                     : () => void afterOutcome()
                   : input.kind === 'passage'
-                    ? () => void advanceOnce()
+                    ? manualPassage
+                      ? () => setResting(true)
+                      : () => void advanceOnce()
                     : () => setReady(true)
               }
             />
@@ -973,6 +976,9 @@ export function ScenePlayer({
               <div ref={choiceArea} className="choice-area">
                 {inputControl()}
               </div>
+            )}
+            {phase === 'scene' && manualPassage && resting && (
+              <RestAdvance onAdvance={() => void advanceOnce()} />
             )}
             {phase === 'outcome' && resting && certaintyPending && (
               <div className="choice-area certainty">

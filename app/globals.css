@@ -364,8 +364,8 @@ button:disabled {
   padding: 5vh clamp(12px, 3vw, 42px);
   background: radial-gradient(
     ellipse 72% 68% at 42% 50%,
-    rgba(7, 7, 9, 0.94),
-    rgba(7, 7, 9, 0.72) 64%,
+    rgba(7, 7, 9, 0.84),
+    rgba(7, 7, 9, 0.56) 64%,
     transparent 100%
   );
   animation: scene-arrival 0.5s var(--law-ease-feedback) both;
