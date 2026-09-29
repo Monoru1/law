@@ -166,6 +166,14 @@ export const copy = {
     omar: 'Omar',
     mila: 'Mila',
     farid: 'Farid',
+    // Timeline 0: people met in the examination.
+    law: 'LAW',
+    femme: 'La femme',
+    jade: 'Jade',
+    elias: 'Elias',
+    nora: 'Nora',
+    lou: 'Lou',
+    copie: 'L’autre',
   } as Record<string, string>,
   // Factual names of what the player did toward someone. Never a score.
   relations: {

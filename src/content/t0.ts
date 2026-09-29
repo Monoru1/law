@@ -1,5 +1,6 @@
 import type { Content } from '../engine';
 import { principles } from './principles';
+import { principlesT0 } from './timelines/t0/principles';
 import { scenes } from './timelines/t0';
 import { timeline } from './timelines/t0/meta';
 
@@ -9,7 +10,7 @@ export const contentT0: Content = {
   timelineId: 't0',
   version: '0.1.0',
   scenes,
-  principles,
+  principles: [...principles, ...principlesT0],
   observations: [],
   order: [...timeline.order],
   flow: {
@@ -17,6 +18,7 @@ export const contentT0: Content = {
     pasEncoreSceneId: '',
     confrontationUnsignedSceneId: '',
     checkpointSceneId: '',
-    codaSceneId: 't0.ce-qui-est-note',
+    // The last scene of the order ends the examination.
+    codaSceneId: timeline.order.at(-1)!,
   },
 };
