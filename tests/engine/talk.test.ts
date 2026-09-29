@@ -352,11 +352,12 @@ describe('Timeline 0 played by a seeded player', () => {
   it('always completes, and every journal validates', () => {
     const clock = { at: 0 };
     const nodes = new Set<string>();
-    for (let seed = 1; seed <= 300; seed++) {
+    for (let seed = 1; seed <= 500; seed++) {
       const run = simulateTalkRun(contentT0, seeded(seed), clock, {
         timeoutRate: seed % 5 === 0 ? 0.6 : 0.1,
         silenceRate: seed % 3 === 0 ? 0.8 : 0.1,
         seen: nodes,
+        skipRate: seed % 7 === 0 ? 0.3 : 0,
       });
       expect(run.state.completed).toBe(true);
       expect(replay(run.events, contentT0)).toEqual(run.state);
@@ -370,5 +371,5 @@ describe('Timeline 0 played by a seeded player', () => {
           `${scene.id}/${node.id}`,
         );
     }
-  }, 120000);
+  }, 300000);
 });

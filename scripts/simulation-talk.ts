@@ -52,6 +52,8 @@ export function simulateTalkRun(
     // Nodes already reached by earlier runs: a curious player prefers a reply
     // that leads somewhere new, so coverage does not depend on luck.
     seen?: Set<string>;
+    // Chance that a scene is left through the pause menu instead of played.
+    skipRate?: number;
     inherit?: { timelineId: string; memory: never };
   } = {},
 ): TalkRun {
@@ -78,6 +80,10 @@ export function simulateTalkRun(
       sceneId: scene.id,
       sceneVersion: scene.version,
     });
+    if (rand() < (options.skipRate ?? 0)) {
+      push({ type: 'scene_skipped', sceneId: scene.id });
+      continue;
+    }
     const raw = content.scenes.find((s) => s.id === scene.id)!;
     for (let step = 0; step < 400; step++) {
       const resolved = resolveScene(raw, state);
@@ -156,7 +162,7 @@ export function simulateTalkRun(
         const chosen =
           silent.length && rand() < (options.silenceRate ?? 0.2)
             ? pick(silent)
-            : fresh.length && rand() < 0.75
+            : fresh.length && rand() < 0.85
               ? pick(fresh)
               : pick(replies);
         push({

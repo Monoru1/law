@@ -213,7 +213,11 @@ export function auditContent(
         const target = everyScene.get(c.said.sceneId);
         const talk = target && talkOf(target);
         const node = talk?.nodes.find((n) => n.id === c.said.nodeId);
-        if (!node)
+        if (node && !node.ask && !node.write)
+          problems.push(
+            `${scene.id}: reads a line from ${c.said.nodeId}, which is never answered`,
+          );
+        else if (!node)
           problems.push(
             `${scene.id}: reads a line that does not exist (${c.said.sceneId}/${c.said.nodeId})`,
           );
