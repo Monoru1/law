@@ -82,11 +82,13 @@ export function talkSegments(
   return out;
 }
 
-export type Env = 'rue' | 'salle' | 'couloir' | 'noir';
+export type Env = 'rue' | 'salle' | 'couloir' | 'noir' | 'maison';
 export const envOf = (ambience: string | undefined): Env =>
   ambience === 'rain'
     ? 'rue'
-    : ambience === 'corridor'
+    : ambience === 'home'
+      ? 'maison'
+      : ambience === 'corridor'
       ? 'couloir'
       : ambience === 'silence'
         ? 'noir'

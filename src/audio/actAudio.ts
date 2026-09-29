@@ -61,6 +61,8 @@ const AMBIENCE_GAINS: Record<string, LayerGains> = {
   rain: { drone: 0.02, pulse: 0, texture: 0.075 },
   room: { drone: 0.03, pulse: 0, texture: 0.01 },
   corridor: { drone: 0.026, pulse: 0, texture: 0.02 },
+  // A lived-in room: a low warmth and almost nothing else.
+  home: { drone: 0.022, pulse: 0, texture: 0.008 },
   silence: { drone: 0, pulse: 0, texture: 0 },
 };
 

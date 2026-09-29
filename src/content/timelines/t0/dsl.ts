@@ -108,7 +108,7 @@ export const E = (id = 'end', outcome = 'suite'): TalkNode => ({
 type SceneOptions = {
   id: string;
   title: string;
-  ambience?: 'room' | 'rain' | 'corridor' | 'silence';
+  ambience?: 'room' | 'rain' | 'corridor' | 'silence' | 'home';
   flags?: string[];
   regression?: 0 | 1 | 2 | 3;
   start: string;
