@@ -350,13 +350,26 @@ describe('narrative audit', () => {
 
 describe('Timeline 0 played by a seeded player', () => {
   it('continues from the trip into the twenty years', () => {
-    expect(contentT0.order.slice(-2)).toEqual([
+    const trip = contentT0.order.indexOf('t0.le-trajet');
+    expect(contentT0.order.slice(trip, trip + 2)).toEqual([
       't0.le-trajet',
       't0.les-vingt-annees',
     ]);
     expect(
       contentT0.scenes.find((scene) => scene.id === 't0.les-vingt-annees'),
     ).toBeDefined();
+  });
+
+  it('finishes the examination through its answer, law, door and rainy return', () => {
+    expect(contentT0.order.slice(-7)).toEqual([
+      't0.les-vingt-annees',
+      't0.la-contradiction',
+      't0.l-exception',
+      't0.le-mensonge',
+      't0.ta-loi',
+      't0.la-porte',
+      't0.epilogue',
+    ]);
   });
 
   it('always completes, and every journal validates', () => {

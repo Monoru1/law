@@ -24,5 +24,11 @@ export const timeline = {
     't0.la-douleur',
     't0.le-trajet',
     't0.les-vingt-annees',
+    't0.la-contradiction',
+    't0.l-exception',
+    't0.le-mensonge',
+    't0.ta-loi',
+    't0.la-porte',
+    't0.epilogue',
   ],
 } as const;

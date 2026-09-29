@@ -72,4 +72,4 @@ Stabiliser et enregistrer ce checkpoint, puis raccorder `les-vingt-annees.ts` à
 ## Ambiguïtés conservées
 
 - Le document de conception annonce Lou jusqu’à 26 ans, tandis que le brouillon retrouvé de `Les vingt années` s’arrête actuellement à ses 16 ans. Ce décalage doit être résolu lors du raccordement de la scène, sans remplacer Lou ni son attachement par un résumé.
-- L’héritage futur de T0 vers T3 est décrit dans la conception, mais le type `Content.inherits` reste singulier dans le code actuel. Les anciennes sauvegardes T3 ne doivent pas devenir incompatibles ; ce raccordement reste à traiter séparément.
+- L’héritage multiple existe déjà dans le moteur via `alsoInherits`, mais le store et l’interface T3 ne raccordent encore que T2. Les anciennes sauvegardes T3 ne doivent pas devenir incompatibles ; le raccordement optionnel de T0 reste à traiter séparément.

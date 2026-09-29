@@ -376,7 +376,7 @@ export const lesVingtAnnees = talkScene({
         lou('Rien.', held(2600)),
         lou('Je voulais juste voir si t’étais là.', held(3800)),
       ],
-      { next: 'coupe' },
+      { next: 'y2048' },
     ),
     N(
       'r-final-rien',
@@ -387,9 +387,163 @@ export const lesVingtAnnees = talkScene({
           4000,
         ),
       ],
+      { next: 'y2048' },
+    ),
+    N('y2048', [
+      y('2048'),
+      s(
+        'Lou part avec deux valises et le ciré jaune roulé au fond de la seconde.',
+        3400,
+      ),
+      lou('Tu vas pas rester devant la fenêtre quand même.', held(2800)),
+      s('Tu restes devant la fenêtre.', 3000),
+    ]),
+    N('y2050', [
+      y('2050'),
+      s(
+        'Elle appelle un mercredi à 1 h 14. Elle ne pleure pas. Elle respire trop vite.',
+        3400,
+      ),
+      lou('Tu peux parler de n’importe quoi ?', held(2600)),
+    ]),
+    A('appel', [
+      reply('histoire', 'Lui raconter une histoire idiote', {
+        next: 'r-appel-histoire',
+      }),
+      reply('venir', 'Je viens.', { next: 'r-appel-venir' }),
+      silence('rester', 'Rester en ligne', { next: 'r-appel-rester' }),
+    ]),
+    N(
+      'r-appel-histoire',
+      [
+        s(
+          'Tu racontes la tente qui fuyait. À quarante-sept gouttes, sa respiration ralentit.',
+          3600,
+        ),
+      ],
+      { next: 'y2052' },
+    ),
+    N(
+      'r-appel-venir',
+      [lou('Non. Parle juste.', held(2600)), s('Alors tu parles.', 3200)],
+      { next: 'y2052' },
+    ),
+    N(
+      'r-appel-rester',
+      [
+        s(
+          'Vous ne dites rien pendant six minutes. Quand elle raccroche, elle respire normalement.',
+          3600,
+        ),
+      ],
+      { next: 'y2052' },
+    ),
+    N('y2052', [
+      y('2052'),
+      s(
+        'Inès retrouve le carton « provisoire ». Elle demande si le mot a encore un sens après treize ans.',
+        3400,
+      ),
+      s('Vous ouvrez le carton. Vous ne reprenez pas le projet.', 3000),
+      s('Vous le laissez ouvert.', 2800),
+    ]),
+    N('y2054', [
+      y('2054'),
+      s(
+        'Un déjeuner dehors. Lou arrive en retard, pose le ciré jaune sur le dossier d’une chaise et commande pour tout le monde.',
+        3600,
+      ),
+      lou('Quoi ? Je vous connais.', held(2600)),
+    ]),
+    N('y2056', [
+      y('2056'),
+      s('Elle a vingt-six ans.', 2800),
+      s(
+        'Elle épluche une pomme à la table de la cuisine. Toi, tu lis le journal. Inès cherche ses clés.',
+        3600,
+      ),
+      lou('Papa ?', held(3200)),
+    ]),
+    A('dernier', [
+      reply('oui', 'Oui ?', { next: 'r-dernier-oui' }),
+      silence('lever', 'Lever les yeux', { next: 'r-dernier-lever' }),
+    ]),
+    N(
+      'r-dernier-oui',
+      [lou('Rien.', held(2400)), lou('Je voulais juste vérifier.', held(3000))],
       { next: 'coupe' },
     ),
-    N('coupe', [], { effects: [flag('t0.annees.vues')], next: 'end' }),
+    N(
+      'r-dernier-lever',
+      [
+        s(
+          'Elle sourit. Tu ne sais pas pourquoi. Tu allais le lui demander.',
+          3400,
+        ),
+      ],
+      { next: 'coupe' },
+    ),
+    N(
+      'coupe',
+      [stage('Noir.', held(4200)), law('Elle n’existe pas.', held(3600))],
+      {
+        effects: [flag('t0.annees.vues')],
+        route: [
+          {
+            when: { noted: { tag: 'douleur-apporte' } },
+            next: 'rappel-douleur',
+          },
+        ],
+        next: 'oubli-intro',
+      },
+    ),
+    N(
+      'rappel-douleur',
+      [
+        law(
+          'Tu m’as dit qu’une douleur pouvait apporter : « {{note:douleur-apporte|…}} ».',
+          held(3600),
+        ),
+        law('Je repose la question.', held(2600)),
+      ],
+      { next: 'oubli-intro' },
+    ),
+    N('oubli-intro', [
+      law('Je peux te laisser ces vingt années.', held(3000)),
+      law('Ou tout effacer. Lou comprise.', held(3200)),
+    ]),
+    A('oubli', [
+      reply('garder', 'GARDER', {
+        hold: true,
+        next: 'garder',
+        effects: [
+          flag('t0.annees.gardees'),
+          { relationEvent: { characterId: 'lou', kind: 'protected' } },
+        ],
+      }),
+      reply('effacer', 'TOUT EFFACER', {
+        hold: true,
+        next: 'effacer',
+        effects: [
+          flag('t0.annees.effacees'),
+          { relationEvent: { characterId: 'lou', kind: 'sacrificed' } },
+        ],
+      }),
+    ]),
+    N(
+      'garder',
+      [law('D’accord.', held(2800)), law('Alors elle reste.', held(3400))],
+      { next: 'end' },
+    ),
+    N(
+      'effacer',
+      [
+        lou('Papa ?', held(2600)),
+        stage('Puis rien.', held(4200)),
+        law('C’est fait.', held(3200)),
+      ],
+      { next: 'end' },
+    ),
     E(),
   ],
 });

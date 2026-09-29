@@ -20,6 +20,12 @@ import { laSecondeChance } from './scenes/la-seconde-chance';
 import { laDouleur } from './scenes/la-douleur';
 import { leTrajet } from './scenes/le-trajet';
 import { lesVingtAnnees } from './scenes/les-vingt-annees';
+import { laContradiction } from './scenes/la-contradiction';
+import { lException } from './scenes/l-exception';
+import { leMensonge } from './scenes/le-mensonge';
+import { taLoi } from './scenes/ta-loi';
+import { laPorte } from './scenes/la-porte';
+import { epilogue } from './scenes/epilogue';
 
 export const scenes = [
   prologue,
@@ -44,4 +50,10 @@ export const scenes = [
   laDouleur,
   leTrajet,
   lesVingtAnnees,
+  laContradiction,
+  lException,
+  leMensonge,
+  taLoi,
+  laPorte,
+  epilogue,
 ];
