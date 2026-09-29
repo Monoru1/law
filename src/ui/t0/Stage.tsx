@@ -43,6 +43,27 @@ export function DialogueLine({
         {segment.text}
       </p>
     );
+  if (segment.who === 'year')
+    return (
+      <p
+        className={`${styles.line} ${styles.year}`}
+        data-age={age}
+        style={motion}
+      >
+        {segment.text}
+      </p>
+    );
+  if (segment.who === 'notif')
+    return (
+      <p
+        className={`${styles.line} ${styles.notif}`}
+        data-age={age}
+        style={motion}
+      >
+        <span>LAW · maintenant</span>
+        {segment.text}
+      </p>
+    );
   const voice =
     segment.who === 'narrator'
       ? styles.narrator

@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { contentT0 } from '../../content/t0';
 import {
   beatDelay,
+  clockStart,
   matchOutcome,
   nextScene,
   renderText,
@@ -64,7 +65,7 @@ function useSingleFlight() {
 }
 
 const FRESH_MS = 6000;
-const clock = () => Date.now();
+const wallNow = () => Date.now();
 const tick = () => performance.now();
 
 export function ScenePlayerT0() {
@@ -147,7 +148,7 @@ export function ScenePlayerT0() {
   if (visitId !== lastVisit) {
     // A journal picked up again shows what was already said, without
     // replaying it; a scene just entered plays from its first word.
-    const resumed = visit ? clock() - visit.at > FRESH_MS : false;
+    const resumed = visit ? wallNow() - visit.at > FRESH_MS : false;
     setLastVisit(visitId);
     setShown(resumed ? segments.length : 0);
     setInstant(resumed);
@@ -296,6 +297,22 @@ export function ScenePlayerT0() {
     return () => clearTimeout(timer);
   }, [chosen, leaving, cardLines.length, cardHold, instant, visitId]);
 
+  // A clock that runs by itself (the call): read from the journal's start
+  // line, shown as minutes, and when it ends whatever waits is recorded as such.
+  const clock = talk?.clock;
+  const clockFrom = scene && clock ? clockStart(state, scene) : null;
+  const [wall, setWall] = useState(0);
+  useEffect(() => {
+    if (clockFrom === null) return;
+    const id = setInterval(() => setWall(wallNow()), 500);
+    return () => clearInterval(id);
+  }, [clockFrom]);
+  const remaining =
+    clock && clockFrom !== null && wall ? clock.ms - (wall - clockFrom) : null;
+  useEffect(() => {
+    if (remaining !== null && remaining <= 0 && answering)
+      void say('timeout', 'timeout');
+  }, [remaining, answering, say]);
   const canWrite = Boolean(node?.write) && answering;
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -375,6 +392,19 @@ export function ScenePlayerT0() {
       >
         PAUSE
       </button>
+      {remaining !== null && !chosen && (
+        <div
+          className={styles.clock}
+          role="timer"
+          aria-label="Temps de l’appel"
+        >
+          {String(Math.floor(Math.max(0, remaining) / 60000)).padStart(2, '0')}:
+          {String(Math.floor((Math.max(0, remaining) % 60000) / 1000)).padStart(
+            2,
+            '0',
+          )}
+        </div>
+      )}
       <div className={styles.log} ref={logRef}>
         <div className={styles.inner} role="log" aria-live="polite">
           {segments.slice(0, shown).map((segment, index) => {
