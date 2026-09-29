@@ -498,6 +498,45 @@ describe('local storage adapter', () => {
     expect(map.get(SAVE_KEY)).toBe('{broken');
   });
 
+  it('verifies an archive before replacing an incompatible active save and deduplicates a retry', async () => {
+    const { map, storage } = storageFixture();
+    const oldRaw = JSON.stringify({ schemaVersion: 99, runId: 'old-city' });
+    map.set(SAVE_KEY, oldRaw);
+    const replacement = saveFixture();
+    let refuseActiveWrite = true;
+    storage.setItem.mockImplementation((key: string, value: string) => {
+      if (key === SAVE_KEY && refuseActiveWrite)
+        throw new Error('QuotaExceededError');
+      map.set(key, value);
+    });
+
+    await expect(localStorageAdapter.replace(replacement)).rejects.toThrow(
+      'QuotaExceededError',
+    );
+    expect(map.get(SAVE_KEY)).toBe(oldRaw);
+    expect(listRecoveryCopies()).toHaveLength(1);
+    expect(exportRecoveryCopy(listRecoveryCopies()[0]!.key)).toBe(oldRaw);
+
+    refuseActiveWrite = false;
+    await localStorageAdapter.replace(replacement);
+    expect(listRecoveryCopies()).toHaveLength(1);
+    expect(await localStorageAdapter.load()).toEqual(replacement);
+  });
+
+  it('keeps the active save when storage does not retain its archive', async () => {
+    const { map, storage } = storageFixture();
+    const oldRaw = JSON.stringify({ schemaVersion: 99, runId: 'old-city' });
+    map.set(SAVE_KEY, oldRaw);
+    storage.setItem.mockImplementation((key: string, value: string) => {
+      if (key === SAVE_KEY) map.set(key, value);
+    });
+
+    await expect(localStorageAdapter.replace(saveFixture())).rejects.toThrow(
+      'archive',
+    );
+    expect(map.get(SAVE_KEY)).toBe(oldRaw);
+  });
+
   it('bounds copies, restores valid copies and clears all player data explicitly', async () => {
     const { map } = storageFixture();
     for (let i = 0; i < 8; i++) {

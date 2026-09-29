@@ -7,7 +7,10 @@ import {
   type GameEvent,
   type Memory,
 } from '../engine';
-import { CURRENT_SCHEMA_VERSION } from '../persistence/migrations';
+import {
+  CURRENT_SCHEMA_VERSION,
+  IncompatibleSaveError,
+} from '../persistence/migrations';
 import {
   defaultSettings,
   type ReportingStatus,
@@ -31,6 +34,7 @@ export type GameStore = {
   save: SaveGame | null;
   loaded: boolean;
   error: string | null;
+  incompatible: boolean;
   hydrate: () => Promise<void>;
   start: (options?: {
     replaceExisting?: true;
@@ -63,7 +67,12 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
       if (!options?.replaceExisting) {
         const existing = await adapter.load();
         if (existing) {
-          set({ save: existing, loaded: true, error: null });
+          set({
+            save: existing,
+            loaded: true,
+            error: null,
+            incompatible: false,
+          });
           return;
         }
       }
@@ -104,12 +113,13 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
       };
       if (options?.replaceExisting) await adapter.replace(save);
       else await persist(save);
-      set({ save, loaded: true, error: null });
+      set({ save, loaded: true, error: null, incompatible: false });
     }
     return {
       save: null,
       loaded: false,
       error: null,
+      incompatible: false,
       hydrate: () =>
         enqueue(async () => {
           try {
@@ -126,12 +136,13 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
               }
               save = corrected;
             }
-            set({ save, loaded: true, error: null });
+            set({ save, loaded: true, error: null, incompatible: false });
           } catch (e) {
             set({
               save: null,
               loaded: true,
               error: e instanceof Error ? e.message : String(e),
+              incompatible: e instanceof IncompatibleSaveError,
             });
           }
         }),
@@ -151,7 +162,7 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
       restore: (key) =>
         enqueue(async () => {
           const save = await adapter.restore(key);
-          set({ save, loaded: true, error: null });
+          set({ save, loaded: true, error: null, incompatible: false });
         }),
       append: (partial) =>
         enqueue(async () => {
@@ -207,7 +218,7 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
       clear: () =>
         enqueue(async () => {
           await adapter.clear();
-          set({ save: null, error: null });
+          set({ save: null, error: null, incompatible: false });
         }),
     };
   });

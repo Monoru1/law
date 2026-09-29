@@ -21,6 +21,7 @@ function Threshold() {
   const hydrateT2 = useT2GameStore((s) => s.hydrate);
   const start = useT3GameStore((s) => s.start);
   const error = useT3GameStore((s) => s.error);
+  const incompatible = useT3GameStore((s) => s.incompatible);
   useEffect(() => {
     if (!t2Loaded) void hydrateT2();
   }, [t2Loaded, hydrateT2]);
@@ -29,10 +30,11 @@ function Threshold() {
     [t2Save],
   );
   const door = copy.doors.find((d) => d.timelineId === 't3')!;
-  const enter = async (reportingConsent: boolean) => {
+  const enter = async (reportingConsent: boolean, replaceExisting = false) => {
     if (!t2Save || !house.completed) return;
     try {
       await start({
+        ...(replaceExisting ? { replaceExisting: true as const } : {}),
         pseudonym: t2Save.pseudonym,
         reportingConsent,
         inherited: {
@@ -55,7 +57,13 @@ function Threshold() {
         </span>
       </div>
       <div style={{ maxWidth: 750 }}>
-        {t2Error ? (
+        {incompatible ? (
+          copy.threshold3.incompatible.split('\n\n').map((paragraph) => (
+            <p key={paragraph} className="serif threshold-line">
+              {paragraph}
+            </p>
+          ))
+        ) : t2Error ? (
           <p className="serif threshold-line">{copy.threshold3.unreadable}</p>
         ) : !house.completed ? (
           <p className="serif threshold-line">{copy.threshold3.locked}</p>
@@ -69,9 +77,23 @@ function Threshold() {
         {house.completed && consent && (
           <p className="mono threshold-note">{copy.threshold3.reportNote}</p>
         )}
-        {error && <p role="alert">{error}</p>}
+        {error && !incompatible && <p role="alert">{error}</p>}
         <div className="home-actions" style={{ marginTop: 40 }}>
-          {house.completed && !t2Error ? (
+          {incompatible && house.completed && !t2Error ? (
+            <>
+              <Button onClick={() => void enter(consent, true)}>
+                {copy.threshold3.restart}
+              </Button>
+              {consent && (
+                <Button
+                  className="ghost"
+                  onClick={() => void enter(false, true)}
+                >
+                  {copy.threshold3.restartWithoutReport}
+                </Button>
+              )}
+            </>
+          ) : house.completed && !t2Error ? (
             <>
               <Button onClick={() => void enter(consent)}>
                 {copy.threshold3.enter}

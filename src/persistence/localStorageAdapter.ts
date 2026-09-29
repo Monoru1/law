@@ -40,7 +40,10 @@ export function createLocalStorageAdapter(
     const copies = listCopies();
     if (!copies.some((copy) => localStorage.getItem(copy.key) === raw)) {
       const timestamp = Math.max(Date.now(), (copies[0]?.createdAt ?? 0) + 1);
-      localStorage.setItem(`${saveKey}:${reason}:${timestamp}`, raw);
+      const key = `${saveKey}:${reason}:${timestamp}`;
+      localStorage.setItem(key, raw);
+      if (localStorage.getItem(key) !== raw)
+        throw new Error('L’archive locale n’a pas pu être vérifiée.');
     }
     for (const copy of listCopies().slice(MAX_RECOVERY_COPIES))
       localStorage.removeItem(copy.key);

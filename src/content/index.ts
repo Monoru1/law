@@ -193,5 +193,9 @@ export const copy = {
       'Comme pour La Maison, un rapport factuel sera transmis à la fin de La Ville.',
     unreadable:
       'La maison n’a pas pu être relue. La ville attend qu’elle le soit.',
+    incompatible:
+      'Cette partie appartient à une version antérieure de la ville.\n\nElle sera conservée sur cet appareil.',
+    restart: 'Commencer la nouvelle ville',
+    restartWithoutReport: 'Commencer sans rapport',
   },
 } as const;

@@ -14,6 +14,102 @@ const ROOM = 'thelaw:save';
 const HOUSE = 'thelaw:save-t2';
 const CITY = 'thelaw:save-t3';
 
+function oldCompletedCitySave(houseSave: ReturnType<typeof saveOf>) {
+  let serial = 0;
+  const inherited = cityEvents()[1]!;
+  const old = (draft: Record<string, unknown>) => ({
+    ...draft,
+    id: `old-city-${++serial}`,
+    at: 10_000 + serial,
+  });
+  return {
+    schemaVersion: 4,
+    timelineId: 't3',
+    contentVersion: '3.0.0',
+    runId: 'old-city-run',
+    createdAt: 10_000,
+    updatedAt: 10_100,
+    settings: {
+      simpleConfirmation: false,
+      reducedMotion: 'auto',
+      textSize: 'normal',
+      sound: false,
+    },
+    pseudonym: 'Ancien testeur',
+    reportingConsent: true,
+    reportingStatus: 'sent',
+    events: [
+      old({ type: 'run_started', contentVersion: '3.0.0' }),
+      old({
+        type: 'memory_inherited',
+        fromTimelineId: 't2',
+        fromRunId: houseSave.runId,
+        memory: inherited.type === 'memory_inherited' ? inherited.memory : {},
+      }),
+      old({
+        type: 'scene_entered',
+        sceneId: 't3.premier-jour',
+        sceneVersion: 1,
+      }),
+      old({
+        type: 'scene_entered',
+        sceneId: 't3.dossier-anciennete',
+        sceneVersion: 1,
+      }),
+      old({
+        type: 'choice_locked',
+        sceneId: 't3.dossier-anciennete',
+        sceneVersion: 1,
+        input: 'binary',
+        value: 'premiere',
+        hesitationMs: 1,
+        selectionChanges: 0,
+      }),
+      old({ type: 'scene_entered', sceneId: 't3.la-pause', sceneVersion: 1 }),
+      old({
+        type: 'scene_entered',
+        sceneId: 't3.dossier-urgence',
+        sceneVersion: 1,
+      }),
+      old({
+        type: 'choice_locked',
+        sceneId: 't3.dossier-urgence',
+        sceneVersion: 1,
+        input: 'binary',
+        value: 'ordre',
+        hesitationMs: 1,
+        selectionChanges: 0,
+      }),
+      old({
+        type: 'scene_entered',
+        sceneId: 't3.reunion-service',
+        sceneVersion: 1,
+      }),
+      old({ type: 'scene_entered', sceneId: 't3.la-regle', sceneVersion: 1 }),
+      old({
+        type: 'choice_locked',
+        sceneId: 't3.la-regle',
+        sceneVersion: 1,
+        input: 'choice',
+        value: 'anciennete',
+        hesitationMs: 1,
+        selectionChanges: 0,
+      }),
+      old({ type: 'scene_entered', sceneId: 't3.la-fenetre', sceneVersion: 1 }),
+      old({
+        type: 'choice_locked',
+        sceneId: 't3.la-fenetre',
+        sceneVersion: 1,
+        input: 'choice',
+        value: 'sortir',
+        hesitationMs: 1,
+        selectionChanges: 0,
+      }),
+      old({ type: 'run_completed', timelineId: 't3' }),
+    ],
+  };
+}
+
 async function seed(page: Page, saves: Record<string, unknown>) {
   await page.addInitScript((values) => {
     for (const [key, value] of Object.entries(values))
@@ -41,6 +137,104 @@ test('the city stays closed until the house is finished', async ({ page }) => {
   expect(
     await page.evaluate(() => localStorage.getItem('thelaw:save-t3')),
   ).toBeNull();
+});
+
+test('an old city save is archived explicitly before the current city starts', async ({
+  page,
+}) => {
+  const room = saveOf(content, roomEvents(), { reportingConsent: false });
+  const house = saveOf(contentT2, fullHouseEvents(), {
+    reportingConsent: false,
+  });
+  const oldCity = oldCompletedCitySave(house);
+  await seed(page, { [ROOM]: room, [HOUSE]: house, [CITY]: oldCity });
+
+  await page.goto('/jouer/t3');
+  await expect(
+    page.getByText(
+      'Cette partie appartient à une version antérieure de la ville.',
+    ),
+  ).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), CITY)).toBe(
+    JSON.stringify(oldCity),
+  );
+  expect(
+    await page.evaluate(
+      (prefix) =>
+        Object.keys(localStorage).filter((key) => key.startsWith(prefix)),
+      `${CITY}:replaced:`,
+    ),
+  ).toHaveLength(0);
+
+  const cancelPage = await page.context().newPage();
+  await cancelPage.goto('/jouer/t3');
+  await cancelPage.getByRole('link', { name: 'Retour à l’accueil' }).click();
+  expect(
+    await cancelPage.evaluate((key) => localStorage.getItem(key), CITY),
+  ).toBe(JSON.stringify(oldCity));
+  await cancelPage.close();
+
+  await button(page, 'Commencer la nouvelle ville').click();
+  await expect(
+    page.getByText('Ton badge ne fonctionne pas du premier coup.'),
+  ).toBeVisible();
+  const stored = await page.evaluate(
+    ({ roomKey, houseKey, cityKey }) => ({
+      room: localStorage.getItem(roomKey),
+      house: localStorage.getItem(houseKey),
+      city: JSON.parse(localStorage.getItem(cityKey)!),
+      archives: Object.keys(localStorage)
+        .filter((key) => key.startsWith(`${cityKey}:replaced:`))
+        .map((key) => localStorage.getItem(key)),
+    }),
+    { roomKey: ROOM, houseKey: HOUSE, cityKey: CITY },
+  );
+  expect(stored.room).toBe(JSON.stringify(room));
+  expect(stored.house).toBe(JSON.stringify(house));
+  expect(stored.archives).toEqual([JSON.stringify(oldCity)]);
+  expect(stored.city.contentVersion).toBe(contentT3.version);
+  expect(stored.city.events[1]).toMatchObject({
+    type: 'memory_inherited',
+    fromTimelineId: 't2',
+    fromRunId: house.runId,
+  });
+
+  await page.reload();
+  expect(
+    await page.evaluate(
+      (prefix) =>
+        Object.keys(localStorage).filter((key) => key.startsWith(prefix))
+          .length,
+      `${CITY}:replaced:`,
+    ),
+  ).toBe(1);
+});
+
+test('an incomplete old city remains untouched when the house is absent', async ({
+  page,
+}) => {
+  const house = saveOf(contentT2, fullHouseEvents());
+  const completed = oldCompletedCitySave(house);
+  const incomplete = {
+    ...completed,
+    reportingStatus: 'not_sent',
+    events: completed.events.slice(0, -2),
+  };
+  await seed(page, { [CITY]: incomplete });
+
+  await page.goto('/jouer/t3');
+  await expect(
+    page.getByText(
+      'Cette partie appartient à une version antérieure de la ville.',
+    ),
+  ).toBeVisible();
+  await expect(button(page, 'Commencer la nouvelle ville')).toHaveCount(0);
+  await expect(
+    page.getByRole('link', { name: 'Aller à la maison' }),
+  ).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), CITY)).toBe(
+    JSON.stringify(incomplete),
+  );
 });
 
 test('a decision in the city rests on its consequence, whatever the player picks, until they move on', async ({
