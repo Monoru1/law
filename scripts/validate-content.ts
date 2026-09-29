@@ -238,7 +238,7 @@ for (let run = 0; run < RUNS; run++) {
   if (room.state.visited.at(-1) !== 't1.coda') fail(`T1 coda not final ${run}`);
   if (house.state.visited.at(-1) !== 't2.la-maison')
     fail(`T2 ending not final ${run}`);
-  if (city.state.visited.at(-1) !== 't3.la-fenetre')
+  if (city.state.visited.at(-1) !== 't3.sortie')
     fail(`T3 ending not final ${run}`);
   confrontationsT2 += house.state.contradictions.length;
   inheritedConfrontations += house.state.contradictions.filter((c) =>

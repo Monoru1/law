@@ -158,6 +158,7 @@ export const copy = {
     sem: 'Sem',
     omar: 'Omar',
     mila: 'Mila',
+    farid: 'Farid',
   } as Record<string, string>,
   // Factual names of what the player did toward someone. Never a score.
   relations: {
