@@ -208,7 +208,7 @@ export function ScenePlayer({
     copy.doors.find((d) => d.timelineId === content.timelineId) ??
     copy.doors[0];
   const timelineNumber = String(
-    copy.doors.findIndex((d) => d.timelineId === door.timelineId) + 1,
+    Number(door.timelineId.slice(1)),
   ).padStart(2, '0');
   const router = useRouter();
   const save = useStore((s) => s.save);

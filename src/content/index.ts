@@ -28,6 +28,13 @@ export const copy = {
   },
   doors: [
     {
+      timelineId: 't0' as const,
+      index: '0',
+      name: 'L’EXAMEN',
+      promise: 'Quelques questions.',
+      presentation: null as null,
+    },
+    {
       timelineId: 't1' as const,
       index: 'I',
       name: 'LA PIÈCE',
