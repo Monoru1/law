@@ -35,7 +35,8 @@ for (const item of contents)
 const sorted = Object.fromEntries(
   Object.entries(next).sort(([a], [b]) => (a < b ? -1 : 1)),
 );
-writeFileSync(path, `${JSON.stringify(sorted, null, 2)}\n`);
+if (process.argv.includes('--write'))
+  writeFileSync(path, `${JSON.stringify(sorted, null, 2)}\n`);
 console.log(
   `${Object.keys(sorted).length} scene contracts registered${missing.length ? `, ${missing.length} added` : ''}.`,
 );

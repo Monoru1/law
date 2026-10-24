@@ -1,25 +1,12 @@
 import { gainsForAct, type LayerGains } from './actAudio';
 
-export interface AudioManager {
-  play(cue: string): void;
-  setAmbience(id: string): void;
-  mute(): void;
-}
-export const silentAudio: AudioManager = {
-  play() {},
-  setAmbience() {},
-  mute() {},
-};
-
 // The city's whole sound is synthesised in the browser: no external file, no
 // third-party asset, nothing whose licence needs documenting. Three layers —
 // a low drone, a slow amplitude pulse, a filtered noise texture — cross-fade
 // as the act changes. Nothing here plays before a user gesture, and nothing
 // here can block the game: every entry point is wrapped so a failure is
 // silent, never a thrown error the player would see.
-export interface ActAudioDirector extends AudioManager {
-  /** Cross-fades to the given act's layers over a few seconds. */
-  setAct(act: number): void;
+export interface ActAudioDirector {
   setProfile(gains: LayerGains): void;
   setMuted(muted: boolean): void;
   /** Starts the engine; must follow a real user gesture per browser policy. */
@@ -46,7 +33,6 @@ export function createProceduralAudioManager(): ActAudioDirector {
   let droneGain: GainNode | null = null;
   let pulseGain: GainNode | null = null;
   let textureGain: GainNode | null = null;
-  let currentAct = 0;
   let currentGains = gainsForAct(0);
   let muted = false;
   let started = false;
@@ -138,11 +124,6 @@ export function createProceduralAudioManager(): ActAudioDirector {
         void context?.resume();
       });
     },
-    setAct(act: number) {
-      currentAct = act;
-      currentGains = gainsForAct(currentAct);
-      safe(applyGains);
-    },
     setProfile(gains: LayerGains) {
       currentGains = gains;
       safe(applyGains);
@@ -150,12 +131,6 @@ export function createProceduralAudioManager(): ActAudioDirector {
     setMuted(next: boolean) {
       muted = next;
       safe(applyGains);
-    },
-    // Kept for interface compatibility; La Ville has no discrete cues yet.
-    play() {},
-    setAmbience() {},
-    mute() {
-      this.setMuted(true);
     },
   };
 }

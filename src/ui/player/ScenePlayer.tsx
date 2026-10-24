@@ -40,7 +40,7 @@ import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
 import { BeatRenderer } from './BeatRenderer';
 import { GlyphInput } from './inputs/GlyphInput';
-import { Room } from '../stage/Room';
+import { World } from '../world/World';
 import { Settings } from '../screens/Settings';
 import { End } from '../screens/End';
 import { Onboarding } from '../screens/Onboarding';
@@ -775,7 +775,7 @@ export function ScenePlayer({
       data-input={input.kind}
       style={{ fontSize: `${textScale}rem` }}
     >
-      <Room
+      <World
         key={visitId}
         timelineId={content.timelineId}
         sceneId={scene.id}
