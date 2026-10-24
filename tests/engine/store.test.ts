@@ -1,3 +1,4 @@
+import { rebirthContent } from '../../src/content/rebirth';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { useGameStore } from '../../src/store/gameStore';
 import {
@@ -317,4 +318,43 @@ it('prepares the Tribunal with primary exam memory and one transitive city memor
       .start({ inherited: primary, alsoInherited: [city, city] }),
   ).rejects.toThrow();
   expect(localStorage.getItem('test:tribunal-invalid')).toBeNull();
+});
+
+it('isolates the Rebirth campaign and archives an incompatible journal before replacement', async () => {
+  const old = simulateTalkRun(contentT0, seeded(7), { at: 1 });
+  const raw = JSON.stringify({
+    schemaVersion: 5,
+    timelineId: 't0',
+    contentVersion: contentT0.version,
+    runId: 'legacy-exam',
+    createdAt: 1,
+    updatedAt: 2,
+    settings: {
+      simpleConfirmation: false,
+      reducedMotion: 'auto',
+      textSize: 'normal',
+      sound: false,
+    },
+    events: old.events,
+  });
+  localStorage.setItem('thelaw:save-t0', raw);
+  const key = 'thelaw:rebirth:save-t0';
+  const adapter = createLocalStorageAdapter(key, rebirthContent);
+  const store = createGameStore(adapter, rebirthContent);
+  await store.getState().start();
+  expect(localStorage.getItem('thelaw:save-t0')).toBe(raw);
+  expect(store.getState().save?.events).toHaveLength(1);
+  await store.getState().clear();
+  localStorage.setItem(key, raw);
+  await store.getState().hydrate();
+  expect(store.getState().incompatible).toBe(true);
+  expect(localStorage.getItem(key)).toBe(raw);
+  await expect(store.getState().start()).rejects.toThrow();
+  await store.getState().start({ replaceExisting: true });
+  const copies = listRecoveryCopies(key);
+  expect(copies).toHaveLength(1);
+  expect(localStorage.getItem(copies[0]!.key)).toBe(raw);
+  expect(localStorage.getItem('thelaw:save-t0')).toBe(raw);
+  await store.getState().settings({ sound: true, volume: 0.25 });
+  expect((await adapter.load())?.settings.volume).toBe(0.25);
 });

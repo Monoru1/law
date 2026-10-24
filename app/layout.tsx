@@ -21,7 +21,8 @@ const canonicalSiteUrl = process.env.SITE_URL || process.env.URL;
 const deploymentUrl = process.env.DEPLOY_PRIME_URL || canonicalSiteUrl;
 const metadataBase = new URL(deploymentUrl || 'http://localhost:3000');
 
-const description = 'Une fiction interactive. Chaque choix laisse une trace.';
+const description =
+  'Les Archives du silence. Un thriller interactif à Valombre.';
 
 export const metadata: Metadata = {
   metadataBase,

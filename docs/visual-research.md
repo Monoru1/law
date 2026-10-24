@@ -79,3 +79,18 @@ Ces références ne fournissent aucun code ni asset au projet.
 Aucun asset externe n’est intégré. Toute la géométrie et toute la lumière sont
 réécrites pour THE LAW avec CSS/SVG. Le seul fichier de texture utilisé reste
 `public/grain.svg`, déjà présent dans le dépôt.
+
+## REBIRTH — ressources livrées le 24 octobre 2026
+
+Le scénario public devient **Les Archives du silence**. Les recommandations historiques ci-dessus ne décrivent pas la nouvelle ouverture.
+
+- `public/rebirth/apartment.webp` et `school.webp` : décors originaux générés avec l'outil intégré `image_gen`, inspectés puis encodés en WebP qualité 82 avec Sharp. Deux sources différentes, environ 136 Ko chacune ; aucun téléchargement d'image tierce. Les PNG originaux restent dans le dossier local de génération Codex, les fichiers réellement consommés sont dans le dépôt.
+- `elise.svg`, `corridor-photo.svg` : illustrations documentaires originales, explicitement présentées comme reconstitutions graphiques de pièces fictives.
+- `gabriel.svg`, `nora-delmas.svg`, `adrien-keller.svg` : études vectorielles originales stylisées, pas des photographies de personnes réelles.
+- Affichage responsive par `next/image` ; les arrière-plans sont visibles, et le texte dispose d'une surface lisible. Réduction des animations et navigation au clavier prises en charge. Les décors des dossiers non jouables ne sont pas annoncés comme livrés.
+
+### Prompts des deux décors (outil intégré, sans référence externe)
+
+Appartement : Create one original cinematic environmental background for a French psychological investigation game, THE LAW: REBIRTH. Wide landscape 16:9 composition. Scene: an unoccupied modest French apartment in the fictional city Valombre, rainy night October 2026, seen at standing eye level from the entrance. Realistic aged materials: wooden writing desk in foreground left with an ivory envelope and closed folders, dark upholstered chair, older computer with monitor off, worn plaster wall, door on right with a narrow warm slit under it, tall rain-streaked window center-left showing defocused streetlights. A small amber desk lamp lights the papers. Deep shadows still retain visible architectural detail, photoreal cinematic still, subtle film grain, restrained old ivory and deep burgundy against near-black. Compose the architectural window and desk in the upper and left area, leave lower right darker calm room space for UI overlay. No people, no text, no logo, no watermarks, no blood, no supernatural monsters. This is the actual in-game scene background, not a UI mockup.
+
+Couloir : Original photoreal cinematic environment background for THE LAW: REBIRTH, French psychological investigation thriller. A deserted French secondary-school corridor at night, fictional Valombre, 2026. Wide landscape 16:9. Strong deep one-point perspective, side-lit dusty tile floor and repeated muted burgundy metal lockers, old radiator, one heavy wood classroom door on the right with a broken pale paper seal across its frame and a visibly newer brass cylinder, bulletin board, old frosted glazing above doors, one fluorescent fixture still on at far end with a dim pale-ivory pool of light. Exterior rain seen through a distant tall window. End of corridor swallowed in shadow, but important objects readable. Detailed realistic textures and plausible architecture, 35mm thriller cinematography. Colors near-black #090809, deep burgundy #241315, old ivory #B9A18C, pale warm light. No people, no blood, no monsters, no text or numbers (UI will add labels), no logos or watermark. Background image only, not UI mockup. Keep lower third darker for readable overlay.

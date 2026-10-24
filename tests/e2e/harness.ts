@@ -705,3 +705,76 @@ export async function withTimelineDiagnostics<T>(
     throw error;
   }
 }
+
+export const REBIRTH_KEY = 'thelaw:rebirth:save-t0';
+export async function rebirthAction(
+  page: Page,
+  name: string,
+  keyboard = false,
+) {
+  const action = page.getByRole('button', { name, exact: true });
+  await expect(action).toBeVisible();
+  if (keyboard) {
+    await action.focus();
+    await page.keyboard.press('Enter');
+  } else await action.click();
+}
+export async function completeRebirthPrologue(
+  page: Page,
+  contact: 'nora' | 'keller' | 'alone' = 'nora',
+  keyboard = false,
+) {
+  const act = (name: string) => rebirthAction(page, name, keyboard);
+  const next = () => act('Poursuivre l’enquête');
+  const collect = () => act('Consigner cette pièce');
+  await act('Ramasser l’enveloppe');
+  await act('Ouvrir l’enveloppe sur le bureau');
+  await next();
+  await act('Examiner la photographie d’Élise');
+  await collect();
+  await act('Examiner la déposition signée');
+  await collect();
+  await act('Examiner la convocation');
+  await collect();
+  await act('Brancher la carte mémoire');
+  await next();
+  await act('Isoler le canal droit');
+  await act('Conserver la transcription restaurée');
+  await next();
+  await act('Ouvrir la version du registre');
+  await collect();
+  await act('Comparer les deux versions');
+  await act('Consigner la modification postérieure à la réception');
+  await next();
+  await act(
+    contact === 'nora'
+      ? 'Contacter Nora Delmas'
+      : contact === 'keller'
+        ? 'Prévenir Adrien Keller'
+        : 'Garder les documents et enquêter seul',
+  );
+  if (contact === 'nora') {
+    await act('Examiner la copie que Nora transmet');
+    await collect();
+  } else if (contact === 'keller') {
+    await act('Examiner l’autorisation de Keller');
+    await collect();
+  } else await act('Prendre la lampe et les copies');
+  await act('Rejoindre le lycée Saint-Just');
+  await next();
+  await expect(page.locator('[data-location="school"]')).toBeVisible();
+  await act('Examiner la serrure de B-17');
+  await collect();
+  await act('Reconstituer la chronologie de la porte');
+  await act('La fermeture de 2009 n’exclut pas une intervention en 2018');
+  await act('Suivre la trace de l’intervention');
+  await next();
+  await act('Examiner la photographie récente');
+  await collect();
+  await act('Garder l’original à l’abri');
+  await act('Clore le prologue et conserver le dossier');
+  await act('Terminer le prologue');
+  await expect(
+    page.getByRole('heading', { name: 'Le dossier reste ouvert.' }),
+  ).toBeVisible();
+}

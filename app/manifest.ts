@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: '/',
     name: 'THE LAW: REBIRTH',
     short_name: 'THE LAW: REBIRTH',
-    description: 'Une fiction interactive. Chaque choix laisse une trace.',
+    description: 'Les Archives du silence. Un thriller interactif à Valombre.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

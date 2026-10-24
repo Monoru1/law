@@ -1,3 +1,43 @@
+# THE LAW: REBIRTH — Transmission à Claude, 24 octobre 2026
+
+## État actuel
+
+La directive **Opération REBIRTH : nouvelle histoire, nouveau jeu** remplace la direction « Le Greffier ». Le canon public est désormais **Les Archives du silence**, à Valombre. Gabriel Varenne, 34 ans, revient en octobre 2026 sur la disparition d'Élise Moreau en 2009. Les dossiers de 2013 et 2018, le dernier greffier et le verdict restent à développer.
+
+**Lot 1 livré : prologue complet, pas jeu complet ni dossier T0 complet.** `/jouer/t0` présente sept scènes : arrivée à 23 h 46, enveloppe, restauration d'un message, comparaison des dépositions, choix Nora/Keller/solitaire, couloir B et photographie récente. Une issue termine le prologue et conserve le dossier ; l'interface annonce explicitement que la suite n'est pas encore jouable.
+
+## Réalisation et points d'entrée
+
+- `src/content/rebirth.ts` : scènes publiques, dialogues, conditions, effets, pièces `RB-001` à `RB-009`, lieux et conclusions factuelles. La photo d'Élise lui attribue une intention et une parole, sans confirmer son sort. Les deux textes diffèrent ; l'auteur de la modification reste inconnu. Une serrure récente ne prouve pas qu'Élise est vivante.
+- Le choix Nora donne accès à une copie de maintenance et une alliée qui cache sa source ; Keller facilite l'entrée mais avertit les archives ; Gabriel seul doit entrer sans témoin. Les suites visibles et les relations enregistrées diffèrent. Les pièces ne sont acquises qu'après « Consigner », pas simplement après ouverture.
+- `src/ui/t0/ScenePlayerT0.tsx` : lecteur d'enquête unique, cadence manuelle, documents, carnet, pause/passage libre, clavier, export, fin de prologue et reprise dans un document. `Stage.tsx` et `Controls.tsx` fournissent les composants réutilisables.
+- `public/rebirth/` : deux décors bitmap originaux générés puis optimisés en WebP, illustrations des pièces et portraits vectoriels originaux, onze WAV locaux. Prompts/provenance dans `docs/visual-research.md`, production sonore dans `docs/audio-direction.md`.
+- Le son est volontaire : pluie/vent, ventilation, motif musical synthétique, papier, téléphone, pas, porte, grésillement et horloge. La scène finale passe au silence. Volume/mute persistants, aucun AudioContext avant activation, fermeture à la sortie. Les deux clips de voix française sont synthétisés localement, avec transcription équivalente. C'est une voix synthétique, pas une interprétation de comédienne.
+
+## Sauvegardes : ne pas fusionner les éditions
+
+- Nouvelle clé : **`thelaw:rebirth:save-t0`**. Nouveaux IDs : **`rebirth.t0.*`**. Nouveau registre append-only : **`src/content/rebirth-contracts.json`** (7 contrats).
+- Les clés historiques `thelaw:save`, `thelaw:save-t0`, `thelaw:save-t2`, `thelaw:save-t3`, leurs 86 contrats, les migrations et fixtures restent préservés. Les anciennes données ne deviennent jamais des actes de Gabriel. Leur export brut est accessible depuis le carnet, sans ancienne interface narrative.
+- `scripts/contracts.ts` vérifie séparément les deux registres ; `--write` n'écrit que les contrats manquants. Le registre historique précédemment signalé localement est protégé et ne contient aucun changement fonctionnel dans ce lot.
+- Le schéma reste v5 : `settings.volume` est optionnel. La validation des IDs accepte explicitement le namespace `rebirth.`. Le moteur déterministe, le journal et les conditions/effets ne dépendent pas de React ou du navigateur.
+- Aucun reporting ni envoi de texte libre. L'ancienne API de collecte reste 410. Le site de préinscription est indépendant et n'a pas été modifié.
+
+## Nettoyage effectif
+
+Ancien lecteur T1–T3 et ses seuils, `BeatRenderer`, `GlyphInput`, onboarding et fins, ancien `World` et CSS, ancienne projection visuelle T0, audio `actAudio`, `grain.svg` et tests E2E des parcours publics supprimés ont été retirés. Les deux suites E2E existantes sont réécrites autour du nouveau comportement. Les tests du moteur et les fixtures historiques restent pertinents et conservés. **Motion est retiré de package.json et du lockfile**, sans nouvelle dépendance. Les styles globaux de l'ancien gameplay sont remplacés par les primitives encore consommées.
+
+Les anciens contenus narratifs restent dans le dépôt à titre de compatibilité et de validation des sauvegardes, sans route publique jouable. `/jouer`, `/jouer/t2` et `/jouer/t3` redirigent vers `/jouer/t0`.
+
+## Vérifications et limites
+
+- Build, lint, TypeScript, Prettier et contrats vérifiés. Validation : 500 nouveaux parcours seedés, plus les simulations et fixtures historiques. Vérification de l'énergie non nulle des onze WAV et de la présence de décors différents.
+- 14 E2E sur build de production : les trois routes de contact, parcours complet au clavier, reprise dans un document, absence de fausse collecte, passage de toutes les scènes, export/effacement sans toucher l'ancienne édition, activation/volume/mute, appareil audio indisponible et redirections. Captures inspectées à 390 et 1440 px ; contrôles de largeur à 320, 390, 667×375, 768 et 1440.
+- À poursuivre : dossier Élise après le prologue, archives et témoins, enquête Camille 2013, station 2018, Tribunal et verdict déterministe. Aucun de ces chapitres n'est annoncé comme livré. Portraits stylisés et voix synthétique à améliorer si une direction plus réaliste est retenue. Pas de test physique iPhone/Android ni de nouvelle mesure Lighthouse à ce stade.
+
+La suite de ce fichier est l'historique de l'ancienne édition et des travaux précédents ; elle n'est plus le plan narratif actif.
+
+---
+
 # Progress
 
 ## Done

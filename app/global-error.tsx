@@ -25,8 +25,8 @@ export default function GlobalError({
       <body
         style={{
           alignItems: 'center',
-          background: '#0d0d10',
-          color: '#efece4',
+          background: '#090809',
+          color: '#E6DED3',
           display: 'flex',
           fontFamily: 'Arial, sans-serif',
           justifyContent: 'center',
@@ -53,8 +53,8 @@ export default function GlobalError({
             onClick={retry}
             style={{
               background: 'transparent',
-              border: '1px solid #efece4',
-              color: '#efece4',
+              border: '1px solid #E6DED3',
+              color: '#E6DED3',
               cursor: 'pointer',
               font: 'inherit',
               marginTop: 24,

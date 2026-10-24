@@ -272,7 +272,7 @@ const effect: z.ZodType<unknown> = z.lazy(() =>
   ]),
 );
 export const sceneSchema = z.object({
-  id: z.string().regex(/^t[0-4]\.[a-z-]+$/),
+  id: z.string().regex(/^(?:rebirth\.)?t[0-4]\.[a-z-]+$/),
   version: z.number().int().positive(),
   timelineId: z.enum(['t0', 't1', 't2', 't3', 't4']),
   title: z.string(),
@@ -592,6 +592,7 @@ export const settingsSchema = z.object({
   reducedMotion: z.enum(['auto', 'on', 'off']),
   textSize: z.enum(['small', 'normal', 'large']),
   sound: z.boolean(),
+  volume: z.number().min(0).max(1).optional(),
 });
 // Schema 2 and 3: the whole interpreting content was embedded as identity.
 export const legacySaveSchema = z.object({

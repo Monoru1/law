@@ -10,6 +10,7 @@ import {
 } from '../engine';
 import { legacySaveSchema, saveSchema } from '../engine/schema';
 import registry from '../content/contracts.json';
+import rebirthRegistry from '../content/rebirth-contracts.json';
 import type { SaveGame } from './SaveAdapter';
 import legacyContent from './legacy-content-v1.json';
 
@@ -27,7 +28,7 @@ export class IncompatibleSaveError extends Error {
 }
 
 type Contracts = Record<string, string>;
-export const contractRegistry: Contracts = registry;
+export const contractRegistry: Contracts = { ...registry, ...rebirthRegistry };
 
 type SceneEvent = Extract<GameEvent, { sceneVersion: number }>;
 const isSceneEvent = (event: GameEvent): event is SceneEvent =>

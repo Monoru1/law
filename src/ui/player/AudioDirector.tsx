@@ -1,66 +1,69 @@
 'use client';
-import { useEffect, useRef } from 'react';
-import type { StoreApi, UseBoundStore } from 'zustand';
-import { soundscapeFor } from '../../audio/actAudio';
-import { createProceduralAudioManager } from '../../audio/AudioManager';
-import { replay, resolveScene, type Content } from '../../engine';
-import type { GameStore } from '../../store/createGameStore';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  createInvestigationAudio,
+  type AudioPlace,
+  type SoundCue,
+} from '../../audio/AudioManager';
+import { useT0GameStore } from '../../store/gameStoreT0';
 
-// Watches the current scene and the player's sound setting, and drives the
-// procedural act audio accordingly. Renders nothing; a sibling of the scene
-// player, never a dependency of it, so a T1/T2 player is unaffected and an
-// audio failure can never block a decision.
-export function AudioDirector({
-  content,
-  useStore,
-}: {
-  content: Content;
-  useStore: UseBoundStore<StoreApi<GameStore>>;
-}) {
-  const save = useStore((s) => s.save);
-  const manager = useRef(createProceduralAudioManager());
-  const act = useRef(0);
-  const startedOnGesture = useRef(false);
-
-  // Web Audio may only start after a real user gesture; the first click or
-  // key on this page is that gesture, listened for once, then forgotten.
+export function useInvestigationAudio(place: AudioPlace) {
+  const settings = useT0GameStore((state) => state.save?.settings);
+  const update = useT0GameStore((state) => state.settings);
+  const engine = useMemo(() => createInvestigationAudio(), []);
+  const [started, setStarted] = useState(false);
+  const [error, setError] = useState('');
   useEffect(() => {
-    if (startedOnGesture.current) return;
-    const start = () => {
-      if (startedOnGesture.current) return;
-      startedOnGesture.current = true;
-      manager.current.resume();
-    };
-    document.addEventListener('pointerdown', start, { once: true });
-    document.addEventListener('keydown', start, { once: true });
-    return () => {
-      document.removeEventListener('pointerdown', start);
-      document.removeEventListener('keydown', start);
-    };
-  }, []);
-
+    engine.configure({
+      place,
+      muted: !settings?.sound,
+      volume: settings?.volume ?? 0.65,
+    });
+  }, [engine, place, settings?.sound, settings?.volume]);
+  useEffect(() => () => engine.dispose(), [engine]);
   useEffect(() => {
-    manager.current.setMuted(!(save?.settings.sound ?? false));
-  }, [save?.settings.sound]);
-
-  useEffect(() => {
-    const state = replay(save?.events ?? [], content);
-    const raw = content.scenes.find((s) => s.id === state.currentSceneId);
-    if (!raw) return;
-    const scene = resolveScene(raw, state);
-    const soundscape = soundscapeFor(
-      scene.id,
-      scene.audio?.ambience,
-      act.current,
-    );
-    act.current = soundscape.act;
-    manager.current.setProfile(soundscape.gains);
-  }, [save, content]);
-
-  useEffect(() => {
-    const engine = manager.current;
-    return () => engine.setMuted(true);
-  }, []);
-
-  return null;
+    if (!started || !settings?.sound || place !== 'apartment') return;
+    const timer = setInterval(() => void engine.cue('clock'), 2400);
+    return () => clearInterval(timer);
+  }, [engine, started, settings?.sound, place]);
+  return {
+    enabled: started && settings?.sound === true,
+    error,
+    async toggle() {
+      try {
+        if (started && settings?.sound) {
+          engine.configure({
+            place,
+            muted: true,
+            volume: settings.volume ?? 0.65,
+          });
+          await update({ sound: false });
+          return;
+        }
+        const ok = await engine.start();
+        setStarted(ok);
+        if (ok) {
+          setError('');
+          await update({ sound: true });
+        } else
+          setError(
+            'Le son est indisponible. Les transcriptions restent accessibles.',
+          );
+      } catch {
+        engine.configure({
+          place,
+          muted: true,
+          volume: settings?.volume ?? 0.65,
+        });
+        setStarted(false);
+        setError(
+          'Le réglage audio n’a pas pu être enregistré. La partie est conservée.',
+        );
+      }
+    },
+    async cue(name: SoundCue) {
+      return engine.cue(name);
+    },
+    stopVoice: engine.stopVoice,
+  };
 }

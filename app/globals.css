@@ -16,12 +16,6 @@ body {
 }
 body {
   overflow-x: hidden;
-  background-image: radial-gradient(
-    ellipse 120% 80% at 50% -10%,
-    var(--law-black),
-    var(--law-void) 80%
-  );
-  background-attachment: fixed;
 }
 a {
   color: inherit;
@@ -29,7 +23,8 @@ a {
 }
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 button {
@@ -37,11 +32,11 @@ button {
 }
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 0.5;
 }
 :focus-visible {
-  outline: var(--law-focus-width) solid var(--law-paper);
-  outline-offset: var(--law-focus-offset);
+  outline: 2px solid var(--law-paper);
+  outline-offset: 4px;
 }
 ::selection {
   background: var(--law-paper);
@@ -53,985 +48,206 @@ button:disabled {
 }
 .mono {
   font-family: var(--font-meta), monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
 }
-.shell {
-  min-height: 100svh;
-  position: relative;
-  isolation: isolate;
-}
-.connectivity-status {
-  position: fixed;
-  inset: auto 0 0;
-  z-index: 100;
-  padding: 12px clamp(16px, 4vw, 48px);
-  border-top: 1px solid var(--law-paper);
-  background: var(--law-black);
-  color: var(--law-paper);
-  line-height: 1.5;
+.law-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 14px 20px;
+  border: 1px solid var(--law-ink-2);
+  background: var(--law-paper);
+  color: var(--law-black);
+  font-size: 0.875rem;
+  line-height: 1.4;
   text-align: center;
 }
-.home {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  max-width: 1640px;
-  margin: auto;
-  padding: clamp(24px, 4vw, 70px);
-  min-height: 100svh;
+.law-button:hover:not(:disabled) {
+  background: var(--law-ink-2);
 }
-.site-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
+.law-button.ghost {
+  background: var(--law-surface);
+  color: var(--law-paper);
+  border-color: var(--law-line-strong);
 }
-.wordmark {
-  font-size: 0.78rem;
-  letter-spacing: 0.2em;
+.law-button.ghost:hover:not(:disabled) {
+  border-color: var(--law-paper);
 }
-.home-body {
-  margin: 8vh 0 4vh;
-}
-.home p {
-  font-size: clamp(1.2rem, 2vw, 2rem);
-  max-width: 34ch;
-}
-.home p.threshold-line {
-  font-size: clamp(2.1rem, 5vw, 4.4rem);
-  line-height: 1.05;
-  max-width: 22ch;
-  margin: 16px 0;
-}
-.home p.threshold-note {
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
-  line-height: 1.6;
-  max-width: 62ch;
-  margin-top: 2.5rem;
-  color: var(--law-gray-300);
+.law-button.signal,
+.law-button.signal:hover:not(:disabled) {
+  background: var(--law-signal);
+  color: var(--law-paper);
+  border-color: var(--law-paper);
 }
 .home-actions {
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
-  margin-top: 3.5rem;
+  margin-top: 32px;
 }
-.rebirth-home {
-  max-width: none;
-  padding: clamp(20px, 4vw, 64px);
-  background: radial-gradient(
-    ellipse at 50% 12%,
-    var(--law-surface-2),
-    transparent 60%
-  );
-}
-.rebirth-home .site-top {
-  flex-wrap: wrap;
-}
-.registry-link {
-  padding-block: 14px;
-  text-decoration: underline;
-  text-underline-offset: 6px;
-}
-.court-entry {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: min(760px, 85svh);
-  isolation: isolate;
-  margin-block: 32px;
-  text-align: center;
-}
-.court-doors {
-  position: absolute;
-  inset: 0 max(0px, calc((100% - 960px) / 2));
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  border: 12px double var(--law-line-strong);
-  border-radius: 48% 48% 0 0;
-  overflow: hidden;
-  box-shadow:
-    0 18px 70px var(--law-void),
-    inset 0 0 70px var(--law-void);
-  z-index: -1;
-}
-.court-doors span {
-  border: 1px solid var(--law-line);
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 15%,
-      var(--law-line-faint) 15% 16%,
-      transparent 16% 32%
-    ),
-    linear-gradient(180deg, var(--law-surface-2), var(--law-void));
-  box-shadow: inset 0 0 50px var(--law-void);
-}
-.court-invitation {
-  padding: clamp(16px, 4vw, 64px);
-  max-width: 900px;
-}
-.rebirth-home h1 {
-  font-size: clamp(2.5rem, 7vw, 6.5rem);
-  line-height: 1;
-  letter-spacing: -0.035em;
-  white-space: normal;
-  margin: 0 0 24px;
-  text-wrap: balance;
-}
-.court-invitation p {
-  margin: 0 auto 32px;
-  color: var(--law-ink-2);
-}
-.rebirth-home .home-body {
-  width: min(100%, 1200px);
-  margin: 48px auto;
-  scroll-margin-top: 24px;
-}
-.registry-title {
-  font-size: clamp(2rem, 5vw, 4rem);
-  margin: 0;
-}
-.rebirth-home .registry-note {
-  font-size: 1rem;
-  color: var(--law-ink-2);
-  max-width: 65ch;
-}
-.home-doors {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  margin-block: 48px;
-}
-.door-card {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 20px;
-  align-content: start;
-  padding: clamp(18px, 3vw, 36px);
-  border: 1px solid var(--law-line-strong);
-  border-top: 8px solid var(--law-surface-3);
-  background: var(--law-surface);
-  box-shadow: 0 10px 24px var(--law-void);
-}
-.door-card:last-child {
-  grid-column: 1 / -1;
-}
-.door-card[data-status='presentation'] {
-  border-top-style: double;
-  background: var(--law-black);
-}
-.door-index {
-  grid-column: 1;
-  font-size: 0.75rem;
-  color: var(--law-paper);
-}
-.dossier-status {
-  grid-column: 2;
-  color: var(--law-ink-2);
-  font-size: 0.75rem;
-}
-.rebirth-home .door-promise {
-  grid-column: 1 / -1;
-  margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  line-height: 1.25;
-}
-.rebirth-home .dossier-progress {
-  grid-column: 1 / -1;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin: 0;
-  color: var(--law-ink-2);
-}
-.door-card .law-button {
-  grid-column: 1 / -1;
-  justify-self: start;
-}
-@media (max-width: 650px) {
-  .home-doors {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
-  }
-  .door-card {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
-  .dossier-status {
-    grid-column: 1;
-  }
-  .court-entry {
-    min-height: 65svh;
-  }
-  .rebirth-home .footerline {
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-}
-.law-button {
-  display: inline-flex;
-  user-select: none;
-  align-items: center;
-  justify-content: center;
-  min-height: 54px;
-  padding: 14px 23px;
-  border: 1px solid var(--law-gray-100);
-  background: transparent;
-  color: var(--law-paper);
-  font-family: var(--font-meta), monospace;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  text-align: center;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    border-color 0.18s ease;
-  position: relative;
-  overflow: hidden;
-}
-.law-button:hover:not(:disabled),
-.law-button.selected {
-  background: var(--law-paper);
-  color: var(--law-black);
-}
-.law-button.ghost {
-  border-color: var(--law-gray-700);
-}
-.law-button.ghost:hover:not(:disabled) {
-  background: transparent;
-  color: var(--law-paper);
-  border-color: var(--law-paper);
-}
-
-/* Choice — a position crossing the room, not a card in a form. */
-.law-button.choice {
-  justify-content: flex-start;
-  text-align: left;
-  min-height: var(--law-control-min);
-  padding: var(--law-space-5) clamp(54px, 5vw, 78px) var(--law-space-5)
-    var(--law-space-6);
-  background: transparent;
-  border: 0;
-  border-right: 1px solid var(--law-line);
-  text-transform: none;
-  letter-spacing: 0.01em;
-  font-family: var(--font-body), Arial, sans-serif;
-  font-size: clamp(1rem, 1.15vw, 1.15rem);
-  line-height: var(--law-leading-help);
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-.law-button.choice::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--law-line-strong);
-  transition:
-    background 0.18s ease,
-    width 0.18s ease;
-}
-.law-button.choice::after {
-  content: attr(data-choice-index);
-  position: absolute;
-  right: var(--law-space-5);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--law-ink-3);
-  font-family: var(--font-meta), monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.12em;
-}
-.law-button.choice:hover:not(:disabled) {
-  background: rgba(233, 230, 223, 0.055);
-  color: var(--law-paper);
-}
-.law-button.choice:hover:not(:disabled)::before,
-.law-button.choice.selected::before {
-  background: var(--law-paper);
-  width: 5px;
-}
-.law-button.choice.selected {
-  background: rgba(233, 230, 223, 0.07);
-  color: var(--law-paper);
-}
-.choice-grid .law-button.choice:last-child {
-  border-right: 0;
-}
-
-/* Commit — a single, deliberate act (sign, give, confirm). Filled affordance,
-   never a hold gesture. */
-.law-button.commit {
-  min-height: var(--law-control-min);
-  padding: var(--law-space-4) var(--law-space-8);
-  background: var(--law-paper);
-  color: var(--law-black);
-  border-color: var(--law-paper);
-  font-weight: 500;
-}
-.law-button.commit:hover:not(:disabled) {
-  background: transparent;
-  color: var(--law-paper);
-}
-
-/* Signal — reserved strictly for irreversible actions (erase). */
-.law-button.signal,
-.law-button.signal:hover:not(:disabled) {
-  background: var(--law-signal);
-  border-color: var(--law-paper);
-  color: var(--law-signal-ink);
-}
-.footerline {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--law-gray-300);
-  border-top: 1px solid var(--law-gray-700);
-  padding-top: 18px;
-}
-.stage {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  padding: clamp(20px, 3vw, 48px);
-  transition: background 0.6s ease;
-  overflow: clip;
-  isolation: isolate;
-}
-.stage::after {
-  content: '';
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: radial-gradient(
-    ellipse at 50% 25%,
-    transparent 24%,
-    rgba(0, 0, 0, 0.55) 90%
-  );
-  opacity: var(--vignette, 0.5);
-}
-.player-top,
-.player-alert {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 20px;
-  margin-top: 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--law-line-strong);
-  background: var(--law-black);
-}
-.player-alert p {
-  margin: 0;
-  font-size: 0.8rem;
-  letter-spacing: 0.06em;
-  max-width: 60ch;
-}
-.player-bottom {
-  position: relative;
-  z-index: 2;
-}
-.player-top {
+.site-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 40px;
-}
-.player-main {
-  width: min(920px, 100%);
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 68svh;
-  padding: 5vh clamp(12px, 3vw, 42px);
-  background: radial-gradient(
-    ellipse 72% 68% at 42% 50%,
-    rgba(7, 7, 9, 0.84),
-    rgba(7, 7, 9, 0.56) 64%,
-    transparent 100%
-  );
-  animation: scene-arrival 0.5s var(--law-ease-feedback) both;
-}
-@keyframes scene-arrival {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.beats {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8px, 1.5vh, 24px);
-  min-height: clamp(170px, 32vh, 400px);
-  justify-content: end;
-}
-.stage[data-phase='outcome'] .beats {
-  min-height: 0;
-  padding-left: clamp(14px, 2vw, 24px);
-  border-left: 1px solid var(--law-line-strong);
-}
-.stage[data-phase='outcome'] .beat {
-  max-width: 27ch;
-}
-.beat {
-  font-size: clamp(2rem, 4.2vw, 4.15rem);
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-  max-width: 24ch;
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  color: var(--law-ink-2);
-}
-.beat.meta,
-.beat.whisper {
-  font-family: var(--font-meta), monospace;
-  font-size: clamp(0.75rem, 1vw, 1rem);
-  letter-spacing: 0.09em;
-  line-height: 1.5;
-  max-width: 60ch;
-  color: var(--law-gray-100);
-}
-.beat.emphasis {
-  font-style: italic;
-}
-.beat.dash {
-  font-size: 1.5rem;
-  color: var(--law-gray-300);
-}
-.beat:last-child {
-  color: var(--law-paper);
-}
-.choice-area {
-  margin-top: clamp(36px, 8vh, 92px);
-  max-width: 790px;
-}
-.choice-grid {
-  display: grid;
-  user-select: none;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  border-top: 1px solid var(--law-line-strong);
-  border-bottom: 1px solid var(--law-line-strong);
-}
-.choice-grid.three {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.choice-grid .law-button {
-  min-height: 84px;
-}
-.outcome-actions {
-  user-select: none;
-  margin-top: 48px;
-}
-/* A decision rests: what was committed stays above its consequence, and the
-   way on is a line of type, not a call to action. */
-.lock-trace {
-  margin: 0 0 clamp(14px, 2.4vh, 28px);
-  max-width: 60ch;
-  font-size: clamp(0.72rem, 0.95vw, 0.9rem);
-  letter-spacing: 0.06em;
-  line-height: 1.5;
-  color: var(--law-gray-300);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.law-proposal .lock-trace {
-  margin: 18px 0 0;
-}
-.rest {
-  margin-top: clamp(28px, 6vh, 64px);
-  padding-left: clamp(14px, 2vw, 24px);
-}
-.rest-advance {
-  user-select: none;
-  min-height: 44px;
-  min-width: 44px;
-  padding: 10px 2px;
-  border: 0;
-  border-bottom: 1px solid transparent;
-  background: transparent;
-  color: var(--law-gray-100);
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  animation: rest-arrival 0.6s var(--law-ease-feedback) both;
-}
-.rest-advance:hover,
-.rest-advance:focus-visible {
-  color: var(--law-paper);
-  border-bottom-color: var(--law-line-strong);
-}
-.rest-advance:focus-visible {
-  outline: 1px solid var(--law-paper);
-  outline-offset: 4px;
-}
-@keyframes rest-arrival {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-.certainty-question {
-  margin: 0 0 12px;
-  font-size: clamp(1.4rem, 2.4vw, 2.1rem);
-  line-height: 1.15;
-  color: var(--law-ink-2);
-}
-.player-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  color: var(--law-gray-300);
-  gap: 24px;
-}
-.hint {
-  font-size: 0.7rem;
-  line-height: 1.6;
-}
-/* Physical response: a committed decision briefly settles the chamber —
-   a restrained flash of the top boundary. THE LAW registered it. */
-.stage--pulse::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 2px;
-  z-index: 3;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--law-paper) 50%,
-    transparent
-  );
-  opacity: 0;
-  animation: lock-pulse var(--law-duration-lock) var(--law-ease-feedback);
-  pointer-events: none;
-}
-@keyframes lock-pulse {
-  0% {
-    opacity: 0;
-  }
-  30% {
-    opacity: 0.85;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-.law-page .site-top {
-  flex-wrap: wrap;
-  gap: var(--law-space-3);
-}
-.law-page .site-top .law-button {
-  min-height: var(--law-target-min);
-  max-width: 100%;
-  line-height: var(--law-leading-help);
-  overflow-wrap: anywhere;
-}
-.field {
-  display: block;
-  width: 100%;
-  min-height: 96px;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid var(--law-gray-100);
-  border-radius: 0;
-  outline: 0;
-  color: var(--law-paper);
-  padding: 16px 0;
-  font-family: var(--font-display), serif;
-  font-size: clamp(1.4rem, 2.7vw, 2.5rem);
-  resize: vertical;
-}
-.field:focus {
-  border-bottom-width: 2px;
-}
-.field::placeholder {
-  color: var(--law-ink-3);
-}
-
-/* Record — the player's own words, framed as an entry written into the file. */
-.record-field {
-  min-height: 120px;
-  padding: 18px 18px 18px calc(18px + var(--law-space-3));
-  border: 1px solid var(--law-line);
-  border-left: 2px solid var(--law-line-strong);
-  background: var(--law-surface);
-}
-.record-field:focus {
-  border-color: var(--law-line-strong);
-  border-left-color: var(--law-paper);
-  border-bottom-width: 1px;
-}
-.record-meta {
-  display: flex;
-  justify-content: space-between;
   gap: 16px;
-  align-items: baseline;
-  margin: 10px 0 30px;
-  color: var(--law-ink-3);
+  flex-wrap: wrap;
 }
-.range {
-  appearance: none;
-  width: 100%;
-  height: 44px;
-  margin: 25px 0;
-  cursor: pointer;
-  background: transparent;
+.law-page {
+  max-width: 1000px;
+  margin: auto;
+  padding: clamp(20px, 5vw, 64px);
+  overflow-wrap: anywhere;
 }
-.range::-webkit-slider-runnable-track {
-  height: 1px;
-  background: var(--law-line-strong);
-}
-.range::-webkit-slider-thumb {
-  appearance: none;
-  width: 26px;
-  height: 26px;
-  margin-top: -13px;
-  border: 1px solid var(--law-paper);
-  border-radius: 50%;
-  background: var(--law-black);
-  box-shadow: inset 0 0 0 7px var(--law-black);
-}
-.range:hover::-webkit-slider-thumb,
-.range:focus-visible::-webkit-slider-thumb {
-  background: var(--law-paper);
-}
-.range::-moz-range-track {
-  height: 1px;
-  background: var(--law-line-strong);
-}
-.range::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
-  border: 1px solid var(--law-paper);
-  border-radius: 50%;
-  background: var(--law-black);
-}
-.range-value {
+.law-page h1 {
   font-family: var(--font-display), serif;
-  font-size: 5rem;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  line-height: 1.05;
+  font-weight: 400;
 }
-
-/* Certainty — a measured reading, not a settings slider. */
-.certainty-gauge {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  border-bottom: 1px solid var(--law-line);
-  padding-bottom: 10px;
+.law-page h2 {
+  font-size: 2rem;
 }
-.certainty-gauge .range-value {
-  font-size: clamp(3.5rem, 9vw, 6rem);
-  line-height: 0.9;
-}
-.certainty-unit {
-  color: var(--law-ink-3);
-}
-.certainty-scale {
-  display: flex;
-  justify-content: space-between;
-  color: var(--law-ink-3);
-  margin-top: 8px;
-}
-.glyph-grid {
-  display: flex;
-  justify-content: space-between;
-  gap: 30px;
-}
-.glyph-choice {
-  border: 1px solid var(--law-gray-700);
-  background: transparent;
-  color: var(--law-paper);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 155px;
-  flex: 1;
-  cursor: pointer;
-}
-.glyph-choice.selected,
-.glyph-choice:hover {
-  border-color: var(--law-paper);
+.law-page p {
+  line-height: 1.7;
 }
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(11, 11, 12, 0.97);
-  z-index: 20;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  background: rgba(9, 8, 9, 0.94);
 }
 .overlay-inner {
-  width: min(660px, 100%);
+  width: min(760px, 100%);
   max-height: 90svh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
 }
-.overlay h2,
-.law-page h1 {
-  font-size: clamp(3.5rem, 9vw, 8rem);
-  line-height: 0.88;
-  letter-spacing: -0.065em;
-  margin: 22px 0 44px;
-}
-/* Law proposal / revision — a signature moment that interrupts the ordinary
-   rhythm of answering. Framed like a protocol document, signed with one click. */
-.law-proposal {
-  width: min(760px, 100%);
-  margin: auto;
-  padding: clamp(20px, 3vw, 36px);
-  border: 1px solid var(--law-line);
-  border-top: 2px solid var(--law-paper);
-  background: linear-gradient(var(--law-surface), transparent 70%);
-}
-.law-proposal-mark {
-  color: var(--law-ink-3);
-  margin: 0 0 clamp(20px, 4vh, 40px);
-}
-.law-proposal-intro {
-  color: var(--law-ink-2);
-  margin: 0 0 var(--law-space-4);
-}
-.law-statement {
-  font-size: clamp(1.7rem, 3.6vw, 3rem);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  max-width: 26ch;
-  margin: 0 0 clamp(24px, 4vh, 40px);
-}
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: stretch;
-}
-.stack .law-button {
-  justify-content: flex-start;
+.overlay h2 {
+  font-weight: 400;
 }
 .settings-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--law-gray-700);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--law-line-strong);
 }
-.law-page {
-  max-width: 1050px;
-  margin: auto;
-  padding: clamp(24px, 4vw, 64px);
+.settings-row select {
+  background: var(--law-surface);
+  border: 1px solid var(--law-ink-2);
+  color: var(--law-paper);
+  min-height: 44px;
+  padding: 10px;
 }
-.law-page section {
-  border-top: 1px solid var(--law-line);
-  padding: 28px 0 clamp(48px, 8vh, 80px);
+.settings-row input[type='range'] {
+  width: min(260px, 100%);
+  min-height: 44px;
+  accent-color: var(--law-paper);
 }
-.law-page section h2 {
-  margin: 0 0 38px;
-  color: var(--law-ink-2);
+.settings-row input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--law-paper);
 }
-.law-page article {
-  padding: 22px 0;
-  border-bottom: 1px solid var(--law-line);
-}
-.law-page article .mono {
-  color: var(--law-ink-3);
-}
-.law-page article p {
-  font-size: clamp(1.3rem, 2.5vw, 2.3rem);
-  line-height: 1.25;
-  max-width: 35ch;
-  margin: 15px 0;
-}
-/* Signed laws read as material entries in the record. */
-.law-page section:first-of-type article {
-  border-left: 2px solid var(--law-line-strong);
-  padding-left: clamp(14px, 2vw, 24px);
-}
-/* Player's own words, quoted back as part of the file. */
-.law-page blockquote {
-  border-left: 2px solid var(--law-paper);
-  padding-left: 18px;
-  color: var(--law-ink-2);
-  font-style: italic;
-  max-width: 42ch;
-}
-.law-page small {
-  color: var(--law-gray-300);
-  line-height: 1.6;
-}
-.law-page .revision {
-  text-decoration: line-through;
-  color: var(--law-gray-300);
-  font-size: 1.1rem;
+.connectivity-status {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 100;
+  padding: 16px;
+  background: var(--law-black);
+  color: var(--law-paper);
+  border-top: 1px solid var(--law-paper);
+  text-align: center;
+  line-height: 1.5;
 }
 .end-screen {
-  background: var(--law-black);
-  text-align: center;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: clamp(28px, 6vh, 64px) 24px;
+  padding: 24px;
+  text-align: center;
+  gap: 24px;
 }
 .end-inner {
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: 42ch;
-}
-.end-screen h1 {
-  font-size: clamp(5rem, 14vw, 15rem);
-  letter-spacing: -0.08em;
-  line-height: 0.8;
-  margin: 0 0 clamp(24px, 5vh, 44px);
+  width: min(680px, 100%);
 }
 .technical-error h1 {
-  font-size: clamp(2.7rem, 8vw, 6rem);
-  line-height: 0.95;
+  font-size: clamp(2.5rem, 6vw, 5rem);
 }
-.technical-error p:not(.mono) {
-  max-width: 52ch;
-  line-height: 1.6;
+.rebirth-dossiers {
+  position: relative;
+  margin: 100px auto 0;
+  padding: 32px;
+  max-width: 1200px;
+  background: rgba(9, 8, 9, 0.94);
+  border: 1px solid var(--law-line-strong);
 }
-.technical-error .home-actions {
-  justify-content: center;
+.rebirth-dossiers h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  margin: 0 0 32px;
 }
-.end-statements {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(10px, 2vh, 18px);
+.rebirth-dossiers ol {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
 }
-.end-screen .end-statements p {
-  font-size: clamp(1.5rem, 3vw, 3rem);
-  line-height: 1.12;
-  margin: 0;
+.rebirth-dossiers li {
+  border-top: 1px solid var(--law-line-strong);
+  padding: 24px 0;
 }
-.end-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(16px, 2.5vh, 24px);
-  margin-top: clamp(28px, 5vh, 52px);
+.rebirth-dossiers h3 {
+  font-family: var(--font-display), serif;
+  font-size: 1.7rem;
+  font-weight: 400;
 }
-.end-teaser {
-  margin: clamp(24px, 5vh, 48px) 0 0;
-  color: var(--law-gray-300);
-  text-align: center;
+.rebirth-dossiers p {
+  line-height: 1.7;
+  color: var(--law-ink-2);
+}
+.rebirth-notebook section {
+  margin-block: 48px;
+}
+.rebirth-notebook details {
+  margin-top: 40px;
+  padding: 24px;
+  border: 1px solid var(--law-line-strong);
+}
+.rebirth-notebook summary {
+  cursor: pointer;
+  min-height: 44px;
+  line-height: 1.7;
 }
 @media (max-width: 650px) {
-  .home-body {
-    margin: 0;
+  .overlay {
+    padding: 12px;
   }
-  .choice-grid,
-  .choice-grid.three {
-    grid-template-columns: 1fr;
+  .rebirth-dossiers {
+    padding: 24px 18px;
   }
-  .choice-grid .law-button {
-    min-height: 64px;
-  }
-  .choice-grid .law-button.choice {
-    border-right: 0;
-    border-bottom: 1px solid var(--law-line);
-    font-size: 1.05rem;
-  }
-  .choice-grid .law-button.choice:last-child {
-    border-bottom: 0;
-  }
-  .law-proposal {
-    padding: 20px 16px;
-  }
-  .player-main {
-    min-height: 73svh;
-    padding: 30px 0;
-  }
-  .beats {
-    min-height: 27vh;
-  }
-  .stage[data-phase='outcome'] .beats {
-    min-height: 27vh;
-  }
-  .beat {
-    font-size: clamp(2rem, 8vw, 3rem);
-  }
-  .glyph-choice {
-    flex-wrap: wrap;
-  }
-  .home {
-    padding: 25px;
-  }
-  .footerline {
-    font-size: 0.62rem;
+  .rebirth-dossiers ol {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
     scroll-behavior: auto !important;
   }
-}
-select {
-  background: var(--law-black);
-  color: var(--law-paper);
-  border: 1px solid var(--law-gray-300);
-  padding: 10px;
-  min-width: 115px;
-}
-input[type='checkbox'] {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--law-paper);
-}
-.stage[data-reduce='true'] * {
-  animation-duration: 0.01ms !important;
-  transition-duration: 0.01ms !important;
-}
-
-.notes-ledger {
-  padding-inline-start: 1.5rem;
-}
-.notes-ledger li {
-  padding-inline-start: 0.5rem;
-}
-.notes-ledger article {
-  overflow-wrap: anywhere;
-}
-.notes-ledger blockquote {
-  margin: 24px 0;
-  font-size: 1.6rem;
-  line-height: 1.4;
-}
-
-.court-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
 }

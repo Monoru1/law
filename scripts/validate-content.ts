@@ -1,3 +1,7 @@
+import { rebirthContent, documents } from '../src/content/rebirth';
+import { auditContent } from '../src/engine';
+import rebirthRegistry from '../src/content/rebirth-contracts.json';
+import { simulateTalkRun } from './simulation-talk';
 import { content, copy } from '../src/content';
 import { contentT2 } from '../src/content/t2';
 import { contentT3 } from '../src/content/t3';
@@ -333,3 +337,37 @@ console.log(
 );
 console.log('Scene coverage:', hits);
 console.log('Variant coverage:', variantHits);
+
+const rebirthDrift = registryDrift(rebirthRegistry, [rebirthContent]);
+if (rebirthDrift.changed.length || rebirthDrift.missing.length)
+  fail('REBIRTH contracts are not registered.');
+const rebirthProblems = auditContent(rebirthContent);
+if (rebirthProblems.length) fail(rebirthProblems.join('\n'));
+rebirthContent.scenes.forEach((scene) => sceneSchema.parse(scene));
+if (new Set(documents.map((document) => document.id)).size !== documents.length)
+  fail('Duplicate evidence IDs.');
+for (let seed = 1; seed <= 500; seed++) {
+  const run = simulateTalkRun(
+    rebirthContent,
+    seeded(seed),
+    { at: 0 },
+    { skipRate: seed % 7 === 0 ? 0.3 : 0 },
+  );
+  if (!run.state.completed) fail(`REBIRTH did not finish for seed ${seed}`);
+  migrateSave(
+    {
+      schemaVersion: 5,
+      timelineId: 't0',
+      contentVersion: rebirthContent.version,
+      runId: `rebirth-${seed}`,
+      createdAt: 0,
+      updatedAt: 1,
+      settings: defaultSettings,
+      events: run.events,
+    },
+    rebirthContent,
+  );
+}
+console.log(
+  `REBIRTH: ${rebirthContent.scenes.length} scenes, ${documents.length} stable evidence IDs, 500 validated journeys.`,
+);

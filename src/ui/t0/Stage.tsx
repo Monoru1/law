@@ -1,112 +1,100 @@
 'use client';
-import type { Segment } from './talkView';
-import { SPEAKERS, type Env } from './talkView';
+import Image from 'next/image';
+import { applyFrenchTypography } from '../../engine';
+import type { EvidenceDocument, LocationId } from '../../content/rebirth';
 import styles from './t0.module.css';
 
-// The place is only light and weather: the frame never draws furniture. It is
-// cheap by construction, a few gradients and two moving layers of rain.
-export function Place({ env }: { env: Env }) {
+export function Place({ location }: { location: LocationId }) {
+  const asset = location === 'school' ? 'school' : 'apartment';
   return (
-    <>
-      <div className={styles.place} data-env={env} aria-hidden="true">
-        {env === 'rue' && (
-          <>
-            <div className={styles.signal} />
-            <div className={styles.rain} />
-          </>
-        )}
-      </div>
-      <div className={styles.vignette} aria-hidden="true" />
-      <div className={styles.grain} aria-hidden="true" />
-    </>
-  );
-}
-
-export function DialogueLine({
-  segment,
-  age,
-  instant,
-}: {
-  segment: Segment;
-  age: number;
-  instant: boolean;
-}) {
-  const motion = instant ? { animation: 'none' } : undefined;
-  if (segment.kind === 'reply')
-    return (
-      <p
-        className={`${styles.line} ${styles.echo}`}
-        data-age={age}
-        data-silent={segment.silent ? 'true' : undefined}
-        style={motion}
-      >
-        {segment.text}
-      </p>
-    );
-  if (segment.who === 'year')
-    return (
-      <p
-        className={`${styles.line} ${styles.year}`}
-        data-age={age}
-        style={motion}
-      >
-        {segment.text}
-      </p>
-    );
-  if (segment.who === 'notif')
-    return (
-      <p
-        className={`${styles.line} ${styles.notif}`}
-        data-age={age}
-        style={motion}
-      >
-        <span>LAW · maintenant</span>
-        {segment.text}
-      </p>
-    );
-  const voice =
-    segment.who === 'narrator'
-      ? styles.narrator
-      : segment.who === 'law'
-        ? styles.law
-        : styles.person;
-  const named =
-    segment.opens && segment.who !== 'law' && segment.who !== 'narrator';
-  return (
-    <>
-      {named && (
-        <span className={styles.speaker}>
-          {SPEAKERS[segment.who] ?? segment.who}
-        </span>
-      )}
-      <p
-        className={`${styles.line} ${voice} ${
-          segment.style === 'emphasis'
-            ? styles.emphasis
-            : segment.style === 'whisper'
-              ? styles.whisper
-              : ''
-        }`}
-        data-age={age}
-        style={motion}
-      >
-        {segment.text}
-      </p>
-    </>
-  );
-}
-
-// Black, and a few words. Sometimes the whole scene is this.
-export function TitleCard({ lines }: { lines: string[] }) {
-  return (
-    <div className={styles.card} role="status">
-      <div>
-        {lines.map((text, index) => (
-          <p key={index} style={{ animationDelay: `${index * 1.2}s` }}>
-            {text}
-          </p>
-        ))}
-      </div>
+    <div
+      className={styles.environment}
+      data-location={location}
+      aria-hidden="true"
+    >
+      <Image
+        src={`/rebirth/${asset}.webp`}
+        alt=""
+        fill
+        sizes="100vw"
+        priority
+        quality={85}
+      />
+      <div className={styles.weather} />
+      <div className={styles.shade} />
     </div>
+  );
+}
+export function Portrait({ who, name }: { who: string; name: string }) {
+  if (!['gabriel', 'nora-delmas', 'adrien-keller'].includes(who)) return null;
+  return (
+    <Image
+      className={styles.portrait}
+      src={`/rebirth/${who}.svg`}
+      width={72}
+      height={88}
+      alt={name}
+      unoptimized
+    />
+  );
+}
+export function DocumentSheet({
+  document,
+  play,
+  audioEnabled,
+}: {
+  document: EvidenceDocument;
+  play?: () => void;
+  audioEnabled?: boolean;
+}) {
+  return (
+    <article className={styles.paper}>
+      <p className={styles.documentId}>{document.id} · Pièce du dossier</p>
+      <h2>{document.title}</h2>
+      <p className={styles.source}>
+        {document.source}
+        <br />
+        {document.date}
+      </p>
+      {document.image && (
+        <Image
+          className={styles.evidenceImage}
+          src={document.image}
+          alt={
+            document.id === 'RB-001'
+              ? 'Reconstitution illustrée du tirage d’Élise, personnage fictif'
+              : 'Illustration de la silhouette devant B-17, sans visage identifiable'
+          }
+          width={600}
+          height={420}
+          unoptimized
+        />
+      )}
+      {document.paragraphs.map((text, index) => (
+        <p key={index}>{applyFrenchTypography(text)}</p>
+      ))}
+      {document.transcript && (
+        <>
+          <h3>Transcription de l’enregistrement</h3>
+          <blockquote>{applyFrenchTypography(document.transcript)}</blockquote>
+        </>
+      )}
+      {play && (
+        <button
+          className="law-button"
+          type="button"
+          onClick={play}
+          disabled={!audioEnabled}
+        >
+          Écouter l’enregistrement restauré
+        </button>
+      )}
+      {play && !audioEnabled && (
+        <p>
+          Active le son dans la barre de jeu pour écouter. La transcription
+          contient les mêmes informations.
+        </p>
+      )}
+    </article>
   );
 }

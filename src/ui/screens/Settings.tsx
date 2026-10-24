@@ -1,6 +1,6 @@
 'use client';
 import type { StoreApi, UseBoundStore } from 'zustand';
-import { useGameStore } from '../../store/gameStore';
+import { useState } from 'react';
 import type { GameStore } from '../../store/createGameStore';
 import { copy } from '../../content';
 import { Button } from '../primitives/Button';
@@ -8,15 +8,25 @@ import { Dialog } from '../primitives/Dialog';
 // Settings belong to the journal being played, not always to Timeline I.
 export function Settings({
   close,
-  store = useGameStore as UseBoundStore<StoreApi<GameStore>>,
+  store,
   label = 'THE LAW: REBIRTH / 01',
 }: {
   close: () => void;
-  store?: UseBoundStore<StoreApi<GameStore>>;
+  store: UseBoundStore<StoreApi<GameStore>>;
   label?: string;
 }) {
   const save = store((s) => s.save);
-  const update = store((s) => s.settings);
+  const persistSettings = store((s) => s.settings);
+  const [saveError, setSaveError] = useState('');
+  const update = (value: Parameters<GameStore['settings']>[0]) => {
+    void persistSettings(value)
+      .then(() => setSaveError(''))
+      .catch(() =>
+        setSaveError(
+          'Le réglage n’a pas pu être enregistré. La partie est conservée.',
+        ),
+      );
+  };
   const s = save?.settings;
   if (!s) return null;
   return (
@@ -59,6 +69,19 @@ export function Settings({
           onChange={(e) => update({ sound: e.target.checked })}
         />
       </label>
+      <label className="settings-row">
+        <span>Volume</span>
+        <input
+          aria-label="Volume"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={s.volume ?? 0.65}
+          onChange={(event) => update({ volume: Number(event.target.value) })}
+        />
+      </label>
+      {saveError && <p role="alert">{saveError}</p>}
       <div style={{ marginTop: 35 }}>
         <Button onClick={close}>{copy.resume}</Button>
       </div>

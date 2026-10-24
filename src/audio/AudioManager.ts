@@ -1,136 +1,200 @@
-import { gainsForAct, type LayerGains } from './actAudio';
-
-// The city's whole sound is synthesised in the browser: no external file, no
-// third-party asset, nothing whose licence needs documenting. Three layers —
-// a low drone, a slow amplitude pulse, a filtered noise texture — cross-fade
-// as the act changes. Nothing here plays before a user gesture, and nothing
-// here can block the game: every entry point is wrapped so a failure is
-// silent, never a thrown error the player would see.
-export interface ActAudioDirector {
-  setProfile(gains: LayerGains): void;
-  setMuted(muted: boolean): void;
-  /** Starts the engine; must follow a real user gesture per browser policy. */
-  resume(): void;
-}
-
-const FADE_SECONDS = 3;
-
-function buildNoiseBuffer(context: AudioContext): AudioBuffer {
-  const seconds = 4;
-  const buffer = context.createBuffer(
-    1,
-    context.sampleRate * seconds,
-    context.sampleRate,
-  );
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  return buffer;
-}
-
-export function createProceduralAudioManager(): ActAudioDirector {
+// Asset-based local sound design. AudioContext is created only by start(),
+// called directly from the player's sound button. No global listeners.
+export type AudioPlace = 'apartment' | 'school' | 'silence';
+export type SoundCue =
+  | 'paper'
+  | 'door'
+  | 'steps'
+  | 'phone'
+  | 'electric'
+  | 'clock'
+  | 'message'
+  | 'message-intro';
+export function createInvestigationAudio() {
   let context: AudioContext | null = null;
   let master: GainNode | null = null;
-  let droneGain: GainNode | null = null;
-  let pulseGain: GainNode | null = null;
-  let textureGain: GainNode | null = null;
-  let currentGains = gainsForAct(0);
-  let muted = false;
-  let started = false;
-
-  const safe = (fn: () => void) => {
-    try {
-      fn();
-    } catch {
-      /* Audio is decoration; a failure here never touches gameplay. */
+  let muted = true;
+  let volume = 0.65;
+  let place: AudioPlace = 'apartment';
+  let revision = 0;
+  let alive = true;
+  let loops: { source: AudioBufferSourceNode; gain: GainNode }[] = [];
+  const oneShots = new Set<AudioBufferSourceNode>();
+  const buffers = new Map<string, Promise<AudioBuffer>>();
+  const load = (name: string) => {
+    if (!context) throw new Error('Audio not started');
+    const ctx = context;
+    let pending = buffers.get(name);
+    if (!pending) {
+      pending = fetch(`/rebirth/${name}.wav`)
+        .then((response) => {
+          if (!response.ok) throw new Error('Audio asset unavailable');
+          return response.arrayBuffer();
+        })
+        .then((bytes) => ctx.decodeAudioData(bytes));
+      buffers.set(name, pending);
+      void pending.catch(() => buffers.delete(name));
     }
+    return pending;
   };
-
-  function applyGains(): void {
-    if (!context || !droneGain || !pulseGain || !textureGain) return;
-    const gains = currentGains;
-    const now = context.currentTime;
-    const factor = muted ? 0 : 1;
-    for (const [node, value] of [
-      [droneGain, gains.drone],
-      [pulseGain, gains.pulse],
-      [textureGain, gains.texture],
-    ] as const)
-      node.gain.linearRampToValueAtTime(value * factor, now + FADE_SECONDS);
-  }
-
-  function build(): void {
-    if (started) return;
-    started = true;
-    const Ctx =
-      typeof window === 'undefined'
-        ? undefined
-        : (window.AudioContext ??
-          (window as unknown as { webkitAudioContext?: typeof AudioContext })
-            .webkitAudioContext);
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    context = ctx;
-    master = ctx.createGain();
-    master.gain.value = 1;
-    master.connect(ctx.destination);
-
-    // Drone: a single low, tuned oscillator — the piece's floor.
-    const drone = ctx.createOscillator();
-    drone.type = 'sine';
-    drone.frequency.value = 55;
-    droneGain = ctx.createGain();
-    droneGain.gain.value = 0;
-    drone.connect(droneGain).connect(master);
-    drone.start();
-
-    // Pulse: the drone's own amplitude, slowly modulated — felt more than
-    // heard, arriving only once a rule is in force.
-    const pulseCarrier = ctx.createOscillator();
-    pulseCarrier.type = 'sine';
-    pulseCarrier.frequency.value = 110;
-    const pulseLfo = ctx.createOscillator();
-    pulseLfo.type = 'sine';
-    pulseLfo.frequency.value = 0.12;
-    const lfoDepth = ctx.createGain();
-    lfoDepth.gain.value = 0.5;
-    const pulseCarrierGain = ctx.createGain();
-    pulseCarrierGain.gain.value = 0.5;
-    pulseLfo.connect(lfoDepth).connect(pulseCarrierGain.gain);
-    pulseGain = ctx.createGain();
-    pulseGain.gain.value = 0;
-    pulseCarrier.connect(pulseCarrierGain).connect(pulseGain).connect(master);
-    pulseCarrier.start();
-    pulseLfo.start();
-
-    // Texture: filtered noise — the system running on its own, underneath.
-    const noise = ctx.createBufferSource();
-    noise.buffer = buildNoiseBuffer(ctx);
-    noise.loop = true;
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 240;
-    textureGain = ctx.createGain();
-    textureGain.gain.value = 0;
-    noise.connect(filter).connect(textureGain).connect(master);
-    noise.start();
-
-    applyGains();
-  }
-
-  return {
-    resume() {
-      safe(() => {
-        build();
-        void context?.resume();
+  const applyVolume = () => {
+    if (!context || !master) return;
+    master.gain.cancelScheduledValues(context.currentTime);
+    master.gain.setTargetAtTime(muted ? 0 : volume, context.currentTime, 0.03);
+    if (muted)
+      for (const source of oneShots) {
+        try {
+          source.stop();
+        } catch {
+          /* Already ended. */
+        }
+      }
+  };
+  async function transition() {
+    if (!context || !master) return;
+    const token = ++revision;
+    const ctx = context;
+    const output = master;
+    if (place === 'silence') {
+      for (const layer of loops) {
+        layer.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
+        layer.source.stop(ctx.currentTime + 1);
+        layer.source.onended = () => {
+          layer.source.disconnect();
+          layer.gain.disconnect();
+        };
+      }
+      loops = [];
+      return;
+    }
+    try {
+      const [air, score] = await Promise.all([
+        load(place === 'school' ? 'school-air' : 'rain'),
+        load('score'),
+      ]);
+      if (!alive || revision !== token || ctx.state === 'closed') return;
+      const previous = loops;
+      loops = [air, score].map((buffer, index) => {
+        const source = ctx.createBufferSource();
+        const gain = ctx.createGain();
+        source.buffer = buffer;
+        source.loop = true;
+        gain.gain.value = 0;
+        source.connect(gain).connect(output);
+        source.start();
+        gain.gain.linearRampToValueAtTime(
+          index === 0 ? 0.9 : place === 'school' ? 0.32 : 0.18,
+          ctx.currentTime + 1.5,
+        );
+        return { source, gain };
       });
+      for (const layer of previous) {
+        layer.gain.gain.cancelScheduledValues(ctx.currentTime);
+        layer.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.25);
+        layer.source.stop(ctx.currentTime + 1.5);
+        layer.source.onended = () => {
+          layer.source.disconnect();
+          layer.gain.disconnect();
+        };
+      }
+    } catch {
+      /* Audio failure never mutates the journal. */
+    }
+  }
+  return {
+    async start(): Promise<boolean> {
+      try {
+        alive = true;
+        if (!context || context.state === 'closed') {
+          context = new AudioContext();
+          master = context.createGain();
+          master.gain.value = 0;
+          const limiter = context.createDynamicsCompressor();
+          limiter.threshold.value = -8;
+          limiter.ratio.value = 8;
+          master.connect(limiter).connect(context.destination);
+        }
+        await context.resume();
+        muted = false;
+        applyVolume();
+        if (!loops.length) await transition();
+        return context.state === 'running';
+      } catch {
+        return false;
+      }
     },
-    setProfile(gains: LayerGains) {
-      currentGains = gains;
-      safe(applyGains);
+    configure(next: { muted: boolean; volume: number; place: AudioPlace }) {
+      muted = next.muted;
+      volume = Math.min(1, Math.max(0, next.volume));
+      applyVolume();
+      if (next.place !== place) {
+        place = next.place;
+        void transition();
+      }
     },
-    setMuted(next: boolean) {
-      muted = next;
-      safe(applyGains);
+    async cue(name: SoundCue): Promise<boolean> {
+      if (!context || !master || muted || context.state !== 'running')
+        return false;
+      const ctx = context;
+      try {
+        const buffer = await load(name);
+        if (!alive || muted || ctx.state !== 'running') return false;
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        const gain = ctx.createGain();
+        gain.gain.value = name.startsWith('message') ? 0.85 : 0.65;
+        // A radio band-pass colours the fictional recording, not its transcript.
+        const filter = ctx.createBiquadFilter();
+        filter.type = name.startsWith('message') ? 'bandpass' : 'lowpass';
+        filter.frequency.value = name.startsWith('message') ? 1600 : 7500;
+        filter.Q.value = 0.5;
+        source.connect(filter).connect(gain).connect(master);
+        oneShots.add(source);
+        source.onended = () => {
+          oneShots.delete(source);
+          source.disconnect();
+          filter.disconnect();
+          gain.disconnect();
+        };
+        source.start();
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    stopVoice() {
+      for (const source of oneShots) {
+        try {
+          source.stop();
+        } catch {
+          /* Already ended. */
+        }
+      }
+    },
+    dispose() {
+      alive = false;
+      revision++;
+      for (const layer of loops) {
+        try {
+          layer.source.stop();
+        } catch {
+          /* Already ended. */
+        }
+      }
+      for (const source of oneShots) {
+        try {
+          source.stop();
+        } catch {
+          /* Already ended. */
+        }
+      }
+      loops = [];
+      oneShots.clear();
+      buffers.clear();
+      if (context && context.state !== 'closed')
+        void context.close().catch(() => undefined);
+      context = null;
+      master = null;
     },
   };
 }

@@ -1,4 +1,4 @@
-import { ScenePlayerT2 } from '../../../src/ui/player/ScenePlayerT2';
-export default function PlayT2() {
-  return <ScenePlayerT2 />;
+import { redirect } from 'next/navigation';
+export default function LegacyEntry() {
+  redirect('/jouer/t0');
 }

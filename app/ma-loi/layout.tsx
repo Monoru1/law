@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Ma loi',
-  description: 'Le registre local de tes décisions et de tes lois.',
+  title: 'Carnet de Gabriel',
+  description:
+    'Les pièces, les hypothèses et les sauvegardes de ton enquête à Valombre.',
   robots: { index: false, follow: false },
 };
 

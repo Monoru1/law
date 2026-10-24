@@ -7,6 +7,7 @@ export type Settings = {
   reducedMotion: 'auto' | 'on' | 'off';
   textSize: 'small' | 'normal' | 'large';
   sound: boolean;
+  volume?: number;
 };
 export const defaultSettings: Settings = {
   simpleConfirmation: false,

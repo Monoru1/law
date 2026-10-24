@@ -69,3 +69,15 @@ licencié n’a pas été validé. Aucun placeholder humain ne doit arriver en p
 
 Aucun fichier audio tiers n’est ajouté par ce pass. Il n’existe donc aucune
 attribution d’asset à publier et aucune licence ambiguë dans le dépôt.
+
+## REBIRTH — son du prologue, 24 octobre 2026
+
+L'ancien moteur à trois oscillateurs est remplacé par des fichiers locaux et une gestion explicite de leur cycle de vie. Les descriptions précédentes sont historiques.
+
+- `scripts/create-rebirth-audio.py` produit neuf fichiers WAV originaux : pluie/vent, ventilation et résonances du lycée, motif musical synthétique à partiels de piano et échos, papier, porte, pas, téléphone, électricité, horloge. Bibliothèque standard Python, sans samples tiers. Le motif est une composition synthétique courte, pas une bande-son orchestrale ni une captation réelle.
+- `message.wav` et `message-intro.wav` : texte original du scénario synthétisé hors ligne avec la voix française Microsoft Hortense installée, via `System.Speech.Synthesis.SpeechSynthesizer`, débit -1. Pas d'imitation d'une personne réelle, pas de service réseau. La version intégrale dure environ 17 secondes ; la transcription identique est toujours visible. Cette voix de synthèse reste une limite de production à remplacer éventuellement par une interprétation enregistrée.
+- Les fichiers sont chargés uniquement après activation du son, puis décodés par Web Audio. Un compresseur limite les crêtes. Les ambiances et la musique se fondent sur 1,5 seconde lors du changement de lieu.
+- Le volume est un champ optionnel des réglages : les sauvegardes historiques sans volume restent lisibles. Une nouvelle visite n'ouvre pas automatiquement d'AudioContext, même si l'option Son a été mémorisée.
+- Mute coupe les lectures ponctuelles ; quitter ferme le contexte. Un appareil audio indisponible ne bloque aucune décision. Les tests vérifient l'énergie non nulle des fichiers et le démarrage de véritables sources Web Audio dans Chromium.
+
+Texte synthétisé : « Si vous écoutez ceci, c’est qu’ils ont recommencé. Ne cherchez pas mon nom dans le registre. Cherchez ce qu’ils ont changé après la signature. B dix-sept. La lumière était encore allumée. » Le fichier introductif ne contient que la première phrase.
