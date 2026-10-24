@@ -207,9 +207,10 @@ export function ScenePlayer({
   const door =
     copy.doors.find((d) => d.timelineId === content.timelineId) ??
     copy.doors[0];
-  const timelineNumber = String(
-    Number(door.timelineId.slice(1)),
-  ).padStart(2, '0');
+  const timelineNumber = String(Number(door.timelineId.slice(1))).padStart(
+    2,
+    '0',
+  );
   const router = useRouter();
   const save = useStore((s) => s.save);
   const loaded = useStore((s) => s.loaded);

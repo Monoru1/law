@@ -23,7 +23,9 @@ test('a full run records a signed law, contradicts it and remembers the written 
       leaked.push(request.url());
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page
+    .getByRole('button', { name: 'Commencer — LA PIÈCE', exact: true })
+    .click();
   await page
     .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
     .fill('Testeur');
@@ -82,7 +84,9 @@ test('a full run records a signed law, contradicts it and remembers the written 
 test('keyboard operation and resume from a saved scene', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Commencer' }).focus();
+  await page
+    .getByRole('button', { name: 'Commencer — LA PIÈCE', exact: true })
+    .focus();
   await page.keyboard.press('Enter');
   await page.getByRole('textbox', { name: 'Ton nom ou pseudonyme' }).focus();
   await page.keyboard.type('Testeur');
@@ -105,7 +109,7 @@ test('the complete story is playable using only the keyboard', async ({
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const activate = (name: string) => activateWithKeyboard(page, name);
   await page.goto('/');
-  await activate('Commencer');
+  await activate('Commencer — LA PIÈCE');
   await page.getByRole('textbox', { name: 'Ton nom ou pseudonyme' }).focus();
   await page.keyboard.type('Testeur');
   await activate('Entrer');

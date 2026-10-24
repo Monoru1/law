@@ -110,7 +110,16 @@ export default function Home() {
                     {copy.enter}
                   </Button>
                 ) : loaded && exam.loaded && house.loaded && city.loaded ? (
-                  <Button onClick={() => router.push(routes[door.timelineId]!)}>
+                  <Button
+                    onClick={() => router.push(routes[door.timelineId]!)}
+                    aria-label={`${
+                      door.status === 'in_progress'
+                        ? copy.home.resume
+                        : door.status === 'completed'
+                          ? copy.home.summary
+                          : copy.home.start
+                    } — ${meta.name}`}
+                  >
                     {door.status === 'in_progress'
                       ? copy.home.resume
                       : door.status === 'completed'

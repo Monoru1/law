@@ -46,7 +46,7 @@ test('a night in the house remembers the room, using only the keyboard', async (
   });
   await page.goto('/');
   // The room is finished: its door summarizes, the house's door opens.
-  await expect(button(page, 'Revoir la fin')).toBeVisible();
+  await expect(button(page, 'Revoir la fin — LA PIÈCE')).toBeVisible();
   await page.goto('/jouer/t2');
   await press(page, 'Entrer dans la maison');
   // The man who lost his job because of the money is at the table.

@@ -44,6 +44,7 @@ Document de travail. Le dépôt reste la source de vérité technique ; ce texte
 - **Tests d’écriture.** Lire à voix haute. Si une réplique de LAW ressemble à un chatbot serviable, la couper de moitié.
 
 **Personnages** (voix distinctes).
+
 - **La Femme de l’abribus.** Sèche, elliptique, avance des phrases qu’elle ne finit pas. Nom révélé dans La Ville.
 - **Elias.** Chaleureux, se défend par l’humour, ment par pudeur. Accusé, sympathique.
 - **Nora.** Précise, factuelle, ne se plaint pas. La vérité qui innocente Elias détruit sa vie.
@@ -55,35 +56,35 @@ Document de travail. Le dépôt reste la source de vérité technique ; ce texte
 
 Fonctions : **L** caractériser LAW, **J** caractériser le joueur, **R** relation, **Loi** établir une loi, **A** attachement, **CB** préparer un callback, **C** contradiction, **V** construire La Ville, **F** timeline future, **M** mécanique, **Myst** mystère.
 
-| # | Scène | Mécanique | Fonctions | Écho / callback |
-|---|-------|-----------|-----------|-----------------|
-| P | La Ville, pluie | dialogue à 3 répliques | V, Myst, L | rejoué à la fin |
-| 01 | Bonsoir | dialogue libre, eau, promesse | L, R, CB | verre d’eau (~50 min) ; **promesse** « ne me dis pas ce que tu crois que je veux entendre » |
-| 02 | L’Innocent | interrogatoire + bouton maintenu + « pourquoi » (puces + texte court) | J, Loi, CB | la justification est citée en 11, 14, 19 |
-| 03 | Le silence | rien (LAW se tait, la lumière change) | L, M, J | attente = mesurée, jamais commentée |
-| 04 | Le Pardon | vitre, effacer ou non, « pourquoi ? » | J, Loi, A | « certaines souffrances appartiennent à celui qui les porte » → 16, 17 |
-| 05 | La Copie | débat à trois, choix de qui sort | L, J, Myst, C | continuité de la personne → 15, 23 |
-| 06 | Le Dernier Appel | téléphone, horloge 10:00, texte libre/silence | A, J, CB | Jade ; qui annonce ? → 12, 19 |
-| 07 | Un dimanche | banalité : ranger, LAW ne demande rien | A, CB | objets cités en 13 |
-| 08 | Le Bonheur | voir ou non, maintenu, « je repose la question » | J, A, Loi | attachement → sacrifice |
-| 09 | L’Homme parfait | choisir un défaut ; analyse plus tard | J, CB, Myst | reprise en 14 |
-| 10 | Le Témoin (Elias, Nora) | questions libres, ils peuvent mentir | R, A, C | Elias/Nora reviennent en 12, 20, 21 |
-| 11 | La Promesse (Elias) | tenir la promesse coûte à Elias | R, C, L | « Je croyais que tu avais promis. » |
-| 12 | Le Traître | LAW prend position | L, R, Loi | « Je suis censé être honnête avec toi. » |
-| — | Interlude : la pause | couloir, distributeur, fenêtre | V, Myst, M | « C’est la ville. » — « Quelle ville ? » |
-| 13 | Ton autre vie | visite de dix minutes, objets, Lou (6 ans), LAW refuse de prolonger | A, L, J, CB | prépare 19 |
-| 14 | Le Sacrifice invisible | cite la justification de 02 | J, C, CB | « Est-ce toujours vrai ? » |
-| 15 | Le Bouton inutile | 51 %, regret ? | J, M, C | dépend de 05 |
-| 16 | La Seconde Chance | texte libre, disparition de personnes | J, A, F | écho de 04 |
-| 17 | L’Oubli (question) | « ce qu’une douleur peut apporter » | J, CB | piège posé pour 19 |
-| 18 | Un trajet | banalité, Jade rappelle | A, R | respiration avant la scène centrale |
-| 19 | Les vingt années | fragments 2031→2045, Lou de 6 à 26 ans, cut brutal, « Elle n’existe pas », GARDER / TOUT EFFACER | A, J, CB, F, Myst | l’oubli (17) devient le bouton ; **la décision est rappelée dans La Ville** |
-| 20 | La Contradiction | LAW choisit deux décisions, le joueur se défend, ACCEPTER / REFORMULER / REFUSER | C, Loi, L | LAW peut dire « D’accord. » |
-| 21 | L’Exception | situation bâtie contre la loi la plus stable | C, J, L | dépend du profil |
-| 22 | Le Mensonge | LAW a tort volontairement | L, J, Myst | teste l’autorité |
-| 23 | Ta loi | texte libre, comparaison avec l’historique | Loi, C, F | la loi voyage vers La Ville |
-| 24 | La Porte | questions au choix, refus, un mensonge | L, Myst | « Je n’ai jamais dit qu’il y avait un résultat. » |
-| E | La Ville, la pluie | prologue rejoué, notifications | V, F | « …voyons ce que tu fais lorsque personne ne te pose la question. » |
+| #   | Scène                   | Mécanique                                                                                        | Fonctions         | Écho / callback                                                                             |
+| --- | ----------------------- | ------------------------------------------------------------------------------------------------ | ----------------- | ------------------------------------------------------------------------------------------- |
+| P   | La Ville, pluie         | dialogue à 3 répliques                                                                           | V, Myst, L        | rejoué à la fin                                                                             |
+| 01  | Bonsoir                 | dialogue libre, eau, promesse                                                                    | L, R, CB          | verre d’eau (~50 min) ; **promesse** « ne me dis pas ce que tu crois que je veux entendre » |
+| 02  | L’Innocent              | interrogatoire + bouton maintenu + « pourquoi » (puces + texte court)                            | J, Loi, CB        | la justification est citée en 11, 14, 19                                                    |
+| 03  | Le silence              | rien (LAW se tait, la lumière change)                                                            | L, M, J           | attente = mesurée, jamais commentée                                                         |
+| 04  | Le Pardon               | vitre, effacer ou non, « pourquoi ? »                                                            | J, Loi, A         | « certaines souffrances appartiennent à celui qui les porte » → 16, 17                      |
+| 05  | La Copie                | débat à trois, choix de qui sort                                                                 | L, J, Myst, C     | continuité de la personne → 15, 23                                                          |
+| 06  | Le Dernier Appel        | téléphone, horloge 10:00, texte libre/silence                                                    | A, J, CB          | Jade ; qui annonce ? → 12, 19                                                               |
+| 07  | Un dimanche             | banalité : ranger, LAW ne demande rien                                                           | A, CB             | objets cités en 13                                                                          |
+| 08  | Le Bonheur              | voir ou non, maintenu, « je repose la question »                                                 | J, A, Loi         | attachement → sacrifice                                                                     |
+| 09  | L’Homme parfait         | choisir un défaut ; analyse plus tard                                                            | J, CB, Myst       | reprise en 14                                                                               |
+| 10  | Le Témoin (Elias, Nora) | questions libres, ils peuvent mentir                                                             | R, A, C           | Elias/Nora reviennent en 12, 20, 21                                                         |
+| 11  | La Promesse (Elias)     | tenir la promesse coûte à Elias                                                                  | R, C, L           | « Je croyais que tu avais promis. »                                                         |
+| 12  | Le Traître              | LAW prend position                                                                               | L, R, Loi         | « Je suis censé être honnête avec toi. »                                                    |
+| —   | Interlude : la pause    | couloir, distributeur, fenêtre                                                                   | V, Myst, M        | « C’est la ville. » — « Quelle ville ? »                                                    |
+| 13  | Ton autre vie           | visite de dix minutes, objets, Lou (6 ans), LAW refuse de prolonger                              | A, L, J, CB       | prépare 19                                                                                  |
+| 14  | Le Sacrifice invisible  | cite la justification de 02                                                                      | J, C, CB          | « Est-ce toujours vrai ? »                                                                  |
+| 15  | Le Bouton inutile       | 51 %, regret ?                                                                                   | J, M, C           | dépend de 05                                                                                |
+| 16  | La Seconde Chance       | texte libre, disparition de personnes                                                            | J, A, F           | écho de 04                                                                                  |
+| 17  | L’Oubli (question)      | « ce qu’une douleur peut apporter »                                                              | J, CB             | piège posé pour 19                                                                          |
+| 18  | Un trajet               | banalité, Jade rappelle                                                                          | A, R              | respiration avant la scène centrale                                                         |
+| 19  | Les vingt années        | fragments 2031→2045, Lou de 6 à 26 ans, cut brutal, « Elle n’existe pas », GARDER / TOUT EFFACER | A, J, CB, F, Myst | l’oubli (17) devient le bouton ; **la décision est rappelée dans La Ville**                 |
+| 20  | La Contradiction        | LAW choisit deux décisions, le joueur se défend, ACCEPTER / REFORMULER / REFUSER                 | C, Loi, L         | LAW peut dire « D’accord. »                                                                 |
+| 21  | L’Exception             | situation bâtie contre la loi la plus stable                                                     | C, J, L           | dépend du profil                                                                            |
+| 22  | Le Mensonge             | LAW a tort volontairement                                                                        | L, J, Myst        | teste l’autorité                                                                            |
+| 23  | Ta loi                  | texte libre, comparaison avec l’historique                                                       | Loi, C, F         | la loi voyage vers La Ville                                                                 |
+| 24  | La Porte                | questions au choix, refus, un mensonge                                                           | L, Myst           | « Je n’ai jamais dit qu’il y avait un résultat. »                                           |
+| E   | La Ville, la pluie      | prologue rejoué, notifications                                                                   | V, F              | « …voyons ce que tu fais lorsque personne ne te pose la question. »                         |
 
 Chaque scène a au moins deux fonctions. Aucune n’existe « pour le dilemme ». Les enjeux sont l’amour, l’oubli, l’identité, la loyauté, la vérité, le pardon, la honte : presque personne ne meurt.
 

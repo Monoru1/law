@@ -89,10 +89,10 @@ export const envOf = (ambience: string | undefined): Env =>
     : ambience === 'home'
       ? 'maison'
       : ambience === 'corridor'
-      ? 'couloir'
-      : ambience === 'silence'
-        ? 'noir'
-        : 'salle';
+        ? 'couloir'
+        : ambience === 'silence'
+          ? 'noir'
+          : 'salle';
 
 export const SPEAKERS: Record<string, string> = {
   law: 'LAW',

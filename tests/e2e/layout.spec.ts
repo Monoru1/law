@@ -17,7 +17,9 @@ for (const [width, height] of viewports)
       path: testInfo.outputPath(`law-home-${width}.png`),
       fullPage: true,
     });
-    await page.getByRole('button', { name: 'Commencer' }).click();
+    await page
+      .getByRole('button', { name: 'Commencer — LA PIÈCE', exact: true })
+      .click();
     await page
       .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
       .fill('Testeur');
@@ -40,7 +42,9 @@ for (const [width, height] of viewports)
 test('reduced motion reveals text without movement', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page
+    .getByRole('button', { name: 'Commencer — LA PIÈCE', exact: true })
+    .click();
   await page
     .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
     .fill('Testeur');
@@ -139,7 +143,9 @@ test('the shell stays usable at a 200% zoom equivalent', async ({ page }) => {
   await page.setViewportSize({ width: 720, height: 450 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'THE LAW' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Commencer' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Commencer — LA PIÈCE', exact: true }),
+  ).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(720);
