@@ -115,3 +115,26 @@ Chemin critique : **spike multi-héritage → scènes T4 → simulation des quat
 | Verdict exportable en image                                                        | Rendu canvas ou dépendance à évaluer                                          |
 | Assets sonores enregistrés                                                         | Licences à valider un à un                                                    |
 | Icônes PWA raster (déjà listées dans le README)                                    | Demande une validation graphique humaine                                      |
+
+## Exécution Codex — périmètre validé le 24 octobre
+
+Le propriétaire confirme que Claude a terminé et autorise la branche isolée `codex/rebirth-reconstruction`. Il valide « Le Greffier » avec trois corrections : preuve effectivement disponible, fin explicitement choisie, règle d'occupation cohérente. Les propositions plus haut restent un historique de conception, pas une preuve de livraison.
+
+| Lot                  | Fichiers concernés                                                          | Résultat et critère de réussite                                                         | Risque / dépendance                                                     | Vérification                                                   |
+| -------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Nettoyage            | scripts de contrats, audio, relais Room, handoff                            | Retirer uniquement les éléments sans appelant ; vérification des contrats sans écriture | Archives et scènes historiques conservées                               | Unités, contrats, validation de contenu, build                 |
+| Identité et registre | tokens.css, globals.css, app/page, métadonnées, chrome UI                   | Une seule entrée et un seul registre ; états et visites issus du journal                | Aucun déverrouillage fictif de T4                                       | E2E responsive et reprise, aperçu social                       |
+| Confidentialité      | ancienne API et modules reporting, onboarding, seuils, tests, documentation | Aucun envoi applicatif des textes ; ancienne route 410 sans lecture ni transmission     | Anciens champs de sauvegarde restent acceptés                           | Unités API, E2E d'une ancienne partie consentie                |
+| Lecture / pièces     | Controls, Ma loi, pause T0                                                  | Notes lisibles avec statut et scène d'origine, export et effacement T0                  | Aucun faux témoignage, aucune mutation à la lecture                     | E2E des notes, rechargement et export                          |
+| Socle Tribunal       | createGameStore, store.test                                                 | Mémoire primaire puis source secondaire transitive ; rejet des doublons avant écriture  | Le contenu de l'audience reste à écrire et valider                      | Parcours simulés réels T0 et T1→T2→T3, relecture de sauvegarde |
+| Audience et verdict  | futur contenu T4 et composition World                                       | À réaliser : audience jouable, preuves sourcées, fins et verdict dérivés des actes      | Validation des scènes, des branches et relecture humaine indispensables | Simulation des fins puis E2E clavier, mobile, reprise          |
+
+Acceptation des interfaces : pas de débordement à 320, 360, 390, 667×375, 768 et 1440 px ; commandes utilisables au clavier ; réduction des animations ; noms accessibles ; aucune nouvelle image lourde ni dépendance. Les décors reposent sur CSS/SVG, les polices sont locales. Les objectifs Lighthouse et essais sur appareils réels restent à mesurer ; ils ne sont pas annoncés comme acquis.
+
+Corrections narratives à intégrer aux futures scènes :
+
+1. Choisir une note falsifiable uniquement parmi les faits présents. Si tous les cas ont été passés, exposer cette absence sans inventer une action ; proposer une audience sans accusation factuelle.
+2. L'absence de loi, les erreurs de pièces et le temps de réflexion ne ferment pas automatiquement une fin. Le joueur peut laisser l'affaire ouverte ou choisir de quitter ; aucune minuterie finale punitive.
+3. La règle « un entre, un sort » est une procédure entretenue par le registre, susceptible d'être abrogée par une correction démontrée et signée par son auteur. La finale où tous sortent doit montrer cette abrogation avant la sortie, plutôt que contredire une loi physique prétendument immuable.
+
+Aucune scène T0–T3 n'est supprimée ou restructurée par ces lots. T4 reste présenté comme non jouable jusqu'à livraison réelle de son contenu. Les suppressions de branches distantes et le site de préinscription ne sont pas inclus.

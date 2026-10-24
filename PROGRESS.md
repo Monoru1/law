@@ -14,7 +14,7 @@
 - Production hardening: browser security headers, non-cacheable reporting responses, JSON-only reporting boundary, byte-accurate request limit and strict top-level payload fields. The factual release checklist and missing human/legal inputs live in `docs/playtest-reporting.md`.
 
 - Timeline 0 — L’EXAMEN is merged on main (PR #2): 28 scenes of deterministic conversation (`talk` input, `line_chosen` events, silence recorded, narrative notes, save schema 5). T4 (LE TRIBUNAL) is still a presentation door only.
-- 24 October 2026 audit and REBIRTH proposal: see `docs/rebirth/` (audit, creative directions, story bible, art direction, gameplay systems, release plan, cleanup plan, decisions). Security update of dependencies (Next 16.4.3 and others), unique accessible name per home door, `format:check` in CI, `.gitattributes`. Creative decisions D-01 to D-09 await validation.
+- 24 October 2026 audit and REBIRTH proposal: see `docs/rebirth/` (audit, creative directions, story bible, art direction, gameplay systems, release plan, cleanup plan, decisions). Security update of dependencies (Next 16.4.3 and others), unique accessible name per home door, `format:check` in CI, `.gitattributes`. La direction « Le Greffier » est validée le 24 octobre avec les corrections consignées ci-dessous.
 
 ## Decisions
 
@@ -29,9 +29,9 @@
 ## Remaining
 
 - Conduct a human timing check for the 8–12 minute target.
-- Playtest Reporting V1 (pseudo + consent → automatic factual report emailed via Brevo on `run_completed`) is implemented for both timelines; see `docs/playtest-reporting.md`. A first real send (with a live Brevo key) has not been performed; automated tests only use mocked `fetch`.
+- Remote playtest reporting was retired for REBIRTH. Historical save fields remain readable; see `docs/playtest-reporting.md`.
 - A human timing check of LA MAISON (target comparable to LA PIÈCE) and a human read of the French text by a native editor.
-- LA VILLE — `Ma loi` is not yet extended to show La Ville's decisions or rule. No human timing/read pass yet for La Ville's own text (28 scenes across six acts; the shipped path is longer than a quick playtest but has not been timed against the 60–90 minute target). World decor for Acts III-VI (Farid's later scenes, Nadia, la grève, la liste, 417) is Codex's to build on top of this content; only Acts I-II's office decor exists today.
+- LA VILLE — décisions, règle et décors des six actes sont intégrés. La durée de jeu et la relecture humaine restent à vérifier.
 
 ## Deviations and justifications
 
@@ -69,3 +69,23 @@
 - Timeline III — a real procedural audio system replaces the unused `AudioManager` stub: three Web Audio layers (a low drone, a slow-pulsed carrier, filtered noise) cross-fade over each scene's declared act (`audio.ambience`, `'act-1'`..`'act-6'`), built only after a first user gesture, muted by `settings.sound` (already a persisted per-timeline setting), and every entry point wrapped so a failure is silent rather than blocking play. The act→gain mapping (`src/audio/actAudio.ts`) is pure and unit-tested; the Web Audio wiring itself is not (no jsdom `AudioContext`), which is the honest limit of that coverage.
 - Timeline III — `scripts/simulation.ts` gained `simulateJourney3`, chaining a third `simulateRun` off T2's memory; `validate:content` now plays 2,000 seeded T1→T2→T3 journeys (up from T1→T2), asserting T3's own coda, 100% scene/variant coverage, and that the attribution rule always starts with `enacted` before any `revised`. `pnpm contracts --write` registered the 7 new scene contracts.
 - Timeline III — Actes III (Le Rouage), IV (Le Dossier), V (Tenir) and VI (La Sortie) are written: 21 new scenes (28 total). Farid deepens across Le Café/Farid le sait; Nadia is introduced (`t3.nadia`) before her dossier collides with the attribution rule (`t3.nadia-dossier`), with a real exception/precedent pair (`t3.exception`, `t3.precedent`) showing the collective cost either way; institutional pressure and a strike carry Act V (`t3.la-pression`, `t3.la-greve`); La Liste Définitive (`t3.la-liste`) is signed on a single tap, no confirmation; the 417 motif resolves from a monthly count planted in `t3.la-routine` to Nadia's own file number in `t3.quatre-cent-dix-sept`; `t3.le-registre` (maintenir/réviser/laisser) precedes the true ending `t3.sortie`, now `codaSceneId`. `t3.consequence-differee` and `t3.retour-connu`/`t3.ce-qui-reste` use `variants` to callback a T1 choice (`t1.dix-mille`) without T3 reading T1's structure. Rule-touching effects added in Acts IV-VI (`ruleApplied`/`exceptionGranted`/`ruleRevised` on Nadia's dossier, the exception and the registry) are wrapped in a defensive `if: {any: [...]}` guard against the simulator's fuzz `scene_skipped`, so a record can never start with anything but `enacted`.
+
+## REBIRTH — 24 octobre 2026, reconstruction Codex
+
+- Lot A : suppression de `scripts/reset-t0-contracts.mjs` (purge incompatible avec les contrats historiques), du handoff T0 terminé et du relais `Room` sans logique ; `ScenePlayer` utilise directement `World`. Retrait de `silentAudio` et des méthodes audio sans appelant. Aucun contrat, scène, clé de stockage ou format de sauvegarde modifié.
+- `pnpm contracts` vérifie désormais sans écrire ; seul `--write` enregistre les nouvelles versions. La modification locale préexistante de `contracts.json` reste exclue des commits Codex.
+- Lots suivants : palette centralisée, entrée et registre uniques, puis lecture/pièces, préparation du Tribunal et verdict après validation narrative. Le reporting transmet encore les textes libres : correctif de confidentialité nécessaire avant ouverture publique.
+- Arbitrages narratifs proposés : rendre toute falsification vérifiable par une pièce effectivement enregistrée, y compris sans réponse au bouton ; remplacer la fin imposée pour absence de loi ou délai expiré par une issue explicitement choisie ; résoudre la contradiction entre occupation constante de la salle et finale où tous sortent. D-01 à D-05 restent en attente dans la bible de Claude.
+
+- Lots B/C : palette REBIRTH sur les tokens partagés, identité des métadonnées/manifest/aperçu et du chrome, accueil monumental CSS sans ressource externe, registre unique avec états réels et visites consignées ; remplacement des styles de l'ancien registre, aucun second menu.
+- Lot D : composant réutilisable `NotesLedger` dans les contrôles de conversation existants, consultable depuis « Ma loi » et la pause T0 ; source, catégorie, statut et posture proviennent du journal. T0 est désormais inclus dans l'export et l'effacement explicite. Aucun nouveau format de sauvegarde.
+- Validation créative reçue : « Le Greffier » avec preuve disponible, fin choisie et occupation cohérente. Préparation du Tribunal autorisée ; ne pas présenter une simple maquette comme une audience jouable.
+
+- Lot confidentialité : retrait des cinq modules de reporting et de leurs quatre fichiers de tests devenus sans objet ; remplacement des tests API par le contrat 410 sans collecte. Suppression du consentement de playtest, des contrôles d'envoi, styles et mocks associés. Les champs historiques restent lisibles, le journal et ses archives ne changent pas. La route résiduelle n'utilise aucune clé Brevo et ne lit jamais le corps.
+
+- Lot préparation du Tribunal : `start` accepte des mémoires secondaires après la source primaire ; chaque mémoire est copiée. Test avec de vrais parcours simulés T0 et T1→T2→T3, relecture persistée, absence de mutation par l'appelant et refus des sources dupliquées. Aucun écran d'audience vide ni déverrouillage fictif ajouté.
+- Retrait de 16 tokens sans consommateur après recherche dans app/src et des anciennes règles d'accueil sans usage. Les couleurs de texte T0 utilisent les rôles partagés.
+
+- Validation finale des lots : 119 tests unitaires (14 fichiers), 86 contrats vérifiés sans écriture, 2 000 parcours T1→T2→T3 et 500 parcours T0 couverts par les tests ; lint, TypeScript du build, build de production et Prettier verts. Suite navigateur complète : 73/73 ; après ajustement du bouton de reprise et du contraste d'effacement, 21/21 tests d'interface supplémentaires passent sur le dernier build. Audit npm : aucune vulnérabilité connue.
+- Contrôle visuel des captures mobile et desktop ; 320 px, paysage 667×375, clavier et réduction des animations vérifiés. Lighthouse et appareils physiques restent à tester.
+- Restent à réaliser : écriture et validation de l'audience T4, témoignages, pièces confrontables, composition du Tribunal et verdict personnalisé ; enrichissement narratif éventuel de T1–T3. Les scènes actives ne sont pas supprimées avant leur remplacement jouable.

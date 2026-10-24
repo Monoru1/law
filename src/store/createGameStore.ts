@@ -41,6 +41,12 @@ export type GameStore = {
     reportingConsent?: boolean;
     // Required when the timeline inherits an earlier one.
     inherited?: { fromRunId: string; memory: Memory };
+    // Optional completed sources, copied after the primary memory.
+    alsoInherited?: {
+      fromTimelineId: string;
+      fromRunId: string;
+      memory: Memory;
+    }[];
   }) => Promise<void>;
   restore: (key: string) => Promise<void>;
   append: (event: EventDraft) => Promise<void>;
@@ -92,7 +98,16 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
           at: now,
           fromTimelineId: content.inherits.timelineId,
           fromRunId: options.inherited.fromRunId,
-          memory: options.inherited.memory,
+          memory: structuredClone(options.inherited.memory),
+        });
+      for (const source of options?.alsoInherited ?? [])
+        events.push({
+          type: 'memory_inherited',
+          id: crypto.randomUUID(),
+          at: now,
+          fromTimelineId: source.fromTimelineId,
+          fromRunId: source.fromRunId,
+          memory: structuredClone(source.memory),
         });
       const pseudonym = options?.pseudonym?.trim().slice(0, 64) || undefined;
       const save: SaveGame = {

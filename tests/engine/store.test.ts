@@ -7,6 +7,12 @@ import {
 import { useT2GameStore } from '../../src/store/gameStoreT2';
 import { SAVE_KEY_T2 } from '../../src/persistence/localStorageAdapter';
 import { content } from '../../src/content';
+import { contentT0 } from '../../src/content/t0';
+import { contentT3 } from '../../src/content/t3';
+import { createGameStore } from '../../src/store/createGameStore';
+import { createLocalStorageAdapter } from '../../src/persistence/localStorageAdapter';
+import { simulateTalkRun } from '../../scripts/simulation-talk';
+import { seeded, simulateJourney3 } from '../../scripts/simulation';
 import { contentT2 } from '../../src/content/t2';
 import { buildMemory, replay } from '../../src/engine';
 import { event, played, saveFixture, storageFixture } from './fixtures';
@@ -235,4 +241,80 @@ it('opens the house from a room finished before this version, keeping its words'
     type: 'memory_inherited',
     fromRunId: 'production-player',
   });
+});
+
+it('prepares the Tribunal with primary exam memory and one transitive city memory', async () => {
+  const exam = simulateTalkRun(contentT0, seeded(13), { at: 1 });
+  const journey = simulateJourney3(content, contentT2, contentT3, seeded(13), {
+    at: 1,
+  });
+  const target = {
+    ...contentT2,
+    timelineId: 't4',
+    scenes: [],
+    order: [],
+    principles: contentT0.principles,
+    inherits: {
+      timelineId: 't0',
+      sceneIds: contentT0.scenes.map((scene) => scene.id),
+      place: 'Dans l’examen',
+    },
+    alsoInherits: [
+      {
+        timelineId: 't3',
+        sceneIds: [
+          ...content.scenes,
+          ...contentT2.scenes,
+          ...contentT3.scenes,
+        ].map((scene) => scene.id),
+        place: 'Dans la ville',
+      },
+    ],
+  };
+  const adapter = createLocalStorageAdapter('test:tribunal', target);
+  const store = createGameStore(adapter, target);
+  const primary = {
+    fromRunId: 'exam-source',
+    memory: buildMemory(exam.state, contentT0, 'Dans l’examen'),
+  };
+  const city = {
+    fromTimelineId: 't3',
+    fromRunId: 'city-source',
+    memory: buildMemory(journey.city.state, contentT3, 'Dans la ville'),
+  };
+  await store.getState().start({ inherited: primary, alsoInherited: [city] });
+  const saved = store.getState().save!;
+  expect(saved.events.map((event) => event.type)).toEqual([
+    'run_started',
+    'memory_inherited',
+    'memory_inherited',
+  ]);
+  const state = replay(saved.events, target);
+  expect(state.notes).toEqual(exam.state.notes);
+  expect(state.choices).toEqual({
+    ...exam.state.choices,
+    ...journey.city.state.choices,
+  });
+  expect(state.rules).toEqual(journey.city.state.rules);
+  expect(state.relations).toEqual([
+    ...exam.state.relations,
+    ...journey.city.state.relations,
+  ]);
+  expect((await adapter.load())?.events).toEqual(saved.events);
+  primary.memory.notes?.splice(0);
+  expect(replay(saved.events, target).notes).toEqual(exam.state.notes);
+  const before = localStorage.getItem('test:tribunal');
+  await store.getState().start({ inherited: primary, alsoInherited: [city] });
+  expect(localStorage.getItem('test:tribunal')).toBe(before);
+  const invalidAdapter = createLocalStorageAdapter(
+    'test:tribunal-invalid',
+    target,
+  );
+  const invalidStore = createGameStore(invalidAdapter, target);
+  await expect(
+    invalidStore
+      .getState()
+      .start({ inherited: primary, alsoInherited: [city, city] }),
+  ).rejects.toThrow();
+  expect(localStorage.getItem('test:tribunal-invalid')).toBeNull();
 });

@@ -95,3 +95,13 @@ Statuts : **PRISE** (appliquée ou sans risque créatif, réversible), **À VALI
 ### D-19 — La femme de l'abribus reçoit un nom en T4 : Aurore — À VALIDER (avec D-02)
 
 - La bible T0 promettait « Nom révélé dans La Ville » ; cette promesse n'est tenue nulle part dans les scènes actuelles. Le prénom évoque le moment de la renaissance (REBIRTH).
+
+## C. Décisions ultérieures — directive prioritaire et confirmation du 24 octobre
+
+Cette section actualise les statuts de l'audit initial sans effacer la proposition de Claude.
+
+- D-01, D-02, D-05 et D-19 : **VALIDÉES** par le propriétaire, réponse « Le Greffier, avec les trois corrections signalées (preuve disponible, fin choisie, occupation cohérente) ». Les corrections détaillées sont dans `06-RELEASE-PLAN.md`, section Exécution Codex. Cela n'atteste pas encore la livraison des scènes T4.
+- D-06 : palette du brief appliquée aux tokens existants ; rouge sang réservé aux actions irréversibles. Aucun nouveau rouge de texte n'est nécessaire à l'accueil et au registre livrés.
+- D-07 : **REMPLACÉE** par le retrait du reporting distant, conformément à l'interdiction de transmission de texte libre d'AGENTS.md et à la directive de nettoyage. Ancienne route 410, champs de sauvegarde historiques conservés.
+- D-09 : **APPLIQUÉE** par conservation du registre historique et retrait du script de purge, suppression explicitement autorisée par la directive prioritaire.
+- D-08 : aucune suppression de branche distante réalisée.
