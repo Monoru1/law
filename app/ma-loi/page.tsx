@@ -2,6 +2,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { content, copy } from '../../src/content';
+import { contentT0 } from '../../src/content/t0';
+import { useT0GameStore } from '../../src/store/gameStoreT0';
+import { NotesLedger } from '../../src/ui/t0/Controls';
 import { contentT2 } from '../../src/content/t2';
 import { contentT3 } from '../../src/content/t3';
 import {
@@ -124,12 +127,21 @@ export default function MyLaw() {
   const error = useGameStore((s) => s.error);
   const hydrate = useGameStore((s) => s.hydrate);
   const clear = useGameStore((s) => s.clear);
+  const exam = useT0GameStore();
   const house = useT2GameStore();
   const city = useT3GameStore();
   const [erasing, setErasing] = useState(false);
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
+  const hydrateExam = exam.hydrate;
+  useEffect(() => {
+    if (!exam.loaded) void hydrateExam();
+  }, [exam.loaded, hydrateExam]);
+  const examState = useMemo(
+    () => replay(exam.save?.events ?? [], contentT0),
+    [exam.save],
+  );
   const hydrateHouse = house.hydrate;
   useEffect(() => {
     if (!house.loaded) void hydrateHouse();
@@ -174,24 +186,34 @@ export default function MyLaw() {
       };
     }),
   );
-  const exists = Boolean(save || house.save || city.save);
+  const exists = Boolean(exam.save || save || house.save || city.save);
   const people = city.save ? cityState : houseState;
-  const errors = [error, house.error, city.error].filter(Boolean);
+  const errors = [exam.error, error, house.error, city.error].filter(Boolean);
   return (
     <main className="law-page">
       <header className="site-top mono">
         <Link className="law-button ghost" href="/">
-          THE LAW
+          THE LAW: REBIRTH
         </Link>
         <Link
           className="law-button ghost"
-          href={city.save ? '/jouer/t3' : house.save ? '/jouer/t2' : '/jouer'}
+          href={
+            city.save
+              ? '/jouer/t3'
+              : house.save
+                ? '/jouer/t2'
+                : save
+                  ? '/jouer'
+                  : '/jouer/t0'
+          }
         >
           {city.save
             ? 'RETOUR À LA VILLE ↗'
             : house.save
               ? 'RETOUR À LA MAISON ↗'
-              : 'RETOUR À LA PIÈCE ↗'}
+              : save
+                ? 'RETOUR À LA PIÈCE ↗'
+                : 'RETOUR À L’EXAMEN ↗'}
         </Link>
       </header>
       <h1 className="serif">Ma loi.</h1>
@@ -204,7 +226,8 @@ export default function MyLaw() {
         errors.length === 0 &&
         loaded &&
         house.loaded &&
-        city.loaded && <p className="serif beat">Aucune partie enregistrée.</p>
+        city.loaded &&
+        exam.loaded && <p className="serif beat">Aucune partie enregistrée.</p>
       ) : (
         <>
           <p
@@ -213,6 +236,9 @@ export default function MyLaw() {
           >
             CE QUI A ÉTÉ FAIT RESTE ÉCRIT.
           </p>
+          {exam.save && (
+            <NotesLedger notes={examState.notes} content={contentT0} />
+          )}
           <section>
             <h2 className="mono">01 / LOIS</h2>
             {latest.state.laws.length === 0 && <p>Aucune loi signée.</p>}
@@ -314,6 +340,11 @@ export default function MyLaw() {
             </section>
           )}
           <footer className="home-actions">
+            {exam.save && (
+              <Button onClick={() => exportJson(exam.save!)}>
+                {copy.notebook.export}
+              </Button>
+            )}
             {save && (
               <Button onClick={() => exportJson(save)}>{copy.export}</Button>
             )}
@@ -332,6 +363,7 @@ export default function MyLaw() {
                 <Button
                   className="signal"
                   onClick={async () => {
+                    await exam.clear();
                     await clear();
                     await house.clear();
                     await city.clear();

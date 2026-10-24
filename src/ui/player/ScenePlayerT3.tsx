@@ -30,13 +30,13 @@ function Threshold() {
     [t2Save],
   );
   const door = copy.doors.find((d) => d.timelineId === 't3')!;
-  const enter = async (reportingConsent: boolean, replaceExisting = false) => {
+  const enter = async (replaceExisting = false) => {
     if (!t2Save || !house.completed) return;
     try {
       await start({
         ...(replaceExisting ? { replaceExisting: true as const } : {}),
         pseudonym: t2Save.pseudonym,
-        reportingConsent,
+        reportingConsent: false,
         inherited: {
           fromRunId: t2Save.runId,
           memory: buildMemory(house, contentT2, contentT3.inherits!.place),
@@ -46,12 +46,12 @@ function Threshold() {
       /* The store exposes the error below; nothing was written. */
     }
   };
-  if (!t2Loaded) return <main className="end-screen mono">THE LAW</main>;
-  const consent = t2Save?.reportingConsent === true;
+  if (!t2Loaded)
+    return <main className="end-screen mono">THE LAW: REBIRTH</main>;
   return (
     <div className="home" role="main">
       <div className="site-top mono">
-        <span>THE LAW / 03</span>
+        <span>THE LAW: REBIRTH / 03</span>
         <span>
           {door.index} / {door.name}
         </span>
@@ -74,35 +74,19 @@ function Threshold() {
             </p>
           ))
         )}
-        {house.completed && consent && (
-          <p className="mono threshold-note">{copy.threshold3.reportNote}</p>
-        )}
         {error && !incompatible && <p role="alert">{error}</p>}
         <div className="home-actions" style={{ marginTop: 40 }}>
           {incompatible && house.completed && !t2Error ? (
             <>
-              <Button onClick={() => void enter(consent, true)}>
+              <Button onClick={() => void enter(true)}>
                 {copy.threshold3.restart}
               </Button>
-              {consent && (
-                <Button
-                  className="ghost"
-                  onClick={() => void enter(false, true)}
-                >
-                  {copy.threshold3.restartWithoutReport}
-                </Button>
-              )}
             </>
           ) : house.completed && !t2Error ? (
             <>
-              <Button onClick={() => void enter(consent)}>
+              <Button onClick={() => void enter()}>
                 {copy.threshold3.enter}
               </Button>
-              {consent && (
-                <Button className="ghost" onClick={() => void enter(false)}>
-                  {copy.threshold3.enterWithoutReport}
-                </Button>
-              )}
             </>
           ) : (
             !t2Error && (

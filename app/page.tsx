@@ -10,7 +10,7 @@ import { content, copy } from '../src/content';
 import { contentT0 } from '../src/content/t0';
 import { contentT2 } from '../src/content/t2';
 import { contentT3 } from '../src/content/t3';
-import { replay, getTimelineDoors } from '../src/engine';
+import { replay, getTimelineDoors, getRunProgress } from '../src/engine';
 import { Button } from '../src/ui/primitives/Button';
 import { Dialog } from '../src/ui/primitives/Dialog';
 export default function Home() {
@@ -58,28 +58,66 @@ export default function Home() {
       }),
     [examState, state, houseState, cityState],
   );
+  const progress = {
+    t0: getRunProgress(examState, contentT0),
+    t1: getRunProgress(state, content),
+    t2: getRunProgress(houseState, contentT2),
+    t3: getRunProgress(cityState, contentT3),
+  };
+  const ready = loaded && exam.loaded && house.loaded && city.loaded;
   const routes: Record<string, string> = {
     t0: '/jouer/t0',
     t1: '/jouer',
     t2: '/jouer/t2',
     t3: '/jouer/t3',
   };
+  const savedRuns = { t0: exam.save, t1: save, t2: house.save, t3: city.save };
+  const resumable = doors
+    .filter((door) => door.status === 'in_progress' && door.timelineId !== 't4')
+    .sort(
+      (a, b) =>
+        (savedRuns[b.timelineId as keyof typeof savedRuns]?.updatedAt ?? 0) -
+        (savedRuns[a.timelineId as keyof typeof savedRuns]?.updatedAt ?? 0),
+    )[0];
   const presenting = presentingId
     ? (copy.doors.find((d) => d.timelineId === presentingId) ?? null)
     : null;
   return (
-    <main className="home">
+    <main className="home rebirth-home">
       <header className="site-top mono">
-        <span className="wordmark">T/L</span>
-        <span>
-          UNE EXPÉRIENCE INTERACTIVE
-          <br />
-          THE LAW
-        </span>
+        <span className="wordmark">{copy.brand}</span>
+        <a className="registry-link" href="#registre">
+          {copy.home.registry}
+        </a>
       </header>
-      <div className="home-body">
-        <h1 className="serif">THE LAW</h1>
-        <p className="serif">{copy.home.tagline}</p>
+      <section className="court-entry" aria-labelledby="convocation">
+        <div className="court-doors" aria-hidden="true">
+          <span />
+          <span />
+        </div>
+        <div className="court-invitation">
+          <h1 id="convocation" className="serif">
+            {copy.home.summons}
+          </h1>
+          <p>{copy.home.tagline}</p>
+          <div className="court-actions">
+            {ready && resumable && (
+              <Link className="law-button" href={routes[resumable.timelineId]!}>
+                {copy.home.resumeLatest}
+              </Link>
+            )}
+            <a
+              className={`law-button${ready && resumable ? ' ghost' : ''}`}
+              href="#registre"
+            >
+              {copy.enter}
+            </a>
+          </div>
+        </div>
+      </section>
+      <div id="registre" className="home-body" tabIndex={-1}>
+        <h2 className="serif registry-title">{copy.home.registry}</h2>
+        <p className="registry-note">{copy.home.registryNote}</p>
         {[error, exam.error, house.error, city.error]
           .filter(Boolean)
           .map((message, i) => (
@@ -92,8 +130,10 @@ export default function Home() {
             const meta = copy.doors.find(
               (d) => d.timelineId === door.timelineId,
             )!;
+            const run =
+              door.timelineId === 't4' ? null : progress[door.timelineId];
             return (
-              <div
+              <article
                 key={door.timelineId}
                 className="door-card"
                 data-status={door.status}
@@ -101,15 +141,24 @@ export default function Home() {
                 <span className="mono door-index">
                   {meta.index} / {meta.name}
                 </span>
+                <span className="mono dossier-status">
+                  {ready ? copy.home.states[door.status] : '…'}
+                </span>
                 <p className="serif door-promise">{meta.promise}</p>
-                {door.status === 'presentation' ? (
+                {ready && run && run.visitedSceneCount > 0 && (
+                  <p className="dossier-progress">
+                    {run.visitedSceneCount} {copy.home.visited}
+                    {run.currentScene ? ` · ${run.currentScene.title}` : ''}
+                  </p>
+                )}
+                {ready && door.status === 'presentation' ? (
                   <Button
                     className="ghost"
                     onClick={() => setPresentingId(door.timelineId)}
                   >
                     {copy.enter}
                   </Button>
-                ) : loaded && exam.loaded && house.loaded && city.loaded ? (
+                ) : ready ? (
                   <Button
                     onClick={() => router.push(routes[door.timelineId]!)}
                     aria-label={`${
@@ -127,7 +176,7 @@ export default function Home() {
                         : copy.home.start}
                   </Button>
                 ) : null}
-              </div>
+              </article>
             );
           })}
         </div>
@@ -140,8 +189,8 @@ export default function Home() {
         )}
       </div>
       <footer className="footerline mono">
-        <span>LA PIÈCE</span>
-        <span>TES DÉCISIONS RESTENT ICI</span>
+        <span>{copy.brand}</span>
+        <span>{copy.home.privacy}</span>
       </footer>
       {presenting && (
         <Dialog label={presenting.name} close={() => setPresentingId(null)}>
@@ -153,6 +202,7 @@ export default function Home() {
               {para}
             </p>
           ))}
+          {presenting.timelineId === 't4' && <p>{copy.home.unavailable}</p>}
           {presenting.timelineId === 't2' && (
             <p className="mono">{copy.threshold.locked}</p>
           )}

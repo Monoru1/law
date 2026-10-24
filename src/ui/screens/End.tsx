@@ -1,5 +1,4 @@
 'use client';
-import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { copy } from '../../content';
 import {
@@ -11,11 +10,9 @@ import {
 export function End({
   state,
   content,
-  reporting,
 }: {
   state: GameState;
   content: Content;
-  reporting?: ReactNode;
 }) {
   const ending =
     content.timelineId === 't2'
@@ -56,7 +53,6 @@ export function End({
               {copy.toCity}
             </Link>
           )}
-          {reporting}
         </div>
       </div>
     </main>

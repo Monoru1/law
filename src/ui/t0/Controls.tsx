@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import type { TalkReply } from '../../engine';
+import { copy } from '../../content';
+import type { Content, Note, TalkReply } from '../../engine';
 import styles from './t0.module.css';
 
 const HOLD_MS = 1300;
@@ -238,5 +239,45 @@ export function WriteBox({
         )}
       </div>
     </form>
+  );
+}
+
+// Read-only projection: notes keep their recorded words, origin and status.
+export function NotesLedger({
+  notes,
+  content,
+}: {
+  notes: Note[];
+  content: Content;
+}) {
+  return (
+    <section aria-label={copy.notebook.title}>
+      <h2 className="serif">{copy.notebook.title}</h2>
+      {notes.length === 0 ? (
+        <p>{copy.notebook.empty}</p>
+      ) : (
+        <ol className="notes-ledger">
+          {notes.map((note) => (
+            <li key={note.id}>
+              <article>
+                <p className="mono">
+                  {copy.notebook.statuses[note.status]} ·{' '}
+                  {copy.notebook.kinds[note.kind]}
+                </p>
+                {note.text && (
+                  <blockquote className="serif">{note.text}</blockquote>
+                )}
+                <p>
+                  {copy.notebook.origin} :{' '}
+                  {content.scenes.find((scene) => scene.id === note.sceneId)
+                    ?.title ?? note.sceneId}
+                </p>
+                <p className="mono">{copy.notebook.stances[note.stance]}</p>
+              </article>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }

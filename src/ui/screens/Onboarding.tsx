@@ -9,66 +9,18 @@ export function Onboarding({
   error,
   defaultPseudonym,
 }: {
-  enter: (pseudonym: string, consent: boolean) => void;
+  enter: (pseudonym: string) => void;
   error?: string | null;
   defaultPseudonym?: string;
 }) {
   const [pseudo, setPseudo] = useState(defaultPseudonym ?? '');
-  const [step, setStep] = useState<'intro' | 'consent'>('intro');
 
   const trimmed = pseudo.trim().slice(0, 64);
-
-  if (step === 'consent') {
-    return (
-      <div className="home" role="main">
-        <div className="site-top mono">
-          <span>THE LAW / 01</span>
-          <span>PROTOCOLE T1</span>
-        </div>
-        <div style={{ maxWidth: 750 }}>
-          <p className="mono" style={{ fontSize: '1rem', margin: '16px 0' }}>
-            {copy.playtestIntro.consentTitle}
-          </p>
-          <p
-            className="serif"
-            style={{
-              fontSize: 'clamp(1.2rem,2.5vw,1.8rem)',
-              lineHeight: 1.4,
-              margin: '16px 0',
-            }}
-          >
-            {copy.playtestIntro.consentBody}
-          </p>
-          {error && <p role="alert">{error}</p>}
-          <div className="home-actions" style={{ marginTop: 50 }}>
-            <Button
-              onClick={() => {
-                if (!trimmed) {
-                  setStep('intro');
-                  return;
-                }
-                enter(trimmed, true);
-              }}
-            >
-              {copy.playtestIntro.consentAccept}
-            </Button>
-            <Button className="ghost" onClick={() => setStep('intro')}>
-              {copy.playtestIntro.consentDecline}
-            </Button>
-          </div>
-        </div>
-        <div className="footerline mono">
-          <span>LA PIÈCE</span>
-          <span>UNE FICTION INTERACTIVE</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="home" role="main">
       <div className="site-top mono">
-        <span>THE LAW / 01</span>
+        <span>THE LAW: REBIRTH / 01</span>
         <span>PROTOCOLE T1</span>
       </div>
       <div style={{ maxWidth: 750 }}>
@@ -95,23 +47,23 @@ export function Onboarding({
             className="mono"
             style={{ display: 'block', fontSize: '1rem', marginBottom: 8 }}
           >
-            {copy.playtestIntro.pseudoLabel}
+            {copy.arrival.pseudoLabel}
           </label>
           <input
             className="field"
             type="text"
             value={pseudo}
             onChange={(e) => setPseudo(e.target.value.slice(0, 64))}
-            placeholder={copy.playtestIntro.pseudoPlaceholder}
+            placeholder={copy.arrival.pseudoPlaceholder}
             maxLength={64}
-            aria-label={copy.playtestIntro.pseudoLabel}
+            aria-label={copy.arrival.pseudoLabel}
             style={{ width: '100%' }}
           />
           <p
             className="mono"
             style={{ fontSize: '0.85rem', margin: '8px 0 0', opacity: 0.6 }}
           >
-            {copy.playtestIntro.pseudoHint}
+            {copy.arrival.pseudoHint}
           </p>
         </div>
         {error && <p role="alert">{error}</p>}
@@ -119,7 +71,7 @@ export function Onboarding({
           <Button
             onClick={() => {
               if (!trimmed) return;
-              setStep('consent');
+              enter(trimmed);
             }}
             disabled={!trimmed}
           >

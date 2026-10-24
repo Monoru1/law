@@ -14,7 +14,7 @@ export default function ErrorPage({
   useEffect(() => {
     heading.current?.focus();
     if (process.env.NODE_ENV === 'development') {
-      console.error('[THE LAW] route failure', {
+      console.error('[THE LAW: REBIRTH] route failure', {
         name: error.name,
         digest: error.digest,
       });

@@ -9,7 +9,7 @@ import { Dialog } from '../primitives/Dialog';
 export function Settings({
   close,
   store = useGameStore as UseBoundStore<StoreApi<GameStore>>,
-  label = 'THE LAW / 01',
+  label = 'THE LAW: REBIRTH / 01',
 }: {
   close: () => void;
   store?: UseBoundStore<StoreApi<GameStore>>;

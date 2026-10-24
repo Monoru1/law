@@ -481,13 +481,9 @@ test('empty history and unreadable saves stay distinguishable', async ({
     .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
     .fill('Testeur');
   await page.getByRole('button', { name: 'Entrer', exact: true }).click();
-  await page.getByRole('button', { name: 'J’accepte et je commence' }).click();
   expect(await page.evaluate(() => localStorage.getItem('thelaw:save'))).toBe(
     '{broken',
   );
-  // The failed attempt leaves onboarding on the consent step; step back to
-  // the intro step, where the home link lives.
-  await page.getByRole('button', { name: 'Retour', exact: true }).click();
   await page.getByRole('link', { name: 'Retour à l’accueil' }).click();
   await expect(page).toHaveURL('/');
 });

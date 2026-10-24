@@ -11,15 +11,10 @@ test('a full run records a signed law, contradicts it and remembers the written 
   page,
 }) => {
   test.slow();
-  // The written answer must never leak to a third party. The consented
-  // first-party report endpoint (/api/report) is its only legitimate
-  // recipient, so it is excluded from the leak set.
+  // No endpoint may receive the player’s words.
   const leaked: string[] = [];
   page.on('request', (request) => {
-    if (
-      request.postData()?.includes('Pour rentrer chez moi') &&
-      !request.url().includes('/api/report')
-    )
+    if (request.postData()?.includes('Pour rentrer chez moi'))
       leaked.push(request.url());
   });
   await page.goto('/');
@@ -30,7 +25,6 @@ test('a full run records a signed law, contradicts it and remembers the written 
     .getByRole('textbox', { name: 'Ton nom ou pseudonyme' })
     .fill('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).click();
-  await page.getByRole('button', { name: 'J’accepte et je commence' }).click();
   await advanceToAction(page, 'Appuyer');
   await exactButton(page, 'Appuyer').click();
   await advanceToAction(page, 'Refuser');
@@ -92,8 +86,6 @@ test('keyboard operation and resume from a saved scene', async ({ page }) => {
   await page.keyboard.type('Testeur');
   await page.getByRole('button', { name: 'Entrer' }).focus();
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'J’accepte et je commence' }).focus();
-  await page.keyboard.press('Enter');
   await advanceToAction(page, 'Ne pas appuyer');
   await page.getByRole('button', { name: 'Ne pas appuyer' }).focus();
   await page.keyboard.press('Enter');
@@ -113,7 +105,6 @@ test('the complete story is playable using only the keyboard', async ({
   await page.getByRole('textbox', { name: 'Ton nom ou pseudonyme' }).focus();
   await page.keyboard.type('Testeur');
   await activate('Entrer');
-  await activate('J’accepte et je commence');
   await advanceToAction(page, 'Appuyer');
   await activate('Appuyer');
   await advanceToAction(page, 'Refuser');

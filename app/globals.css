@@ -95,13 +95,6 @@ button:disabled {
 .home-body {
   margin: 8vh 0 4vh;
 }
-.home h1 {
-  font-size: clamp(6rem, 21vw, 24rem);
-  line-height: 0.75;
-  letter-spacing: -0.095em;
-  white-space: nowrap;
-  margin: 0 0 4rem;
-}
 .home p {
   font-size: clamp(1.2rem, 2vw, 2rem);
   max-width: 34ch;
@@ -126,53 +119,158 @@ button:disabled {
   flex-wrap: wrap;
   margin-top: 3.5rem;
 }
+.rebirth-home {
+  max-width: none;
+  padding: clamp(20px, 4vw, 64px);
+  background: radial-gradient(
+    ellipse at 50% 12%,
+    var(--law-surface-2),
+    transparent 60%
+  );
+}
+.rebirth-home .site-top {
+  flex-wrap: wrap;
+}
+.registry-link {
+  padding-block: 14px;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.court-entry {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: min(760px, 85svh);
+  isolation: isolate;
+  margin-block: 32px;
+  text-align: center;
+}
+.court-doors {
+  position: absolute;
+  inset: 0 max(0px, calc((100% - 960px) / 2));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 12px double var(--law-line-strong);
+  border-radius: 48% 48% 0 0;
+  overflow: hidden;
+  box-shadow:
+    0 18px 70px var(--law-void),
+    inset 0 0 70px var(--law-void);
+  z-index: -1;
+}
+.court-doors span {
+  border: 1px solid var(--law-line);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 15%,
+      var(--law-line-faint) 15% 16%,
+      transparent 16% 32%
+    ),
+    linear-gradient(180deg, var(--law-surface-2), var(--law-void));
+  box-shadow: inset 0 0 50px var(--law-void);
+}
+.court-invitation {
+  padding: clamp(16px, 4vw, 64px);
+  max-width: 900px;
+}
+.rebirth-home h1 {
+  font-size: clamp(2.5rem, 7vw, 6.5rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  white-space: normal;
+  margin: 0 0 24px;
+  text-wrap: balance;
+}
+.court-invitation p {
+  margin: 0 auto 32px;
+  color: var(--law-ink-2);
+}
+.rebirth-home .home-body {
+  width: min(100%, 1200px);
+  margin: 48px auto;
+  scroll-margin-top: 24px;
+}
+.registry-title {
+  font-size: clamp(2rem, 5vw, 4rem);
+  margin: 0;
+}
+.rebirth-home .registry-note {
+  font-size: 1rem;
+  color: var(--law-ink-2);
+  max-width: 65ch;
+}
 .home-doors {
   display: grid;
-  gap: 0;
-  margin: 3rem 0 2rem;
-  border-bottom: 1px solid var(--law-line);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-block: 48px;
 }
 .door-card {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  column-gap: 2rem;
-  row-gap: var(--law-space-3);
-  align-items: center;
-  padding: clamp(var(--law-space-6), 3.5vh, var(--law-space-8)) 0
-    clamp(var(--law-space-6), 3.5vh, var(--law-space-8)) clamp(0px, 1.5vw, 18px);
-  border-top: 1px solid var(--law-line);
-  transition:
-    padding-left 0.25s ease,
-    background 0.25s ease;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-content: start;
+  padding: clamp(18px, 3vw, 36px);
+  border: 1px solid var(--law-line-strong);
+  border-top: 8px solid var(--law-surface-3);
+  background: var(--law-surface);
+  box-shadow: 0 10px 24px var(--law-void);
 }
-.door-card:hover {
-  padding-left: clamp(10px, 2.5vw, 30px);
-  background: linear-gradient(90deg, var(--law-surface), transparent 60%);
+.door-card:last-child {
+  grid-column: 1 / -1;
 }
-.door-card[data-status='presentation'] .door-promise {
-  color: var(--law-ink-2);
+.door-card[data-status='presentation'] {
+  border-top-style: double;
+  background: var(--law-black);
 }
 .door-index {
   grid-column: 1;
-  grid-row: 1;
-  font-size: 0.72rem;
-  letter-spacing: var(--law-tracking-meta);
+  font-size: 0.75rem;
+  color: var(--law-paper);
+}
+.dossier-status {
+  grid-column: 2;
+  color: var(--law-ink-2);
+  font-size: 0.75rem;
+}
+.rebirth-home .door-promise {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.25;
+}
+.rebirth-home .dossier-progress {
+  grid-column: 1 / -1;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
   color: var(--law-ink-2);
 }
-.door-promise {
-  grid-column: 1;
-  grid-row: 2;
-  margin: 0;
-  font-family: var(--font-display), Georgia, serif;
-  font-size: clamp(1.1rem, 1.9vw, 1.6rem);
-  line-height: 1.15;
-  max-width: 42ch;
-}
 .door-card .law-button {
-  grid-column: 2;
-  grid-row: 1 / 3;
-  align-self: center;
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+@media (max-width: 650px) {
+  .home-doors {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .door-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .dossier-status {
+    grid-column: 1;
+  }
+  .court-entry {
+    min-height: 65svh;
+  }
+  .rebirth-home .footerline {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
 }
 .law-button {
   display: inline-flex;
@@ -284,14 +382,10 @@ button:disabled {
 }
 
 /* Signal — reserved strictly for irreversible actions (erase). */
-.law-button.signal {
-  background: transparent;
-  border-color: var(--law-signal);
-  color: var(--law-signal-bright);
-}
+.law-button.signal,
 .law-button.signal:hover:not(:disabled) {
   background: var(--law-signal);
-  border-color: var(--law-signal);
+  border-color: var(--law-paper);
   color: var(--law-signal-ink);
 }
 .footerline {
@@ -844,29 +938,12 @@ button:disabled {
   gap: clamp(16px, 2.5vh, 24px);
   margin-top: clamp(28px, 5vh, 52px);
 }
-.end-reporting {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin: 0;
-  color: var(--law-gray-300);
-  font-size: 0.72rem;
-}
-.end-reporting--failed .end-reporting-retry {
-  min-height: var(--law-target-min);
-  font-size: 0.72rem;
-}
 .end-teaser {
   margin: clamp(24px, 5vh, 48px) 0 0;
   color: var(--law-gray-300);
   text-align: center;
 }
 @media (max-width: 650px) {
-  .home h1 {
-    font-size: 20vw;
-    margin-bottom: 2.5rem;
-  }
   .home-body {
     margin: 0;
   }
@@ -935,4 +1012,26 @@ input[type='checkbox'] {
 .stage[data-reduce='true'] * {
   animation-duration: 0.01ms !important;
   transition-duration: 0.01ms !important;
+}
+
+.notes-ledger {
+  padding-inline-start: 1.5rem;
+}
+.notes-ledger li {
+  padding-inline-start: 0.5rem;
+}
+.notes-ledger article {
+  overflow-wrap: anywhere;
+}
+.notes-ledger blockquote {
+  margin: 24px 0;
+  font-size: 1.6rem;
+  line-height: 1.4;
+}
+
+.court-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
 }

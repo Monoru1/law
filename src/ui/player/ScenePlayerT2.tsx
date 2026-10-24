@@ -23,12 +23,12 @@ function Threshold() {
   }, [t1Loaded, hydrateT1]);
   const room = useMemo(() => replay(t1Save?.events ?? [], content), [t1Save]);
   const door = copy.doors.find((d) => d.timelineId === 't2')!;
-  const enter = async (reportingConsent: boolean) => {
+  const enter = async () => {
     if (!t1Save || !room.completed) return;
     try {
       await start({
         pseudonym: t1Save.pseudonym,
-        reportingConsent,
+        reportingConsent: false,
         inherited: {
           fromRunId: t1Save.runId,
           memory: buildMemory(room, content, contentT2.inherits!.place),
@@ -38,12 +38,12 @@ function Threshold() {
       /* The store exposes the error below; nothing was written. */
     }
   };
-  if (!t1Loaded) return <main className="end-screen mono">THE LAW</main>;
-  const consent = t1Save?.reportingConsent === true;
+  if (!t1Loaded)
+    return <main className="end-screen mono">THE LAW: REBIRTH</main>;
   return (
     <div className="home" role="main">
       <div className="site-top mono">
-        <span>THE LAW / 02</span>
+        <span>THE LAW: REBIRTH / 02</span>
         <span>
           {door.index} / {door.name}
         </span>
@@ -60,21 +60,13 @@ function Threshold() {
             </p>
           ))
         )}
-        {room.completed && consent && (
-          <p className="mono threshold-note">{copy.threshold.reportNote}</p>
-        )}
         {error && <p role="alert">{error}</p>}
         <div className="home-actions" style={{ marginTop: 40 }}>
           {room.completed && !t1Error ? (
             <>
-              <Button onClick={() => void enter(consent)}>
+              <Button onClick={() => void enter()}>
                 {copy.threshold.enter}
               </Button>
-              {consent && (
-                <Button className="ghost" onClick={() => void enter(false)}>
-                  {copy.threshold.enterWithoutReport}
-                </Button>
-              )}
             </>
           ) : (
             !t1Error && (

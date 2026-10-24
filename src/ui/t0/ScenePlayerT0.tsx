@@ -362,7 +362,7 @@ export function ScenePlayerT0() {
   if (state.completed)
     return (
       <main className={styles.end}>
-        <p className="mono">THE LAW</p>
+        <p className="mono">THE LAW: REBIRTH</p>
         <Link href="/">Retour à l’accueil</Link>
       </main>
     );
@@ -482,6 +482,9 @@ export function ScenePlayerT0() {
             >
               Passer cette scène
             </Button>
+            <Link className="law-button ghost" href="/ma-loi">
+              Ce que LAW a noté
+            </Link>
             <Button className="ghost" onClick={() => router.push('/')}>
               Quitter
             </Button>
@@ -492,7 +495,7 @@ export function ScenePlayerT0() {
         <Settings
           close={() => setSettings(false)}
           store={useStore}
-          label="THE LAW / 00"
+          label="THE LAW: REBIRTH / 00"
         />
       )}
     </main>

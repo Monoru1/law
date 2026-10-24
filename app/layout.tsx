@@ -21,42 +21,41 @@ const canonicalSiteUrl = process.env.SITE_URL || process.env.URL;
 const deploymentUrl = process.env.DEPLOY_PRIME_URL || canonicalSiteUrl;
 const metadataBase = new URL(deploymentUrl || 'http://localhost:3000');
 
-const description =
-  'Une fiction interactive où chaque choix devient loi. Every choice becomes law.';
+const description = 'Une fiction interactive. Chaque choix laisse une trace.';
 
 export const metadata: Metadata = {
   metadataBase,
   ...(canonicalSiteUrl
     ? { alternates: { canonical: new URL('/', canonicalSiteUrl) } }
     : {}),
-  applicationName: 'THE LAW',
+  applicationName: 'THE LAW: REBIRTH',
   title: {
-    default: 'THE LAW',
-    template: '%s — THE LAW',
+    default: 'THE LAW: REBIRTH',
+    template: '%s — THE LAW: REBIRTH',
   },
   description,
   manifest: '/manifest.webmanifest',
   openGraph: {
     type: 'website',
     locale: 'fr_FR',
-    siteName: 'THE LAW',
-    title: 'THE LAW',
+    siteName: 'THE LAW: REBIRTH',
+    title: 'THE LAW: REBIRTH',
     description,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'THE LAW',
+    title: 'THE LAW: REBIRTH',
     description,
   },
   appleWebApp: {
     capable: true,
-    title: 'THE LAW',
+    title: 'THE LAW: REBIRTH',
     statusBarStyle: 'black-translucent',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0d0d10',
+  themeColor: '#090809',
   colorScheme: 'dark',
 };
 export default function RootLayout({

@@ -1,64 +1,47 @@
 :root {
   /* Surfaces — a layered institutional world that carries its own contrast,
      so the atmosphere never depends on the room being physically dark. */
-  --law-void: #070709;
-  --law-black: #0d0d10;
-  --law-surface: #141418;
-  --law-surface-2: #1c1c21;
-  --law-surface-3: #24242a;
+  --law-void: #090809;
+  --law-black: #090809;
+  --law-surface: color-mix(in srgb, #090809 60%, #241315);
+  --law-surface-2: #241315;
+  --law-surface-3: color-mix(in srgb, #241315 80%, #b9a18c);
 
   /* Ink — a deliberate text hierarchy, legible at 15:00 and at 03:00. */
-  --law-paper: #efece4;
-  --law-ink-2: #c6c3bb;
-  --law-ink-3: #97948c;
+  --law-paper: #e6ded3;
+  --law-ink-2: #b9a18c;
+  --law-ink-3: #b9a18c;
 
   /* Hairlines / boundaries */
   --law-line: rgba(233, 230, 223, 0.14);
   --law-line-strong: rgba(233, 230, 223, 0.32);
   --law-line-faint: rgba(233, 230, 223, 0.07);
 
-  /* Legacy gray scale, remapped onto the ink/surface system so existing
-     rules keep working while gaining daylight contrast. */
+  /* Neutral roles shared by the scene controls. */
   --law-gray-100: #d8d5cd;
   --law-gray-300: #b4b1a9;
   --law-gray-500: #8c8981;
   --law-gray-700: #2b2b30;
-  --law-gray-900: #16161a;
 
   /* Signal — reserved strictly for irreversible actions. */
-  --law-signal: #b23a30;
-  --law-signal-bright: #cf4a3e;
-  --law-signal-ink: #f5eae7;
+  --law-signal: #8e302d;
+  --law-signal-ink: #e6ded3;
 
-  --radius: 0;
-  --law-space-1: 0.25rem;
-  --law-space-2: 0.5rem;
   --law-space-3: 0.75rem;
   --law-space-4: 1rem;
   --law-space-5: 1.25rem;
   --law-space-6: 1.5rem;
   --law-space-8: 2rem;
 
-  --law-type-meta: 0.75rem;
-  --law-type-help: 0.8125rem;
-  --law-type-title: clamp(1.75rem, 3vw, 2.5rem);
   --law-leading-help: 1.55;
-  --law-tracking-meta: 0.1em;
 
   --law-target-min: 44px;
   --law-control-min: 62px;
-  --law-rule: 1px;
   --law-focus-width: 2px;
   --law-focus-offset: 4px;
-  --law-meter-height: 4px;
 
-  --law-duration-feedback: 100ms;
   --law-duration-lock: 260ms;
   --law-ease-feedback: ease-out;
 
   --law-control-surface: var(--law-surface);
-  --law-control-surface-hover: var(--law-surface-2);
-  --law-control-active: var(--law-paper);
-  --law-control-ink: var(--law-black);
-  --law-control-track: var(--law-gray-500);
 }

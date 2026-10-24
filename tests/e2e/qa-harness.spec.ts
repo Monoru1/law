@@ -17,7 +17,6 @@ import {
   installLongSessionClock,
   installUnavailableAudioContext,
   MOBILE_VIEWPORTS,
-  mockReportFailure,
   readJournal,
   reloadAfterTransition,
   reloadDuringConsequence,
@@ -123,7 +122,7 @@ test('audio capability failure, mute and reduced motion stay independent', async
   expect(captured.errors).toEqual([]);
 });
 
-test('offline play and report failure leave the local journal usable', async ({
+test('offline play and retired reporting leave the local journal usable', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -140,7 +139,6 @@ test('offline play and report failure leave the local journal usable', async ({
   );
   await goOnline(page);
 
-  await mockReportFailure(page);
   const beforeReport = await timelineSnapshot(page, ROOM_TARGET);
   const reportStatus = await page.evaluate(async () =>
     fetch('/api/report', {
@@ -149,7 +147,7 @@ test('offline play and report failure leave the local journal usable', async ({
       body: '{}',
     }).then((response) => response.status),
   );
-  expect(reportStatus).toBe(503);
+  expect(reportStatus).toBe(410);
   const afterReport = await timelineSnapshot(page, ROOM_TARGET);
   expect(afterReport.eventCount).toBe(beforeReport.eventCount);
   expect(afterReport.journalDigest).toBe(beforeReport.journalDigest);

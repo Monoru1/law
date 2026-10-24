@@ -19,10 +19,56 @@ export const content: Content = {
   },
 };
 export const copy = {
+  brand: 'THE LAW: REBIRTH',
+  notebook: {
+    title: 'Ce que LAW a noté',
+    empty: 'Aucune note consignée.',
+    export: 'Exporter L’Examen',
+    origin: 'Origine',
+    statuses: {
+      fact: 'Fait',
+      observation: 'Observation',
+      inference: 'Inférence',
+      declared: 'Déclaration',
+    },
+    stances: {
+      open: 'Ouverte',
+      accepted: 'Acceptée',
+      nuanced: 'Nuancée',
+      refused: 'Refusée',
+      withdrawn: 'Retirée',
+    },
+    kinds: {
+      justification: 'Justification',
+      intention: 'Intention',
+      silence: 'Silence',
+      promise: 'Promesse',
+      question: 'Question',
+      reversal: 'Revirement',
+      curiosity: 'Curiosité',
+      refusal: 'Refus',
+      quote: 'Citation',
+      interpretation: 'Interprétation',
+      declared: 'Parole déposée',
+    },
+  },
   home: {
+    summons: 'Vous avez été convoqué.',
+    registry: 'Le registre des dossiers',
+    registryNote: 'Chaque dossier conserve les actes que tu y as consignés.',
+    privacy: 'Tes décisions restent ici.',
+    states: {
+      available: 'Non ouvert',
+      in_progress: 'En cours',
+      completed: 'Clos',
+      presentation: 'Scellé',
+    },
+    unavailable: 'Ce dossier n’est pas encore jouable.',
+    visited: 'scènes consignées',
     tagline: 'Chaque choix laisse une trace.',
     start: 'Commencer',
     resume: 'Reprendre',
+    resumeLatest: 'Reprendre la dernière partie',
     summary: 'Revoir la fin',
     laws: 'Ma loi',
   },
@@ -63,7 +109,7 @@ export const copy = {
       name: 'LE TRIBUNAL',
       promise: 'Tu plaides devant toi-même.',
       presentation:
-        'L\u2019odeur de l\u2019information revient ici.\n\nUne confrontation avec l\u2019ensemble de tes décisions — et avec ce que tu en fais aujourd\u2019hui.',
+        'Le registre conserve tes actes, tes paroles et leurs conséquences.\n\nL’audience n’est pas encore ouverte.',
     },
   ] as const,
   onboarding: [
@@ -71,12 +117,12 @@ export const copy = {
     { text: 'Il n’y a pas de bonne réponse.' },
     { text: 'Il n’y a que les tiennes.' },
     {
-      text: 'THE LAW est une fiction. Elle aborde la mort, le sacrifice et la culpabilité. Tu peux quitter une scène à tout moment.',
+      text: 'THE LAW: REBIRTH est une fiction. Elle aborde la mort, le sacrifice, le deuil, la perte de mémoire et la culpabilité. Tu peux quitter une scène à tout moment.',
       style: 'meta',
     },
   ],
   end: [
-    { text: 'THE LAW' },
+    { text: 'THE LAW: REBIRTH' },
     { text: 'Tu as pris {{count:decisions|0}} décisions.' },
     {
       text: 'La première était un bouton.',
@@ -150,15 +196,10 @@ export const copy = {
     unsignedSign: 'Signer',
     unsignedNo: 'Non',
   },
-  playtestIntro: {
+  arrival: {
     pseudoLabel: 'Ton nom ou pseudonyme',
     pseudoPlaceholder: 'ex. Atlas, Marie D., un prénom…',
     pseudoHint: 'Pseudonyme recommandé.',
-    consentTitle: 'Ce que nous enregistrons',
-    consentBody:
-      "Le playtest enregistre tes décisions, le temps de réflexion et les changements de sélection, ta certitude quand elle est demandée, tes justifications écrites, ainsi que les lois que tu signes et les confrontations qui s'ensuivent. Un rapport factuel est transmis automatiquement au créateur à la fin de la partie. Aucun diagnostic psychologique n'est produit.",
-    consentAccept: 'J\u2019accepte et je commence',
-    consentDecline: 'Retour',
   },
   people: {
     camille: 'Camille',
@@ -193,9 +234,6 @@ export const copy = {
     locked: 'La maison s’ouvre après la pièce.',
     toRoom: 'Aller à la pièce',
     enter: 'Entrer dans la maison',
-    enterWithoutReport: 'Entrer sans rapport',
-    reportNote:
-      'Comme pour La Pièce, un rapport factuel sera transmis à la fin de La Maison.',
     unreadable:
       'La pièce n’a pas pu être relue. La maison attend qu’elle le soit.',
   },
@@ -203,14 +241,10 @@ export const copy = {
     locked: 'La ville s’ouvre après la maison.',
     toRoom: 'Aller à la maison',
     enter: 'Entrer dans la ville',
-    enterWithoutReport: 'Entrer sans rapport',
-    reportNote:
-      'Comme pour La Maison, un rapport factuel sera transmis à la fin de La Ville.',
     unreadable:
       'La maison n’a pas pu être relue. La ville attend qu’elle le soit.',
     incompatible:
       'Cette partie appartient à une version antérieure de la ville.\n\nElle sera conservée sur cet appareil.',
     restart: 'Commencer la nouvelle ville',
-    restartWithoutReport: 'Commencer sans rapport',
   },
 } as const;

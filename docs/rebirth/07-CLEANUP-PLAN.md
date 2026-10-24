@@ -58,3 +58,17 @@ Commande une fois validée : `git push origin --delete <branche>` (une branche �
 2. Branche dédiée, un commit par suppression.
 3. `pnpm format:check`, `lint`, `typecheck`, `test`, `validate:content`, `build`, `test:e2e`.
 4. Jamais de `reset --hard`, de `clean -fd`, de push forcé ou de suppression en masse.
+
+## Exécution Codex — 24 octobre 2026
+
+Autorisation explicite de supprimer les éléments dont l'obsolescence est prouvée, puis confirmation que Claude a terminé.
+
+- Supprimés : `scripts/reset-t0-contracts.mjs`, `docs/handoffs/t0-claude-recovery.md`, `src/ui/stage/Room.tsx`. Le premier effaçait les contrats historiques ; le second documentait une reprise terminée ; le troisième ne faisait que transmettre les mêmes propriétés à `World`.
+- Retirés de `AudioManager.ts` : `silentAudio`, interface de compatibilité et méthodes `play`, `setAmbience`, `mute`, `setAct`, sans appelant dans app/src/tests/scripts. Le moteur procédural et `setProfile`, `setMuted`, `resume` restent utilisés.
+- Conservés après recherche : `grain.svg`, `motion`, Tailwind/PostCSS, les trois polices locales, tous les moteurs, magasins, scènes actives et fixtures historiques. Aucune dépendance déclarée n'est retirée sans preuve.
+- `pnpm contracts` devient une vérification sans écriture ; `--write` conserve son rôle append-only.
+- Les tableaux précédents décrivent l'audit initial de Claude ; cette section consigne l'exécution ultérieure. Aucun nettoyage de branche distante n'est effectué.
+
+- Confidentialité : suppression de `src/reporting/builder.ts`, `emailRenderer.ts`, `report.ts`, `sendGate.ts`, `sendLimiter.ts` et des quatre tests correspondants dans `tests/reporting/`. Ces modules ne sont plus appelés après retrait de l'envoi. Les tests API vérifient désormais le contrat 410 ; les tests navigateur couvrent la partie consentie historique sans envoi. La documentation de reporting est remplacée par le fonctionnement local réel.
+- Retrait de 16 variables CSS sans consommateur, de l'ancienne règle de titre d'accueil, de l'écran de consentement et des variantes de seuil « sans rapport ». Les paramètres historiques restent dans le schéma uniquement pour la compatibilité.
+- Aucune dépendance retirée : toutes celles de `package.json` ont encore un consommateur applicatif, de build ou de test identifié. Aucune nouvelle dépendance ajoutée.

@@ -30,12 +30,6 @@ import {
 import { useGameStore } from '../../store/gameStore';
 import type { UseBoundStore, StoreApi } from 'zustand';
 import type { GameStore } from '../../store/createGameStore';
-import {
-  canAutoSend,
-  releaseSend,
-  submitReport,
-  tryClaimSend,
-} from '../../reporting/sendGate';
 import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
 import { BeatRenderer } from './BeatRenderer';
@@ -218,7 +212,6 @@ export function ScenePlayer({
   const hydrate = useStore((s) => s.hydrate);
   const append = useStore((s) => s.append);
   const start = useStore((s) => s.start);
-  const setReportingStatus = useStore((s) => s.setReportingStatus);
   useEffect(() => {
     if (!loaded) void hydrate();
   }, [loaded, hydrate]);
@@ -234,33 +227,6 @@ export function ScenePlayer({
     () => replay(save?.events ?? [], content),
     [save, content],
   );
-
-  // Envoi automatique du rapport de playtest après run_completed.
-  // Statut persisté dans la sauvegarde (reportingStatus) : survit au
-  // rafraîchissement de page et à la navigation vers "Ma loi" et retour.
-  const completionEvent = save?.events.find((e) => e.type === 'run_completed');
-  const completionEventId = completionEvent?.id ?? null;
-  useEffect(() => {
-    if (!save || !completionEventId) return;
-    if (
-      !canAutoSend({
-        reportingConsent: save.reportingConsent,
-        reportingStatus: save.reportingStatus,
-      })
-    )
-      return;
-    if (!tryClaimSend(save.runId)) return;
-    const runId = save.runId;
-    void submitReport(save, setReportingStatus).finally(() =>
-      releaseSend(runId),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    completionEventId,
-    save?.runId,
-    save?.reportingConsent,
-    save?.reportingStatus,
-  ]);
 
   const current = content.scenes.find((s) => s.id === state.currentSceneId);
   const scene = current ? resolveScene(current, state) : null;
@@ -283,7 +249,7 @@ export function ScenePlayer({
   const [singleFlight] = useState(createSingleFlight);
   const reduced = useReduced(save?.settings.reducedMotion ?? 'auto');
   const tracker = useTimeTracker({ reset: `${scene?.id}:${ready}` });
-  // Physical acknowledgement: THE LAW registers a committed decision with a
+  // Physical acknowledgement: THE LAW: REBIRTH registers a committed decision with a
   // brief, restrained surface pulse. Silent under reduced motion.
   const flashLock = useCallback(() => {
     if (reduced) return;
@@ -481,49 +447,23 @@ export function ScenePlayer({
       // The signed law rests on screen before the night goes on.
       setOverlay(null);
     });
-  if (!loaded) return <main className="end-screen mono">THE LAW</main>;
+  if (!loaded) return <main className="end-screen mono">THE LAW: REBIRTH</main>;
   if (!save && threshold) return <>{threshold}</>;
   if (!save)
     return (
       <Onboarding
         error={error}
-        enter={async (pseudonym, reportingConsent) => {
+        enter={async (pseudonym) => {
           try {
-            await start({ pseudonym, reportingConsent });
+            await start({ pseudonym, reportingConsent: false });
           } catch {
             /* The store exposes the recovery error above. */
           }
         }}
       />
     );
-  if (state.completed) {
-    const reportStatus = save?.reportingStatus ?? 'not_sent';
-    const showConsent = save?.reportingConsent === true;
-    const reporting =
-      showConsent && reportStatus === 'sent' ? (
-        <p className="end-reporting mono">Rapport de playtest transmis.</p>
-      ) : showConsent && reportStatus === 'failed' ? (
-        <div className="end-reporting end-reporting--failed">
-          <p className="mono">Le rapport n&apos;a pas pu être transmis.</p>
-          <Button
-            className="ghost end-reporting-retry"
-            onClick={async () => {
-              if (!save) return;
-              if (!tryClaimSend(save.runId)) return;
-              try {
-                await submitReport(save, setReportingStatus);
-              } finally {
-                releaseSend(save.runId);
-              }
-            }}
-          >
-            Réessayer
-          </Button>
-        </div>
-      ) : null;
-    return <End state={state} content={content} reporting={reporting} />;
-  }
-  if (!scene) return <main className="end-screen mono">THE LAW</main>;
+  if (state.completed) return <End state={state} content={content} />;
+  if (!scene) return <main className="end-screen mono">THE LAW: REBIRTH</main>;
   const input = scene.input;
   const manualPassage = content.timelineId === 't3' && input.kind === 'passage';
   const choiceOptions =
@@ -1037,7 +977,7 @@ export function ScenePlayer({
       </footer>
       {pause && (
         <Dialog label={copy.pause} close={() => setPause(false)}>
-          <p className="mono">THE LAW / {timelineNumber}</p>
+          <p className="mono">THE LAW: REBIRTH / {timelineNumber}</p>
           <h2 className="serif">{copy.pause}</h2>
           <div className="stack">
             <Button onClick={() => setPause(false)}>{copy.resume}</Button>
@@ -1061,7 +1001,7 @@ export function ScenePlayer({
         <Settings
           close={() => setSettings(false)}
           store={useStore}
-          label={`THE LAW / ${timelineNumber}`}
+          label={`THE LAW: REBIRTH / ${timelineNumber}`}
         />
       )}
     </main>

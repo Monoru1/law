@@ -652,20 +652,6 @@ export async function goOnline(page: Page): Promise<void> {
   await expect(page.getByRole('status')).toHaveCount(0);
 }
 
-export async function mockReportFailure(
-  page: Page,
-  status = 503,
-): Promise<void> {
-  await page.route('**/api/report', (route) =>
-    route.fulfill({
-      status,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: 'Reporting unavailable in QA.' }),
-      headers: { 'cache-control': 'no-store' },
-    }),
-  );
-}
-
 export async function assertNoHorizontalOverflow(
   page: Page,
   width: number,

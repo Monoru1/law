@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'THE LAW — Every choice becomes law.';
+export const alt = 'THE LAW: REBIRTH — Chaque choix laisse une trace.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -9,8 +9,8 @@ export default function OpenGraphImage() {
     <div
       style={{
         alignItems: 'center',
-        background: '#0d0d10',
-        color: '#efece4',
+        background: '#090809',
+        color: '#E6DED3',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'Georgia, serif',
@@ -20,10 +20,10 @@ export default function OpenGraphImage() {
         width: '100%',
       }}
     >
-      <div style={{ fontSize: 164, lineHeight: 1 }}>THE LAW</div>
+      <div style={{ fontSize: 100, lineHeight: 1 }}>THE LAW: REBIRTH</div>
       <div
         style={{
-          borderTop: '2px solid #efece4',
+          borderTop: '2px solid #E6DED3',
           fontFamily: 'Arial, sans-serif',
           fontSize: 34,
           letterSpacing: '0.12em',
@@ -32,7 +32,7 @@ export default function OpenGraphImage() {
           textTransform: 'uppercase',
         }}
       >
-        Every choice becomes law.
+        Chaque choix laisse une trace.
       </div>
     </div>,
     size,

@@ -193,7 +193,7 @@
   text-wrap: pretty;
 }
 .person {
-  color: #dcd0bd;
+  color: var(--law-ink-2);
 }
 .narrator {
   font-family: var(--font-meta), monospace;
@@ -205,7 +205,7 @@
   text-wrap: pretty;
 }
 .emphasis {
-  color: #fff;
+  color: var(--law-paper);
 }
 .whisper {
   opacity: 0.66;
@@ -341,7 +341,7 @@
   color: var(--law-ink-3);
 }
 .reply[data-hold='true'] {
-  color: #eab0a8;
+  color: var(--law-signal-ink);
 }
 .reply[data-hold='true']::after {
   content: '';

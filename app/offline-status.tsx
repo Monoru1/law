@@ -24,8 +24,7 @@ export function OfflineStatus() {
       role="status"
       aria-live="polite"
     >
-      Connexion interrompue. La partie reste enregistrée sur cet appareil. Le
-      rapport devra être réessayé après reconnexion.
+      Connexion interrompue. La partie reste enregistrée sur cet appareil.
     </aside>
   );
 }

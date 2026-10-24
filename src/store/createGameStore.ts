@@ -13,7 +13,6 @@ import {
 } from '../persistence/migrations';
 import {
   defaultSettings,
-  type ReportingStatus,
   type SaveAdapter,
   type SaveGame,
   type Settings,
@@ -46,7 +45,6 @@ export type GameStore = {
   restore: (key: string) => Promise<void>;
   append: (event: EventDraft) => Promise<void>;
   settings: (update: Partial<Settings>) => Promise<void>;
-  setReportingStatus: (status: ReportingStatus) => Promise<void>;
   clear: () => Promise<void>;
 };
 
@@ -123,19 +121,7 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
       hydrate: () =>
         enqueue(async () => {
           try {
-            let save = await adapter.load();
-            if (save && save.reportingStatus === 'sending') {
-              const corrected: SaveGame = {
-                ...save,
-                reportingStatus: 'failed',
-              };
-              try {
-                await persist(corrected);
-              } catch {
-                /* best effort */
-              }
-              save = corrected;
-            }
+            const save = await adapter.load();
             set({ save, loaded: true, error: null, incompatible: false });
           } catch (e) {
             set({
@@ -198,18 +184,6 @@ export function createGameStore(adapter: ExtendedAdapter, content: Content) {
           const next = {
             ...save,
             settings: { ...save.settings, ...update },
-            updatedAt: Date.now(),
-          };
-          await persist(next);
-          set({ save: next });
-        }),
-      setReportingStatus: (status) =>
-        enqueue(async () => {
-          const save = get().save;
-          if (!save) return;
-          const next: SaveGame = {
-            ...save,
-            reportingStatus: status,
             updatedAt: Date.now(),
           };
           await persist(next);
