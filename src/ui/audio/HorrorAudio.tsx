@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
  * A small procedural horror soundscape. No external media, tracking, or network.
  * Browser autoplay rules mean that audio starts only after a real user gesture.
  */
-type AudioContextCtor = typeof AudioContext;
 type SoundEngine = {
   context: AudioContext;
   master: GainNode;
@@ -94,7 +93,8 @@ export function HorrorAudio() {
   useEffect(() => {
     try {
       setEnabled(localStorage.getItem('thelaw:audio:enabled') === 'true');
-      const saved = Number(localStorage.getItem('thelaw:audio:volume'));
+      const raw = localStorage.getItem('thelaw:audio:volume');
+      const saved = raw === null ? NaN : Number(raw);
       if (Number.isFinite(saved) && saved >= 0 && saved <= 1) {
         setVolume(saved);
       }
