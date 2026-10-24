@@ -1,4 +1,5 @@
 # DOSSIER I — LA SIXIÈME PLACE
+
 **Statut : concept VALIDÉ, développement narratif de production. Non implémenté.**
 **Genre : horreur domestique, secret de famille, deuil, responsabilité pénale.**
 **Durée cible à maturité : 35–55 minutes ; premier chapitre livrable plus court si annoncé.**
@@ -24,6 +25,7 @@
 ## Architecture en cinq actes
 
 ### ACTE 0 — RETOUR (4–6 min)
+
 La voiture s'arrête devant la maison. Pluie légère, gravier, voix étouffées à l'intérieur. Le joueur peut rester dans la voiture, observer une fenêtre éclairée ou entrer. Il entend un rire d'enfant sur un vieux message téléphonique conservé par la mère : un enregistrement, pas une présence.
 
 **Scène 0.1 — Le seuil.** Une odeur familière, des chaussures rangées, un manteau inconnu. Sarah coupe une conversation quand Alex entre. Le joueur peut la questionner ou laisser passer ; elle retiendra l'attitude.
@@ -31,24 +33,28 @@ La voiture s'arrête devant la maison. Pluie légère, gravier, voix étouffées
 **Premier choix durable :** insister publiquement, observer en silence, demander à Sarah en privé. Il change la confiance et l'accès aux témoignages, pas la vérité des faits.
 
 ### ACTE I — LA MAISON SE SOUVIENT (7–10 min)
+
 **Scène 1.1 — Le mur des photos.** Plusieurs cadres ont été retirés ; marques rectangulaires de poussière. En zoomant, le joueur voit une trace de six silhouettes sur un négatif. Une photo découpée se trouve dans un album, et la découpe correspond au cadre manquant.
 **Scène 1.2 — La chambre fermée.** Une porte fermée à clé, mais aucune apparition surnaturelle. Sarah possède la clé. Henri prétend que la pièce est condamnée à cause d'une fuite ; des relevés d'entretien prouvent le contraire.
 **Scène 1.3 — La cassette.** Un enregistrement de repas d'enfance. Une sixième voix prononce « Maman » ; le bruit du lecteur ralentit et la voix se déforme, explication mécanique montrée plus tard. Le joueur peut consigner l'enregistrement, l'évoquer à table ou le cacher.
 **Révélation de palier :** il existait bien une sixième enfant.
 
 ### ACTE II — LE NOM EFFACÉ (8–12 min)
+
 **Scène 2.1 — La lettre sous le tiroir.** Lettre de Lucie adressée à Éliane, jamais remise, datée de deux ans auparavant. Henri affirme que la lettre est un faux. Une enveloppe avec cachet et une autre écriture rendent ce déni contestable, pas impossible.
 **Scène 2.2 — Mireille.** La tante révèle qu'une procédure a éloigné Lucie après l'accident. Elle ne connaît pas toute la vérité, mais peut fournir la copie d'un document. Si Alex l'a humiliée plus tôt, elle quitte la maison et la pièce devient inaccessible.
 **Scène 2.3 — Sarah.** Elle confesse avoir vu Lucie l'année précédente. Lucie avait demandé de ne pas être ramenée publiquement dans cette maison. Le joueur apprend que **révéler le secret peut aussi violer la volonté de Lucie**.
 **Dilemme :** appeler Lucie avant d'agir, confronter Henri avec les documents, ou attendre le lendemain. Le temps change qui est présent lors de la confrontation.
 
 ### ACTE III — TU VOULAIS QU'IL PARLE (10–15 min)
+
 **Scène 3.1 — La cuisine, 02 h 14.** Henri tente de reprendre la lettre. Son équilibre est précaire ; le tapis près de l'escalier de cave est relevé, montré dans un plan précédent. Il a consommé de l'alcool ou un médicament sédatif ? **Ne pas fixer de cause médicale sans nécessité** : préférer fatigue et marche glissante visibles. Le joueur a des options honnêtes : reculer, appeler Sarah, protéger la lettre en repoussant Henri, lui remettre le document. Le geste de repousser est **explicite**, son risque physique **préfiguré** ; il n'est jamais présenté comme un bouton innocent qui tue par surprise.
 **Scène 3.2 — La chute, conditionnelle.** Si confrontation physique dans des conditions défavorables : Henri recule, chute dans l'escalier, se blesse grièvement. Pas de gore prolongé. Le joueur descend, le touche pour vérifier s'il respire ; **ses mains se tachent de sang**. Il doit appeler les secours, faire venir quelqu'un, rester auprès de lui ou tenter de dissimuler sa propre implication. Une autre branche produit une blessure sans chute grave ; une autre n'a aucune violence.
 **Scène 3.3 — Le temps des secours.** L'appel d'urgence, la voix de Sarah, les consignes simples, la sirène qui tarde. Ne pas faire de la survie un mini-jeu médical hasardeux. Les actions influencent la traçabilité, les témoignages et la confiance, pas un résultat clinique calculé sans justification.
 **Scène 3.4 — La déclaration.** Si blessure : Alex doit décrire ce qui s'est passé. Une omission ou un mensonge peut protéger temporairement Alex mais rendre la déposition de Sarah hostile plus tard. Si aucune blessure : la famille se fracture autrement (Lucie contactée sans consentement, preuve détruite, relation rompue).
 
 ### ACTE IV — CE QUI RESTE (6–10 min)
+
 **Scène 4.1 — La chaise.** Même cadrage que le repas initial, mais une ou plusieurs places sont vides. Les absences dépendent des faits ; aucun « retour à la normale » automatique.
 **Scène 4.2 — Lucie.** Selon la confiance et les preuves, elle accepte un appel, envoie une lettre, refuse le contact ou se présente pour parler en son nom. Elle ne pardonne pas mécaniquement parce que le joueur a trouvé toutes les preuves.
 **Scène 4.3 — La dernière photographie.** Le joueur revoit la photo familiale entière, découvre un détail du contexte de l'accident. Ce détail avait été visible dans l'album dès l'acte I, mais mal interprété.
@@ -56,16 +62,16 @@ La voiture s'arrête devant la maison. Pluie légère, gravier, voix étouffées
 
 ## Matrice des branches critiques
 
-| Décision | Effet immédiat | Coût différé | Écho au Tribunal |
-|---|---|---|---|
-| Confronter Henri devant tous | Sarah se ferme ; Thomas écoute | Lucie risque d'être exposée sans consentement | « Qui avez-vous cherché à protéger ? » |
-| Demander d'abord à Sarah | Accès à la vérité partielle | Henri peut déplacer la lettre | Le Greffier oppose confiance et retard |
-| Contacter Lucie avant révélation | Lucie exprime ses limites | La famille peut nier sa parole | Lucie peut témoigner par écrit |
-| Repousser Henri près de la cave | Chute grave possible si conditions établies | Sang, secours, déposition, risque judiciaire | Le geste exact et son contexte sont cités |
-| Rendre la lettre | Désescalade physique | Destruction possible de l'original | Preuve manquante, mais violence évitée |
-| Appeler Sarah | Témoin et aide | Elle peut contester la version d'Alex | Déposition indépendante |
-| Mentir aux secours / enquêteurs | Protection immédiate apparente | Contradiction documentaire, perte de confiance | Le mensonge est confronté à l'appel |
-| Assumer les faits | Exposition juridique | Possibilité de réparation relationnelle | Responsabilité reconnue, sans « bonne fin » garantie |
+| Décision                         | Effet immédiat                              | Coût différé                                   | Écho au Tribunal                                     |
+| -------------------------------- | ------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------- |
+| Confronter Henri devant tous     | Sarah se ferme ; Thomas écoute              | Lucie risque d'être exposée sans consentement  | « Qui avez-vous cherché à protéger ? »               |
+| Demander d'abord à Sarah         | Accès à la vérité partielle                 | Henri peut déplacer la lettre                  | Le Greffier oppose confiance et retard               |
+| Contacter Lucie avant révélation | Lucie exprime ses limites                   | La famille peut nier sa parole                 | Lucie peut témoigner par écrit                       |
+| Repousser Henri près de la cave  | Chute grave possible si conditions établies | Sang, secours, déposition, risque judiciaire   | Le geste exact et son contexte sont cités            |
+| Rendre la lettre                 | Désescalade physique                        | Destruction possible de l'original             | Preuve manquante, mais violence évitée               |
+| Appeler Sarah                    | Témoin et aide                              | Elle peut contester la version d'Alex          | Déposition indépendante                              |
+| Mentir aux secours / enquêteurs  | Protection immédiate apparente              | Contradiction documentaire, perte de confiance | Le mensonge est confronté à l'appel                  |
+| Assumer les faits                | Exposition juridique                        | Possibilité de réparation relationnelle        | Responsabilité reconnue, sans « bonne fin » garantie |
 
 **Important :** le joueur ne peut pas « gagner » en choisissant systématiquement la violence, ni être puni arbitrairement pour une action non violente. Les issues doivent varier : Henri peut être blessé, survivre sans blessure grave ou ne jamais tomber. Aucune issue n'efface la blessure d'une autre sauvegarde.
 

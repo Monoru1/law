@@ -3,6 +3,7 @@ import {
   collectedDocuments,
   prologueConclusion,
 } from '../../src/content/rebirth';
+import { tribunalContent } from '../../src/content/tribunal';
 import { auditContent, replay } from '../../src/engine';
 import { simulateTalkRun } from '../../scripts/simulation-talk';
 import { seeded } from '../../scripts/simulation';
@@ -83,6 +84,53 @@ it('the new prologue has isolated scene IDs and a resolvable, deterministic inve
       ).toBe('inference');
   }
   expect([...contacts].sort()).toEqual(['alone', 'keller', 'nora']);
+});
+
+it('the tribunal opening has isolated scene IDs and a resolvable, deterministic first audience', () => {
+  expect(auditContent(tribunalContent)).toEqual([]);
+  tribunalContent.scenes.forEach((scene) =>
+    expect(sceneSchema.safeParse(scene).success).toBe(true),
+  );
+  expect(
+    tribunalContent.scenes.every((scene) => scene.id.startsWith('tribunal.')),
+  ).toBe(true);
+  // No scene from this new campaign shares an ID with the rebirth prologue
+  // or the historical t0-t3 timelines: three independent journals, never one
+  // silently overwriting another.
+  const other = new Set([...rebirthContent.scenes.map((s) => s.id)]);
+  expect(tribunalContent.scenes.some((scene) => other.has(scene.id))).toBe(
+    false,
+  );
+  const stances = new Set<string>();
+  for (let seed = 1; seed <= 150; seed++) {
+    const run = simulateTalkRun(
+      tribunalContent,
+      seeded(seed),
+      { at: 0 },
+      { skipRate: seed % 7 === 0 ? 0.3 : 0 },
+    );
+    const save = migrateSave(
+      {
+        schemaVersion: 5,
+        timelineId: 't0',
+        contentVersion: tribunalContent.version,
+        runId: `tr-${seed}`,
+        createdAt: 0,
+        updatedAt: 1,
+        settings: defaultSettings,
+        events: run.events,
+      },
+      tribunalContent,
+    );
+    expect(replay(save.events, tribunalContent)).toEqual(run.state);
+    expect(run.state.completed).toBe(true);
+    for (const note of run.state.notes)
+      if (note.tags.includes('tribunal-ouverture')) stances.add(note.kind);
+  }
+  // Every one of the opening's three answers (ask, contest, silence) is
+  // actually reachable across seeded runs, each recorded as its own fact —
+  // never interpreted into a profile.
+  expect([...stances].sort()).toEqual(['question', 'refusal', 'silence']);
 });
 
 it('ships distinct visible environments and non-silent, locally authored sound assets', () => {

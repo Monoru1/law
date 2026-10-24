@@ -1,4 +1,5 @@
 # THE LAW: REBIRTH — Bible canonique de la nouvelle édition
+
 **Version créative : 24 octobre 2026 — validée sur le principe par le créateur.**
 **Statut : écriture et conception, PAS encore implémenté.**
 
@@ -35,6 +36,7 @@ Ambition émotionnelle : anxiété par anticipation, attachement aux personnages
 ## Règles de conception des conséquences
 
 Pour chaque choix majeur, écrire **AVANT l'implémentation** :
+
 1. Informations connues du joueur au moment du choix ; indices pouvant être découverts.
 2. Intention plausible de chaque option ; aucun bouton « être bon / être mauvais ».
 3. Effet immédiat **sensible** (réaction d'une personne, bruit, mouvement, silence, accès).

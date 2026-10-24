@@ -13,16 +13,10 @@ for (const [width, height] of [
   }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/');
-    await expect(
-      page.getByRole('heading', {
-        name: 'Les Archives du silence',
-        exact: true,
-      }),
-    ).toBeVisible();
-    await page
-      .getByRole('link', { name: 'Commencer le prologue', exact: true })
-      .click();
+    // The home page now leads with the Tribunal (see app/page.tsx); Les
+    // Archives du silence is reached from its own secondary link there, but
+    // this test is about the investigation screen itself.
+    await page.goto('/jouer/t0');
     await expect(
       page.getByRole('heading', { name: '23 h 46 — Le retour' }),
     ).toBeVisible();

@@ -272,7 +272,7 @@ const effect: z.ZodType<unknown> = z.lazy(() =>
   ]),
 );
 export const sceneSchema = z.object({
-  id: z.string().regex(/^(?:rebirth\.)?t[0-4]\.[a-z-]+$/),
+  id: z.string().regex(/^(?:rebirth\.|tribunal\.)?t[0-4]\.[a-z-]+$/),
   version: z.number().int().positive(),
   timelineId: z.enum(['t0', 't1', 't2', 't3', 't4']),
   title: z.string(),
