@@ -1,4 +1,6 @@
 import { rebirthContent, documents } from '../src/content/rebirth';
+import { tribunalContent } from '../src/content/tribunal';
+import tribunalRegistry from '../src/content/tribunal-contracts.json';
 import { auditContent } from '../src/engine';
 import rebirthRegistry from '../src/content/rebirth-contracts.json';
 import { simulateTalkRun } from './simulation-talk';
@@ -370,4 +372,36 @@ for (let seed = 1; seed <= 500; seed++) {
 }
 console.log(
   `REBIRTH: ${rebirthContent.scenes.length} scenes, ${documents.length} stable evidence IDs, 500 validated journeys.`,
+);
+
+const tribunalDrift = registryDrift(tribunalRegistry, [tribunalContent]);
+if (tribunalDrift.changed.length || tribunalDrift.missing.length)
+  fail('TRIBUNAL contracts are not registered.');
+const tribunalProblems = auditContent(tribunalContent);
+if (tribunalProblems.length) fail(tribunalProblems.join('\n'));
+tribunalContent.scenes.forEach((scene) => sceneSchema.parse(scene));
+for (let seed = 1; seed <= 500; seed++) {
+  const run = simulateTalkRun(
+    tribunalContent,
+    seeded(seed),
+    { at: 0 },
+    { skipRate: seed % 3 === 0 ? 0.3 : 0 },
+  );
+  if (!run.state.completed) fail(`TRIBUNAL did not finish for seed ${seed}`);
+  migrateSave(
+    {
+      schemaVersion: 5,
+      timelineId: 't0',
+      contentVersion: tribunalContent.version,
+      runId: `tribunal-${seed}`,
+      createdAt: 0,
+      updatedAt: 1,
+      settings: defaultSettings,
+      events: run.events,
+    },
+    tribunalContent,
+  );
+}
+console.log(
+  `TRIBUNAL: ${tribunalContent.scenes.length} scenes, 500 validated journeys.`,
 );
