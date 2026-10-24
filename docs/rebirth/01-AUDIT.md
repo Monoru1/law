@@ -44,7 +44,7 @@ Trois problèmes concrets ont été trouvés et corrigés :
 | `pnpm audit --audit-level=moderate` | ✗ 21 vulnérabilités (2 critiques, 6 hautes, 11 modérées, 2 faibles) | ✓ aucune                                                  |
 | `pnpm format:check`                 | ✗ 225 fichiers signalés                                             | 4 fichiers réellement non conformes, corrigés (voir note) |
 
-Note E2E : une première exécution après correctifs a donné 65 / 66 ; le dernier échec venait de mon propre changement de nom accessible (un test attendait `Revoir la fin`). Corrigé, le fichier concerné passe 9 / 9. La passe complète finale est consignée dans le message de commit.
+Note E2E : 66 / 66 avec 3 workers (2,3 min). Avec les 7 workers par défaut sur cette machine, des délais dépassés non reproductibles apparaissent (3 échecs différents sur une exécution, tous verts à la relance) : les attentes de cadence de lecture sont sensibles à la charge. À surveiller en CI ; ne pas confondre avec une régression.
 Note format : 221 des 225 signalements sont un artefact de Windows (`core.autocrlf=true`, index en LF). Contrôle exact : `pnpm exec prettier --check --end-of-line auto .`.
 
 ## 4. Contenu existant
