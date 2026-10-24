@@ -13,6 +13,9 @@
 - Save schema 4: per-scene contract registry, byte-exact historical fixtures (84db105, 17c614d, fd2e163), load-boundary invariants, replay fuzzing.
 - Production hardening: browser security headers, non-cacheable reporting responses, JSON-only reporting boundary, byte-accurate request limit and strict top-level payload fields. The factual release checklist and missing human/legal inputs live in `docs/playtest-reporting.md`.
 
+- Timeline 0 — L’EXAMEN is merged on main (PR #2): 28 scenes of deterministic conversation (`talk` input, `line_chosen` events, silence recorded, narrative notes, save schema 5). T4 (LE TRIBUNAL) is still a presentation door only.
+- 24 October 2026 audit and REBIRTH proposal: see `docs/rebirth/` (audit, creative directions, story bible, art direction, gameplay systems, release plan, cleanup plan, decisions). Security update of dependencies (Next 16.4.3 and others), unique accessible name per home door, `format:check` in CI, `.gitattributes`. Creative decisions D-01 to D-09 await validation.
+
 ## Decisions
 
 - The three possible scene 8 screens are one dramatic slot after the surgeon. A signed law without a contradiction sees `t1.pas-encore`; without a signed law, a strong positive evidence trend can see `t1.confrontation-non-signee`.

@@ -2,7 +2,7 @@
 
 API pure exportée depuis `src/engine/index.ts`. Les fonctions reçoivent, par timeline, l’état issu de `replay` et le contenu. Elles ne lisent ni navigateur ni horloge, et ne modifient aucun journal.
 
-`getTimelineDoors(runs): TimelineDoor[]` retourne, dans cet ordre, `t1` (LA PIÈCE), `t2` (LA MAISON), `t3` (LA VILLE), `t4` (LE TRIBUNAL). `runs` associe chaque timeline jouable à `{ state, content }`. Une timeline absente de `runs`, ou dont le contenu ne fournit aucune scène ordonnée de cette timeline, reste `presentation` : ajouter une scène ne suffit pas à ouvrir une porte.
+`getTimelineDoors(runs): TimelineDoor[]` retourne, dans cet ordre, `t0` (L’EXAMEN), `t1` (LA PIÈCE), `t2` (LA MAISON), `t3` (LA VILLE), `t4` (LE TRIBUNAL). `runs` associe chaque timeline jouable à `{ state, content }`. Une timeline absente de `runs`, ou dont le contenu ne fournit aucune scène ordonnée de cette timeline, reste `presentation` : ajouter une scène ne suffit pas à ouvrir une porte.
 
 `resolveDoorEntry(timelineId, runs): DoorEntry` fournit une intention de navigation :
 

@@ -1,4 +1,4 @@
-# THE LAW — La Pièce
+# THE LAW
 
 Une expérience narrative en français. Le joueur signe éventuellement ses propres principes ; ses décisions restent dans un journal local et peuvent le confronter à ces principes plus tard. Aucune note morale n'est calculée.
 
@@ -11,7 +11,7 @@ pnpm install
 pnpm dev
 ```
 
-Ouvrir `http://localhost:3000`. Le gameplay n'utilise ni compte ni base de données : les journaux et réponses libres restent dans `localStorage` sous `thelaw:save` et `thelaw:save-t2`, puis peuvent être exportés ou effacés dans « Ma loi ». L'unique flux applicatif sortant est l'envoi volontaire d'un rapport de playtest via `/api/report` ; voir [`docs/playtest-reporting.md`](docs/playtest-reporting.md).
+Ouvrir `http://localhost:3000`. Le gameplay n'utilise ni compte ni base de données : les journaux et réponses libres restent dans `localStorage` (une clé par timeline : `thelaw:save` pour La Pièce, `thelaw:save-t0`, `thelaw:save-t2`, `thelaw:save-t3`), puis peuvent être exportés ou effacés dans « Ma loi ». L'unique flux applicatif sortant est l'envoi volontaire d'un rapport de playtest via `/api/report` ; voir [`docs/playtest-reporting.md`](docs/playtest-reporting.md).
 
 ## Vérifier
 
@@ -59,6 +59,6 @@ La partie en cours continue si la connexion disparaît après le chargement et l
 - `src/engine/` : moteur pur ; `replay(events, content)` reconstruit les flags, variables, lois et choix à partir du journal.
 - `src/persistence/` : format validé par Zod, migration et copie de secours en cas de sauvegarde invalide.
 - `src/ui/` : lecteur, décor et composants accessibles ; aucune règle narrative dans React.
-- `src/audio/` : interface prévue pour le son, implémentation silencieuse.
+- `src/audio/` : moteur sonore procédural (Web Audio), démarré après un geste, coupé par le réglage Son.
 
 Les `sceneId` restent stables pour préserver les sauvegardes. Les futures timelines, entrées et sources de sauvegarde peuvent être ajoutées sans modifier le contrat du moteur.
