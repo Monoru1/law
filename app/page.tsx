@@ -65,6 +65,18 @@ export default function Home() {
           ))}
         </ol>
       </section>
+      <section className="rebirth-dossiers" aria-label="Le Tribunal">
+        <h2 className="serif">Le Tribunal</h2>
+        <p>
+          Nouvelle direction narrative, en construction : l’audience d’ouverture
+          seule est jouable. Les Archives du silence ci-dessus restent
+          accessibles ; les deux campagnes ne partagent ni sauvegarde ni
+          journal.
+        </p>
+        <Link className="law-button ghost" href="/jouer/tribunal">
+          Entrer dans l’audience
+        </Link>
+      </section>
     </main>
   );
 }
