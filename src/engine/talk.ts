@@ -6,9 +6,11 @@ import type {
   GameEvent,
   GameState,
   Scene,
+  TalkLine,
   TalkNode,
   TalkReply,
   TalkSpec,
+  TalkState,
 } from './types';
 
 type LineChosen = Extract<GameEvent, { type: 'line_chosen' }>;
@@ -21,6 +23,42 @@ export const talkOf = (scene: Scene): TalkSpec | null =>
 
 export const talkNode = (talk: TalkSpec, id: string): TalkNode | undefined =>
   talk.nodes.find((node) => node.id === id);
+
+/**
+ * `walkTalk` silently passes through any node with no `ask`/`write`/`end` of
+ * its own, folding its lines into whatever comes next — a bare narration
+ * node is never, on its own, a point the player sees. A UI that only reads
+ * the single node at `track.cursor` therefore drops every line that belongs
+ * to a node the walk passed through on its way there, including the node
+ * that finally set `track.end` (its own lines are never shown at all,
+ * since no cursor ever rests on it).
+ *
+ * This returns every node narrated since the player's last answer — from
+ * just after the last trail entry carrying a `reply`, through to the node
+ * now waiting (if any) or the node the walk ended on — so a scene can chain
+ * several narration-only nodes and have all of them read together, exactly
+ * once, with no answer-less filler step needed to make each one visible.
+ * Pure and read-only: it does not change what `walkTalk`/`applyLine` record,
+ * so replay and every existing save are unaffected.
+ */
+export function visibleTrailNodes(
+  talk: TalkSpec,
+  track: TalkState,
+): TalkNode[] {
+  let start = 0;
+  for (let i = track.trail.length - 1; i >= 0; i--) {
+    if (track.trail[i]!.reply) {
+      start = i + 1;
+      break;
+    }
+  }
+  const nodes: TalkNode[] = [];
+  for (const item of track.trail.slice(start)) {
+    const node = talkNode(talk, item.nodeId);
+    if (node) nodes.push(node);
+  }
+  return nodes;
+}
 
 /**
  * When the scene's clock started, and whether it has run out by the time of an
@@ -118,6 +156,22 @@ export function visibleReplies(
             item.nodeId === node.id && item.reply?.optionId === reply.id,
         )
       ),
+  );
+}
+
+/**
+ * Every line on screen right now, in order, across every node narrated
+ * since the player's last answer (see `visibleTrailNodes`) — the lines a
+ * UI should render instead of only `talkNode(talk, track.cursor)?.lines`.
+ */
+export function visibleLines(state: GameState, scene: Scene): TalkLine[] {
+  const talk = talkOf(scene);
+  const track = state.talk[scene.id];
+  if (!talk || !track) return [];
+  return visibleTrailNodes(talk, track).flatMap((node) =>
+    (node.lines ?? []).filter(
+      (line) => !line.requires || evaluate(line.requires, state),
+    ),
   );
 }
 

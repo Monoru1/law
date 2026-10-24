@@ -13,6 +13,12 @@ import type { Content, Scene, TalkNode, TalkReply } from '../engine';
 // so no closed enum (scene/save schema `timelineId`) needs to change. Scene
 // IDs are isolated under `tribunal.*` and never collide with `rebirth.t0.*`
 // or the historical `t0.*` IDs.
+//
+// Narration-only nodes (no `ask`/`write` of their own) may freely chain
+// through `next`, including straight into a node that itself carries `end`:
+// `src/engine/talk.ts`'s `visibleLines`/`visibleTrailNodes` fold every node
+// narrated since the player's last answer into what the UI renders, so
+// nothing here needs an answer-less filler step just to stay visible.
 
 const line = (who: string, text: string) => ({ who, text });
 const R = (
@@ -24,7 +30,7 @@ const R = (
 const scene = (slug: string, title: string, nodes: TalkNode[]): Scene => ({
   // Mirrors src/content/rebirth.ts's `rebirth.t0.<slug>` shape so the
   // existing sceneSchema id pattern (`^(?:rebirth\.)?t[0-4]\.[a-z-]+$`)
-  // needs no change; see 08-scripts/contracts for the registry wiring.
+  // needs no change; see scripts/contracts.ts for the registry wiring.
   id: `tribunal.t0.${slug}`,
   version: 1,
   timelineId: 't0',
@@ -116,12 +122,7 @@ const scenes: Scene[] = [
           },
         },
       ],
-      // A narration-only node with `next` and no `ask`/`end` is walked
-      // through silently by the engine (src/engine/talk.ts `walkTalk`) and
-      // never shown to the player: every node the player should actually
-      // see pauses on its own single-option "Continuer" step, exactly like
-      // `noir` and `lumiere` above.
-      ask: { replies: [R('continue', 'Continuer', 'dossier')] },
+      next: 'dossier',
     },
     {
       id: 'r-contester',
@@ -142,7 +143,7 @@ const scenes: Scene[] = [
           },
         },
       ],
-      ask: { replies: [R('continue', 'Continuer', 'dossier')] },
+      next: 'dossier',
     },
     {
       id: 'r-silence',
@@ -159,7 +160,7 @@ const scenes: Scene[] = [
           },
         },
       ],
-      ask: { replies: [R('continue', 'Continuer', 'dossier')] },
+      next: 'dossier',
     },
     {
       id: 'dossier',
@@ -171,12 +172,8 @@ const scenes: Scene[] = [
         line('narrator', 'LA SIXIÈME PLACE.'),
         line('greffier', 'L’audience est suspendue. Pas terminée.'),
       ],
-      // Pauses here (see the comment on `r-demander` above) so these lines
-      // are actually shown before the scene ends; `fin` is the silent,
-      // lines-less terminal node every scene below resolves onto.
-      ask: { replies: [R('continue', 'Continuer', 'fin')] },
+      end: 'suite',
     },
-    { id: 'fin', end: 'suite' },
   ]),
   scene('audience-suspendue', 'L’audience est suspendue', [
     {
@@ -199,9 +196,8 @@ const scenes: Scene[] = [
           'Le banc vide attend. Il attendra le temps qu’il faudra.',
         ),
       ],
-      ask: { replies: [R('continue', 'Continuer', 'fin')] },
+      end: 'suite',
     },
-    { id: 'fin', end: 'suite' },
   ]),
 ];
 

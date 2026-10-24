@@ -7,12 +7,12 @@ import {
   tribunalContent as content,
 } from '../../content/tribunal';
 import {
-  evaluate,
   nextScene,
   replay,
   renderText,
   talkNode,
   talkOf,
+  visibleLines,
   visibleReplies,
   type TalkReply,
 } from '../../engine';
@@ -41,6 +41,9 @@ export function ScenePlayerTribunal() {
   const entering = useRef(false);
   const mounted = useRef(true);
   const replies = scene && node ? visibleReplies(state, scene, node) : [];
+  // Every node narrated since the last answer, not only the single node at
+  // the cursor — see the comment on `visibleLines` in src/engine/talk.ts.
+  const lines = scene ? visibleLines(state, scene) : [];
   // The room lights only once the player has moved past the opening beat of
   // darkness (scene `tribunal.ouverture`, node `noir`). A reload during that
   // first beat stays dark; anything past it is lit.
@@ -204,25 +207,21 @@ export function ScenePlayerTribunal() {
               aria-atomic="true"
               key={`${scene?.id}:${node?.id}`}
             >
-              {node?.lines
-                ?.filter(
-                  (item) => !item.requires || evaluate(item.requires, state),
-                )
-                .map((item, index) => (
-                  <div
-                    key={index}
-                    className={
-                      item.who === 'narrator' ? styles.narration : styles.spoken
-                    }
-                  >
-                    {item.who !== 'narrator' && (
-                      <div className={styles.speaker}>
-                        <span>{speakers[item.who] ?? item.who}</span>
-                      </div>
-                    )}
-                    <p>{renderText(item.text, state, content)}</p>
-                  </div>
-                ))}
+              {lines.map((item, index) => (
+                <div
+                  key={index}
+                  className={
+                    item.who === 'narrator' ? styles.narration : styles.spoken
+                  }
+                >
+                  {item.who !== 'narrator' && (
+                    <div className={styles.speaker}>
+                      <span>{speakers[item.who] ?? item.who}</span>
+                    </div>
+                  )}
+                  <p>{renderText(item.text, state, content)}</p>
+                </div>
+              ))}
             </div>
             {replies.length > 0 && (
               <ol className={styles.replies} aria-label="Actions disponibles">

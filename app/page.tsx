@@ -1,19 +1,39 @@
 'use client';
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { campaign } from '../src/content/rebirth';
+import { campaign as tribunalCampaign } from '../src/content/tribunal';
+import { campaign as rebirthCampaign } from '../src/content/rebirth';
 import { useT0GameStore } from '../src/store/gameStoreT0';
-import styles from '../src/ui/t0/t0.module.css';
-import { Place } from '../src/ui/t0/Stage';
+import { useTribunalGameStore } from '../src/store/gameStoreTribunal';
+import styles from '../src/ui/tribunal/tribunal.module.css';
 
+// The Tribunal is the main entry: it opens and closes the game (see
+// docs/rebirth/canon-2026/00-BIBLE-DU-TRIBUNAL.md). Les Archives du silence
+// (Gabriel Varenne) stays reachable as a clearly secondary, historical link —
+// it is no longer presented as the primary scenario — and its save is
+// untouched: the two campaigns share neither journal nor storage key.
 export default function Home() {
-  const { loaded, save, hydrate, error } = useT0GameStore();
+  const {
+    loaded: tribunalLoaded,
+    save: tribunalSave,
+    hydrate: hydrateTribunal,
+    error: tribunalError,
+  } = useTribunalGameStore();
+  const {
+    loaded: archivesLoaded,
+    save: archivesSave,
+    hydrate: hydrateArchives,
+    error: archivesError,
+  } = useT0GameStore();
   useEffect(() => {
-    if (!loaded) void hydrate();
-  }, [loaded, hydrate]);
+    if (!tribunalLoaded) void hydrateTribunal();
+  }, [tribunalLoaded, hydrateTribunal]);
+  useEffect(() => {
+    if (!archivesLoaded) void hydrateArchives();
+  }, [archivesLoaded, hydrateArchives]);
   return (
     <main className={styles.frame}>
-      <Place location="apartment" />
+      <div className={styles.room} data-lit="true" />
       <header className={styles.hud}>
         <span className={styles.brand}>THE LAW: REBIRTH</span>
         <Link className="law-button ghost" href="/ma-loi">
@@ -21,60 +41,49 @@ export default function Home() {
         </Link>
       </header>
       <section className={styles.story}>
-        <p className={styles.chapter}>Valombre · 24 octobre 2026</p>
-        <h1>{campaign.title}</h1>
-        <p>{campaign.subtitle}</p>
-        <p>
-          Gabriel Varenne est revenu. Dans une enveloppe sans timbre, il trouve
-          une adolescente disparue, deux dépositions incompatibles et sa propre
-          signature.
-        </p>
-        <p>{campaign.warning}</p>
-        {error && <p role="alert">{error}</p>}
-        <Link className="law-button" href="/jouer/t0">
-          {save ? 'Reprendre l’enquête' : 'Commencer le prologue'}
+        <h1>VOUS AVEZ ÉTÉ CONVOQUÉ.</h1>
+        <p>{tribunalCampaign.subtitle}</p>
+        <p>{tribunalCampaign.warning}</p>
+        {tribunalError && <p role="alert">{tribunalError}</p>}
+        <Link className="law-button" href="/jouer/tribunal">
+          {tribunalSave ? 'Reprendre l’audience' : 'Entrer'}
         </Link>
         <p className={styles.localSave}>
           Sauvegarde locale. Aucun compte. Aucun envoi de tes réponses.
         </p>
       </section>
-      <section
-        className="rebirth-dossiers"
-        aria-label="Les dossiers de Valombre"
-      >
-        <h2 className="serif">Les affaires de Valombre</h2>
+      <section className="rebirth-dossiers" aria-label="Le registre">
+        <h2 className="serif">Le registre</h2>
         <ol>
-          {campaign.chapters.map((title, index) => (
-            <li key={title}>
-              <span className="mono">Dossier {index}</span>
-              <h3>{title}</h3>
-              {index === 0 ? (
-                <>
-                  <p>
-                    Le retour à Valombre, l’enveloppe et la première trace au
-                    couloir B.
-                  </p>
-                  <Link className="law-button ghost" href="/jouer/t0">
-                    Jouer le prologue
-                  </Link>
-                </>
-              ) : (
-                <p>À venir · ce dossier n’est pas encore jouable.</p>
-              )}
-            </li>
-          ))}
+          <li>
+            <span className="mono">Dossier I</span>
+            <h3>La Sixième Place</h3>
+            <p>À l’instruction. Non jouable aujourd’hui.</p>
+          </li>
+          <li>
+            <span className="mono">Dossier II</span>
+            <h3>Les Enfants du Sous-sol</h3>
+            <p>À l’instruction. Non jouable aujourd’hui.</p>
+          </li>
+          <li>
+            <span className="mono">Dossier III</span>
+            <h3>Le Dernier Témoin</h3>
+            <p>À l’instruction. Non jouable aujourd’hui.</p>
+          </li>
         </ol>
       </section>
-      <section className="rebirth-dossiers" aria-label="Le Tribunal">
-        <h2 className="serif">Le Tribunal</h2>
+      <section className="rebirth-dossiers" aria-label="Édition précédente">
+        <h2 className="serif">Édition précédente</h2>
         <p>
-          Nouvelle direction narrative, en construction : l’audience d’ouverture
-          seule est jouable. Les Archives du silence ci-dessus restent
-          accessibles ; les deux campagnes ne partagent ni sauvegarde ni
-          journal.
+          {rebirthCampaign.title} n’est plus la direction principale du jeu. Le
+          prologue reste jouable et sa sauvegarde est conservée ; il ne partage
+          ni journal ni progression avec le Tribunal ci-dessus.
         </p>
-        <Link className="law-button ghost" href="/jouer/tribunal">
-          Entrer dans l’audience
+        {archivesError && <p role="alert">{archivesError}</p>}
+        <Link className="law-button ghost" href="/jouer/t0">
+          {archivesSave
+            ? 'Reprendre l’enquête de Gabriel'
+            : 'Jouer le prologue'}
         </Link>
       </section>
     </main>

@@ -17,12 +17,12 @@ import {
   type EvidenceDocument,
 } from '../../content/rebirth';
 import {
-  evaluate,
   nextScene,
   replay,
   renderText,
   talkNode,
   talkOf,
+  visibleLines,
   visibleReplies,
   type TalkReply,
 } from '../../engine';
@@ -62,6 +62,12 @@ export function ScenePlayerT0() {
     ? documents.find((document) => document.id === node.id)
     : undefined;
   const replies = scene && node ? visibleReplies(state, scene, node) : [];
+  // Every node narrated since the last answer, not only the single node at
+  // the cursor: `walkTalk` passes silently through any node with no
+  // ask/write/end of its own (see src/engine/talk.ts), so a chain of
+  // narration-only nodes — including the one that ends the scene — would
+  // otherwise never reach the screen at all.
+  const lines = scene ? visibleLines(state, scene) : [];
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -276,29 +282,25 @@ export function ScenePlayerT0() {
               aria-atomic="true"
               key={`${scene?.id}:${node?.id}`}
             >
-              {node?.lines
-                ?.filter(
-                  (item) => !item.requires || evaluate(item.requires, state),
-                )
-                .map((item, index) => (
-                  <div
-                    key={index}
-                    className={
-                      item.who === 'narrator' ? styles.narration : styles.spoken
-                    }
-                  >
-                    {item.who !== 'narrator' && (
-                      <div className={styles.speaker}>
-                        <Portrait
-                          who={item.who}
-                          name={speakers[item.who] ?? item.who}
-                        />
-                        <span>{speakers[item.who] ?? item.who}</span>
-                      </div>
-                    )}
-                    <p>{renderText(item.text, state, content)}</p>
-                  </div>
-                ))}
+              {lines.map((item, index) => (
+                <div
+                  key={index}
+                  className={
+                    item.who === 'narrator' ? styles.narration : styles.spoken
+                  }
+                >
+                  {item.who !== 'narrator' && (
+                    <div className={styles.speaker}>
+                      <Portrait
+                        who={item.who}
+                        name={speakers[item.who] ?? item.who}
+                      />
+                      <span>{speakers[item.who] ?? item.who}</span>
+                    </div>
+                  )}
+                  <p>{renderText(item.text, state, content)}</p>
+                </div>
+              ))}
             </div>
             {node?.id === 'broken' && (
               <button
