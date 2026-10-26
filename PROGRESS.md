@@ -1,3 +1,11 @@
+# BLACK VEIL — réparation indépendante de l'accueil rouge
+
+- PR #8 auditée à `cf0338f` : CSS invalide avec des caractères `\\n` littéraux, erreur Prettier à la ligne 358 et échec du build Netlify (code 2). Réparation isolée depuis sa branche ; `origin/main` (`c3655e9`, PR #7 fusionnée) intégré pour conserver tous les styles WebGL. Conflit d'ajouts CSS résolu en conservant l'accueil ET la 3D.
+- Dérogation de palette demandée par BLACK VEIL : rouge d'ambiance réservé à l'accueil, sans modifier la signification des actions irréversibles du jeu. Pas de dépendance, d'asset ou de schéma ajouté.
+- Lint, build de production/TypeScript et contrôle de diff réussis. La CI et la prévisualisation de cette réparation doivent être vérifiées avant toute fusion indépendante.
+
+---
+
 # Immersion 3D — 26 octobre 2026, branche de travail
 
 ## Relais Claude — état à reprendre
