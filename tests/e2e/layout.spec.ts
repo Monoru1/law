@@ -32,40 +32,60 @@ for (const [width, height] of [
       path: testInfo.outputPath(`rebirth-apartment-${width}.png`),
       fullPage: true,
     });
+    // /ma-loi is now the Tribunal's own registry (see app/ma-loi/page.tsx);
+    // it no longer shows Les Archives du silence's carnet, but it must still
+    // render and fit at this width regardless of what's been played.
     await page.goto('/ma-loi');
     await expect(
-      page.getByRole('heading', { name: 'Le carnet de Gabriel' }),
+      page.getByRole('heading', { name: 'Le registre du Tribunal' }),
     ).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBeLessThanOrEqual(width);
   });
 
-test('legacy data remains byte-exact and the new edition exports and erases only its own journal', async ({
+test('legacy data remains byte-exact and the Tribunal exports and erases only its own journal', async ({
   page,
 }) => {
-  const legacy =
+  // Two older editions' saves, seeded exactly as a real browser would hold
+  // them: neither this test, nor the Tribunal's export/erase actions below,
+  // may read, convert or touch either one.
+  const legacyRoom =
     '{"ancienneEdition":"ne pas convertir","texte":"Mes anciennes réponses"}';
-  await page.addInitScript((raw) => {
-    if (!localStorage.getItem('thelaw:save-t0'))
-      localStorage.setItem('thelaw:save-t0', raw);
-  }, legacy);
-  await page.goto('/jouer/t0');
-  await rebirthAction(page, 'Ramasser l’enveloppe');
+  const legacyArchives = '{"gabriel":"ne pas convertir"}';
+  await page.addInitScript(
+    ({ room, archives }) => {
+      if (!localStorage.getItem('thelaw:save-t0'))
+        localStorage.setItem('thelaw:save-t0', room);
+      if (!localStorage.getItem('thelaw:rebirth:save-t0'))
+        localStorage.setItem('thelaw:rebirth:save-t0', archives);
+    },
+    { room: legacyRoom, archives: legacyArchives },
+  );
+  await page.goto('/jouer/tribunal');
+  const activate = async (name: string) => {
+    const button = page.getByRole('button', { name, exact: true });
+    await button.focus();
+    await page.keyboard.press('Enter');
+  };
+  await activate('Rester immobile');
   await page.goto('/ma-loi');
   const file = page.waitForEvent('download');
-  await rebirthAction(page, 'Exporter l’enquête');
-  expect((await file).suggestedFilename()).toBe('rebirth-enquete.json');
-  await rebirthAction(page, 'Effacer cette enquête');
-  await rebirthAction(page, 'Confirmer l’effacement');
+  await page.getByRole('button', { name: 'Exporter mon audience' }).click();
+  expect((await file).suggestedFilename()).toBe('the-law-tribunal.json');
+  await page.getByRole('button', { name: 'Effacer cette audience' }).click();
+  await page.getByRole('button', { name: 'Confirmer l’effacement' }).click();
   expect(
-    await page.evaluate((key) => localStorage.getItem(key), REBIRTH_KEY),
+    await page.evaluate(() => localStorage.getItem('thelaw:tribunal:save-t0')),
   ).toBeNull();
   expect(
     await page.evaluate(() => localStorage.getItem('thelaw:save-t0')),
-  ).toBe(legacy);
+  ).toBe(legacyRoom);
+  expect(
+    await page.evaluate(() => localStorage.getItem('thelaw:rebirth:save-t0')),
+  ).toBe(legacyArchives);
   await expect(
-    page.getByText('Aucune enquête enregistrée dans cette édition.'),
+    page.getByText('Aucune audience enregistrée sur cet appareil.'),
   ).toBeVisible();
 });
 

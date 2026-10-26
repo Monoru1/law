@@ -126,7 +126,7 @@ test('contesting the opening is recorded as a distinct fact, not profiled', asyn
   ).toBe(true);
 });
 
-test('the home page leads with the Tribunal, not Gabriel Varenne, and both remain reachable', async ({
+test('the home page presents the Tribunal only, with no public link to Gabriel Varenne', async ({
   page,
 }) => {
   await page.goto('/');
@@ -134,13 +134,10 @@ test('the home page leads with the Tribunal, not Gabriel Varenne, and both remai
     page.getByRole('heading', { name: 'VOUS AVEZ ÉTÉ CONVOQUÉ.' }),
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Entrer' })).toBeVisible();
-  const archives = page.getByRole('link', {
-    name: 'Jouer le prologue',
-    exact: true,
-  });
-  await expect(archives).toBeVisible();
-  await archives.click();
+  // No visitor should land on Gabriel/B-17/Les Archives du silence without
+  // meaning to: the route and its save are kept for compatibility, but
+  // nothing on the public home page points to it any more.
   await expect(
-    page.getByRole('heading', { name: '23 h 46 — Le retour' }),
-  ).toBeVisible();
+    page.getByRole('link', { name: /gabriel|archives du silence|prologue/i }),
+  ).toHaveCount(0);
 });
