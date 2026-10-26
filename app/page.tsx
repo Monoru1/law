@@ -17,7 +17,7 @@ export default function Home() {
     if (!tribunalLoaded) void hydrateTribunal();
   }, [tribunalLoaded, hydrateTribunal]);
   return (
-    <main className={styles.frame}>
+    <main className={`${styles.frame} ${styles.homeOpening}`}>
       <div className={styles.room} data-lit="true" />
       <header className={styles.hud}>
         <span className={styles.brand}>THE LAW: REBIRTH</span>
