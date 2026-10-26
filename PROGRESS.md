@@ -1,6 +1,34 @@
-# THE LAW: REBIRTH — Transmission à Claude, 24 octobre 2026
+# THE LAW: REBIRTH — État réel au 26 octobre 2026 (mise à jour)
 
-## État actuel
+## Ce qui est vrai aujourd'hui
+
+- **`main` à `3427612`** : l'accueil public (`/`) ne présente plus que le Tribunal (« VOUS AVEZ ÉTÉ CONVOQUÉ. ») ; Les Archives du silence (Gabriel Varenne) n'a plus aucun lien public mais reste jouable à `/jouer/t0`, avec sa sauvegarde intacte et isolée. `/ma-loi` est désormais le registre du Tribunal (nouvelle UI, export/effacement de l'audience du Tribunal uniquement — l'export/effacement dédié des anciennes sauvegardes a été retiré de cette page ; les données elles-mêmes ne sont pas touchées).
+- PR #3, #4, #5 fusionnées. Correctifs réels effectués pendant l'intégration, pas seulement du formatage :
+  - un vrai défaut moteur (`src/engine/talk.ts` : `walkTalk` saute silencieusement tout nœud narratif sans question — une UI qui ne lit que `track.cursor` perdait du texte réellement écrit) corrigé à la source par `visibleTrailNodes`/`visibleLines`, appliqué au Tribunal et à Gabriel ;
+  - un vrai bug React (`react-hooks/set-state-in-effect`) dans le nouveau système audio global (`src/ui/audio/HorrorAudio.tsx`) ;
+  - un vrai conflit UX : le nouveau son global dupliquait le contrôle « Activer le son » déjà existant sur `/jouer/t0` — `HorrorAudio` exclut maintenant ce chemin ;
+  - plusieurs tests E2E qui ciblaient l'ancienne UI de `/ma-loi` ont été réécrits contre la nouvelle, sans perdre la garantie qu'ils protégeaient (effacer l'audience du Tribunal n'efface jamais une sauvegarde d'une autre édition — testé avec deux sauvegardes historiques simultanées désormais, pas une seule).
+- État vérifié sur `main` lui-même (pas seulement sur les branches) : `pnpm typecheck`/`lint`/`format:check` verts, build de production OK, 22/22 E2E.
+- **Travail local de Codex en cours**, retrouvé non committé puis sauvegardé par Claude dans la branche `codex/sixieme-place-opening` (poussée sur GitHub, commit `8c8e13c`, **non fusionnée, non encore vérifiée par les contrôles complets**) : premiers éléments de La Sixième Place — `src/content/sixieme-place.ts`, `src/ui/tribunal/HouseStage.tsx`, route `/jouer/sixieme-place`, extensions du lecteur Tribunal et de l'audio procédural. À auditer et valider avant toute fusion.
+- Documents canoniques inchangés : `docs/rebirth/canon-2026/00-BIBLE-DU-TRIBUNAL.md`, `DOSSIER-01-LA-SIXIEME-PLACE.md`, `DOSSIERS-02-03-ET-PROCES.md`. Bilan de production et limites honnêtes dans `docs/rebirth/canon-2026/AUDIT-PRODUCTION.md`.
+
+## Pour reprendre
+
+```
+git fetch origin
+git switch codex/sixieme-place-opening   # ou: git pull si déjà dessus
+pnpm install
+pnpm typecheck && pnpm lint && pnpm test && pnpm validate:content && pnpm build
+LAW_E2E_PORT=3101 CI=1 pnpm test:e2e
+```
+
+Rien n'est encore annoncé comme jouable publiquement pour La Sixième Place : aucune route vers `/jouer/sixieme-place` n'existe dans la navigation publique de `main`.
+
+---
+
+# THE LAW: REBIRTH — Transmission à Claude, 24 octobre 2026 (historique)
+
+## État actuel (dépassé — voir section ci-dessus)
 
 La directive **Opération REBIRTH : nouvelle histoire, nouveau jeu** remplace la direction « Le Greffier ». Le canon public est désormais **Les Archives du silence**, à Valombre. Gabriel Varenne, 34 ans, revient en octobre 2026 sur la disparition d'Élise Moreau en 2009. Les dossiers de 2013 et 2018, le dernier greffier et le verdict restent à développer.
 
