@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 
 /**
@@ -84,25 +84,48 @@ export function HorrorAudio() {
   const pathname = usePathname();
   const engine = useRef<SoundEngine | null>(null);
   const enabledRef = useRef(false);
-  const [enabled, setEnabled] = useState(false);
-  const [volume, setVolume] = useState(0.38);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState(false);
-  const isGame = pathname === '/' || pathname.startsWith('/jouer/');
-
-  useEffect(() => {
+  // Lazy initializers, not an effect: reading the saved preference is part
+  // of computing the first client render, not a side effect to synchronize
+  // afterwards (avoids a cascading setState-in-effect render, and the
+  // default is used safely during SSR, where there is no `window`).
+  const [enabled, setEnabled] = useState(() => {
+    if (typeof window === 'undefined') return false;
     try {
-      setEnabled(localStorage.getItem('thelaw:audio:enabled') === 'true');
+      return localStorage.getItem('thelaw:audio:enabled') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [volume, setVolume] = useState(() => {
+    if (typeof window === 'undefined') return 0.38;
+    try {
       const raw = localStorage.getItem('thelaw:audio:volume');
       const saved = raw === null ? NaN : Number(raw);
-      if (Number.isFinite(saved) && saved >= 0 && saved <= 1) {
-        setVolume(saved);
-      }
+      return Number.isFinite(saved) && saved >= 0 && saved <= 1 ? saved : 0.38;
     } catch {
-      // Private browsing or storage restrictions: audio still works.
+      return 0.38;
     }
-    setReady(true);
-  }, []);
+  });
+  const [error, setError] = useState(false);
+  // Excludes /jouer/t0 (Les Archives du silence): that campaign already
+  // mounts its own dedicated audio engine with its own "Activer le son"
+  // control (src/ui/player/AudioDirector.tsx) — two independent sound
+  // toggles on the same screen would be a real, confusing duplicate, not a
+  // cosmetic one.
+  const isGame =
+    pathname === '/' ||
+    (pathname.startsWith('/jouer/') && !pathname.startsWith('/jouer/t0'));
+  // Whether this is a real client render yet, without a setState-in-effect:
+  // the subscription never fires (nothing external changes), so this only
+  // ever flips the SSR snapshot (false) to the client one (true) on the
+  // client's own first render — the same hydration-safety the previous
+  // `ready` state + mount effect gave, without tripping the "don't setState
+  // synchronously in an effect" rule.
+  const ready = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     enabledRef.current = enabled;
@@ -116,7 +139,11 @@ export function HorrorAudio() {
     if (!audio) return;
     const now = audio.context.currentTime;
     audio.master.gain.cancelScheduledValues(now);
-    audio.master.gain.setTargetAtTime(enabled && isGame ? volume : 0, now, 0.35);
+    audio.master.gain.setTargetAtTime(
+      enabled && isGame ? volume : 0,
+      now,
+      0.35,
+    );
   }, [enabled, volume, isGame]);
 
   useEffect(() => {
