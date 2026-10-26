@@ -9,6 +9,18 @@ export type StageAction = {
   replyId?: string;
   href?: string;
   detail?: string;
+  kind?:
+    | 'examine'
+    | 'open'
+    | 'read'
+    | 'take'
+    | 'listen'
+    | 'talk'
+    | 'choose'
+    | 'move'
+    | 'return';
+  narrativeId?: string;
+  maxDistance?: number;
 };
 
 // Only replies already resolved by the engine may become physical interactions.
@@ -83,6 +95,9 @@ export const environmentCopy = {
   look: 'Regarder autour de soi',
   help: 'Faites glisser le regard, ou utilisez les flèches dans la vue. Les mêmes objets sont accessibles ci-dessous au clavier.',
   reset: 'Recentrer le regard',
+  accessible: 'Accès aux objets au clavier',
+  explore: 'Explorer la pièce',
+  dialogue: 'Afficher les dialogues',
   objects: 'Explorer le lieu',
   back: 'Revenir à la vue d’ensemble',
   rooms: {

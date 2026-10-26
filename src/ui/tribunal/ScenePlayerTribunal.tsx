@@ -261,120 +261,121 @@ export function ScenePlayerTribunal({
           if (reply) say(reply);
         }}
         onCamera={audio.listener}
-      />
-      <section className={styles.story} aria-busy={busy || !loaded}>
-        <h1 ref={focus} tabIndex={-1}>
-          {state.completed
-            ? dossier
-              ? 'Le dossier reste ouvert.'
-              : 'L’audience est suspendue.'
-            : (scene?.title ?? 'Le Tribunal')}
-        </h1>
-        {error && (
-          <div role="alert">
-            <p>{error}</p>
-            <Button
-              onClick={() =>
-                void start({ replaceExisting: true, reportingConsent: false })
-              }
-            >
-              Recommencer en archivant cette partie
-            </Button>
-          </div>
-        )}
-        {!loaded && <p>Ouverture de l’audience…</p>}
-        {audio.error && <p role="status">{audio.error}</p>}
-        {state.completed ? (
-          <>
-            <p>{campaign.next}</p>
-            {dossier ? (
-              <button className="law-button" onClick={() => setLedger(true)}>
-                Relire les traces du chapitre
-              </button>
-            ) : (
-              <Link className="law-button" href="/jouer/sixieme-place">
-                Ouvrir La Sixième Place
-              </Link>
-            )}
-            {!dossier && (
-              <Link href="/ma-loi">Carnet et sauvegardes précédentes</Link>
-            )}
-          </>
-        ) : (
-          <>
-            <div
-              className={styles.dialogue}
-              aria-live="polite"
-              aria-atomic="true"
-              key={`${scene?.id}:${node?.id}`}
-            >
-              {lines.map((item, index) => (
-                <div
-                  key={index}
-                  className={
-                    item.who === 'narrator' ? styles.narration : styles.spoken
-                  }
-                >
-                  {item.who !== 'narrator' && (
-                    <div className={styles.speaker}>
-                      <span>{speakers[item.who] ?? item.who}</span>
-                    </div>
-                  )}
-                  <p>{renderText(item.text, state, content)}</p>
-                </div>
-              ))}
-            </div>
-            {replies.length > 0 && (
-              <ol className={styles.replies} aria-label="Actions disponibles">
-                {replies.map((reply, index) => (
-                  <li key={reply.id}>
-                    <button
-                      type="button"
-                      className={styles.reply}
-                      data-reply={reply.id}
-                      disabled={busy || pause || settings || ledger}
-                      onClick={() => say(reply)}
-                    >
-                      <span className={styles.replyIndex} aria-hidden="true">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <span>{reply.label}</span>
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            )}
-            {track?.end && (
+      >
+        <section className={styles.story} aria-busy={busy || !loaded}>
+          <h1 ref={focus} tabIndex={-1}>
+            {state.completed
+              ? dossier
+                ? 'Le dossier reste ouvert.'
+                : 'L’audience est suspendue.'
+              : (scene?.title ?? 'Le Tribunal')}
+          </h1>
+          {error && (
+            <div role="alert">
+              <p>{error}</p>
               <Button
-                className={styles.continue}
-                onClick={() => move()}
-                disabled={busy}
+                onClick={() =>
+                  void start({ replaceExisting: true, reportingConsent: false })
+                }
               >
-                {scene?.id === content.flow.codaSceneId
-                  ? dossier
-                    ? 'Consigner ce chapitre'
-                    : 'Clore l’audience'
-                  : 'Continuer'}
+                Recommencer en archivant cette partie
               </Button>
-            )}
-          </>
-        )}
-        <p className={styles.localSave}>
-          {error
-            ? 'Enregistrement interrompu.'
-            : loaded && save
-              ? 'Journal enregistré sur cet appareil.'
-              : 'Chargement…'}
-        </p>
-        {staging && (
-          <p className={styles.soundCaption}>
-            {staging.caption} Tous les indices restent lisibles sans audio.
+            </div>
+          )}
+          {!loaded && <p>Ouverture de l’audience…</p>}
+          {audio.error && <p role="status">{audio.error}</p>}
+          {state.completed ? (
+            <>
+              <p>{campaign.next}</p>
+              {dossier ? (
+                <button className="law-button" onClick={() => setLedger(true)}>
+                  Relire les traces du chapitre
+                </button>
+              ) : (
+                <Link className="law-button" href="/jouer/sixieme-place">
+                  Ouvrir La Sixième Place
+                </Link>
+              )}
+              {!dossier && (
+                <Link href="/ma-loi">Carnet et sauvegardes précédentes</Link>
+              )}
+            </>
+          ) : (
+            <>
+              <div
+                className={styles.dialogue}
+                aria-live="polite"
+                aria-atomic="true"
+                key={`${scene?.id}:${node?.id}`}
+              >
+                {lines.map((item, index) => (
+                  <div
+                    key={index}
+                    className={
+                      item.who === 'narrator' ? styles.narration : styles.spoken
+                    }
+                  >
+                    {item.who !== 'narrator' && (
+                      <div className={styles.speaker}>
+                        <span>{speakers[item.who] ?? item.who}</span>
+                      </div>
+                    )}
+                    <p>{renderText(item.text, state, content)}</p>
+                  </div>
+                ))}
+              </div>
+              {replies.length > 0 && (
+                <ol className={styles.replies} aria-label="Actions disponibles">
+                  {replies.map((reply, index) => (
+                    <li key={reply.id}>
+                      <button
+                        type="button"
+                        className={styles.reply}
+                        data-reply={reply.id}
+                        disabled={busy || pause || settings || ledger}
+                        onClick={() => say(reply)}
+                      >
+                        <span className={styles.replyIndex} aria-hidden="true">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <span>{reply.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {track?.end && (
+                <Button
+                  className={styles.continue}
+                  onClick={() => move()}
+                  disabled={busy}
+                >
+                  {scene?.id === content.flow.codaSceneId
+                    ? dossier
+                      ? 'Consigner ce chapitre'
+                      : 'Clore l’audience'
+                    : 'Continuer'}
+                </Button>
+              )}
+            </>
+          )}
+          <p className={styles.localSave}>
+            {error
+              ? 'Enregistrement interrompu.'
+              : loaded && save
+                ? 'Journal enregistré sur cet appareil.'
+                : 'Chargement…'}
           </p>
-        )}
-        {!dossier && (
-          <p className={styles.soundCaption}>{environmentCopy.chair}</p>
-        )}
-      </section>
+          {staging && (
+            <p className={styles.soundCaption}>
+              {staging.caption} Tous les indices restent lisibles sans audio.
+            </p>
+          )}
+          {!dossier && (
+            <p className={styles.soundCaption}>{environmentCopy.chair}</p>
+          )}
+        </section>
+      </EnvironmentStage>
       {pause && !settings && (
         <Dialog label="Pause" close={() => setPause(false)}>
           <h2 className="serif">L’audience attend.</h2>

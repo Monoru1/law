@@ -30,6 +30,8 @@ export type WorldProps = {
   onFailure: () => void;
   onReady: () => void;
   onDegrade?: () => void;
+  onTarget?: (action: StageAction | null) => void;
+  lookVersion?: number;
   onCamera?: (
     position: [number, number, number],
     target: [number, number, number],
@@ -57,6 +59,7 @@ export function EnvironmentStage(
   props: Omit<WorldProps, 'quality' | 'onFailure' | 'onReady' | 'onAction'> & {
     disabled: boolean;
     onReply: (id: string) => void;
+    children?: ReactNode;
   },
 ) {
   const router = useRouter();
@@ -66,6 +69,10 @@ export function EnvironmentStage(
   const [quality, setQuality] = useState<EnvironmentQuality>('standard');
   const [detail, setDetail] = useState('');
   const [inspected, setInspected] = useState<string>();
+  const [target, setTarget] = useState<StageAction | null>(null);
+  const [lookVersion, setLookVersion] = useState(0);
+  const [accessible, setAccessible] = useState(false);
+  const [interfaceHidden, setInterfaceHidden] = useState(false);
   const systemReduced = useSyncExternalStore(
     (notify) => {
       const media = matchMedia('(prefers-reduced-motion: reduce)');
@@ -88,6 +95,7 @@ export function EnvironmentStage(
     );
   const activate = (action: StageAction) => {
     if (props.disabled) return;
+    setInterfaceHidden(false);
     if (action.replyId) props.onReply(action.replyId);
     else if (action.href) router.push(action.href);
     else {
@@ -103,6 +111,25 @@ export function EnvironmentStage(
       data-ready={ready}
     >
       <div className={styles.renderControls}>
+        <button
+          type="button"
+          onClick={() => setInterfaceHidden(!interfaceHidden)}
+        >
+          {interfaceHidden ? copy.dialogue : copy.explore}
+        </button>
+        <button
+          type="button"
+          onClick={() => setLookVersion((value) => value + 1)}
+        >
+          {copy.reset}
+        </button>
+        <button
+          type="button"
+          aria-pressed={accessible}
+          onClick={() => setAccessible(!accessible)}
+        >
+          {copy.accessible}
+        </button>
         <label>
           {copy.quality}{' '}
           <select
@@ -139,6 +166,8 @@ export function EnvironmentStage(
           <RenderBoundary fallback={fallback} onFailure={() => setFailed(true)}>
             <World
               {...props}
+              onTarget={setTarget}
+              lookVersion={lookVersion}
               focusId={detail ? inspected : props.focusId}
               reduced={props.reduced || systemReduced}
               quality={quality}
@@ -154,41 +183,51 @@ export function EnvironmentStage(
             {copy.loading}
           </p>
         )}
+        {target && !props.disabled && (
+          <p className={styles.targetHint} aria-live="polite">
+            {target.label}
+          </p>
+        )}
+        {detail && (
+          <aside className={styles.inspection} role="status">
+            <p>{detail}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setDetail('');
+                setInspected(undefined);
+              }}
+            >
+              {copy.back}
+            </button>
+          </aside>
+        )}
+        <div className={styles.sceneInterface} hidden={interfaceHidden}>
+          {props.children}
+        </div>
+        {(accessible || flat || failed) && (
+          <nav className={styles.objectBar} aria-label={copy.objects}>
+            {props.lit &&
+              props.actions.map((action) => (
+                <button
+                  type="button"
+                  key={action.id}
+                  data-object={action.id}
+                  disabled={props.disabled}
+                  onClick={() => activate(action)}
+                >
+                  {action.label}
+                </button>
+              ))}
+          </nav>
+        )}
       </div>
       {failed && (
         <p role="status" className={styles.renderNotice}>
           {copy.unavailable}
         </p>
       )}
-      <nav className={styles.objectBar} aria-label={copy.objects}>
-        {props.lit &&
-          props.actions.map((action) => (
-            <button
-              type="button"
-              key={action.id}
-              data-object={action.id}
-              disabled={props.disabled}
-              onClick={() => activate(action)}
-            >
-              {action.label}
-            </button>
-          ))}
-      </nav>
-      {detail && (
-        <div className={styles.inspection} role="status">
-          <p>{detail}</p>
-          <button
-            type="button"
-            onClick={() => {
-              setDetail('');
-              setInspected(undefined);
-            }}
-          >
-            {copy.back}
-          </button>
-        </div>
-      )}
-      {!flat && !failed && <p className={styles.renderHelp}>{copy.help}</p>}
+      {accessible && <p className={styles.renderHelp}>{copy.help}</p>}
     </section>
   );
 }

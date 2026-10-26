@@ -1,3 +1,11 @@
+# BLACK VEIL — lot 1, interactions dans le viewport
+
+- Base auditée : `origin/main` à `c3655e9`, branche `feat/black-veil-immersive-gameplay`, aucun changement local préexistant. PR #8 réparée séparément à `dcb99e3` : CSS contenant des `\\n` littéraux, conflit avec styles 3D résolu, build/lint/8 E2E verts, CI et preview désormais vertes. Pas de fusion aveugle ni de duplication de l'accueil.
+- Dialogue, sous-titres et réponses dans le viewport ; mode exploration permettant de dégager l'image, contrôle de recentrage et menu d'accès aux objets au clavier. Fin du défilement entre décor et choix. Survol avec action contextuelle et curseur ; glissement tactile par coordonnées client. Le raycast vérifie tous les obstacles visibles et la distance avant d'activer un objet. Une traînée ne déclenche pas le clic, et le verrou synchrone du lecteur reste la frontière des doubles actions.
+- Validation du lot : lint/TypeScript verts ; 13/13 E2E 3D/dossier verts ; capture après remontage du canvas attend maintenant un vrai frame rendu, puis inspectée. Aucun contrat narratif ou journal modifié à cette étape. Étape suivante : suite du dossier et retour au Tribunal par mémoire figée, sans réécrire une sauvegarde déjà terminée.
+
+---
+
 # Immersion 3D — 26 octobre 2026, branche de travail
 
 ## Relais Claude — état à reprendre

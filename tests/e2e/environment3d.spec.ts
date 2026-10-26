@@ -12,7 +12,15 @@ const choose = (page: Page, id: string) =>
     .click();
 async function hit(page: Page, id: string) {
   const canvas = page.locator('canvas');
-  await expect(page.locator(`[data-object="${id}"]`)).toBeEnabled();
+  await expect(page.locator('section[aria-busy]')).toHaveAttribute(
+    'aria-busy',
+    'false',
+  );
+  const explore = page.getByRole('button', {
+    name: 'Explorer la pièce',
+    exact: true,
+  });
+  if (await explore.isVisible()) await explore.click();
   await canvas.scrollIntoViewIfNeeded();
   await expect(canvas).toHaveAttribute(`data-hit-${id}`, /\[/);
   const [x, y, z] = JSON.parse(
@@ -136,6 +144,7 @@ test('keyboard, quality levels and 2D mode preserve the same journal', async ({
   await expect(page.getByText('Alex. Tu as trouvé la route.')).toBeVisible();
   await page.getByRole('button', { name: 'Revenir au décor 3D' }).click();
   await expect(page.locator('canvas')).toBeVisible();
+  await expect(page.locator('canvas')).toHaveAttribute('data-hit-door', /\[/);
   await page.screenshot({ path: info.outputPath('hall.png'), fullPage: true });
 });
 

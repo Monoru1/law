@@ -96,8 +96,35 @@ export function Interactive({
   onAction: WorldProps['onAction'];
   children: ReactNode;
 }) {
+  const { scene, raycaster, gl } = useThree();
   const action = actions.find((item) => item.id === id);
   const [hovered, setHovered] = useState(false);
+  const clear = () => {
+    setHovered(false);
+    gl.domElement.removeAttribute('data-target');
+    gl.domElement.dispatchEvent(
+      new CustomEvent('world-target', { detail: null }),
+    );
+  };
+  const unobstructed = () => {
+    const first = raycaster
+      .intersectObjects(scene.children, true)
+      .find((hit) => {
+        let object = hit.object;
+        while (object.parent) {
+          if (!object.visible) return false;
+          object = object.parent;
+        }
+        return object.visible;
+      });
+    if (!first || first.distance > (action?.maxDistance ?? 12)) return false;
+    let object = first.object;
+    while (object.parent) {
+      if (object.name === id) return true;
+      object = object.parent;
+    }
+    return false;
+  };
   return (
     <group
       name={id}
@@ -105,7 +132,10 @@ export function Interactive({
         action
           ? (event: ThreeEvent<MouseEvent>) => {
               event.stopPropagation();
-              onAction(action);
+              if (event.delta < 8 && unobstructed()) {
+                clear();
+                onAction(action);
+              }
             }
           : undefined
       }
@@ -113,11 +143,17 @@ export function Interactive({
         action
           ? (event) => {
               event.stopPropagation();
-              setHovered(true);
+              if (unobstructed()) {
+                setHovered(true);
+                gl.domElement.setAttribute('data-target', id);
+                gl.domElement.dispatchEvent(
+                  new CustomEvent('world-target', { detail: action }),
+                );
+              }
             }
           : undefined
       }
-      onPointerOut={() => setHovered(false)}
+      onPointerOut={clear}
     >
       {children}
       {action && (
@@ -195,6 +231,8 @@ function CameraRig({
   onDegrade,
   onFailure,
   focusId,
+  onTarget,
+  lookVersion,
 }: WorldProps) {
   const { camera, gl, invalidate, scene } = useThree();
   const target = useRef(new Vector3());
@@ -240,7 +278,7 @@ function CameraRig({
       camera.lookAt(target.current);
     }
     invalidate();
-  }, [eye, aim, reduced, camera, invalidate]);
+  }, [eye, aim, reduced, camera, invalidate, lookVersion]);
   useEffect(() => {
     const element = gl.domElement;
     const lost = (event: Event) => {
@@ -248,25 +286,39 @@ function CameraRig({
       onFailure();
     };
     element.addEventListener('webglcontextlost', lost);
-    return () => element.removeEventListener('webglcontextlost', lost);
-  }, [gl, onFailure]);
+    const targeted = (event: Event) =>
+      onTarget?.((event as CustomEvent<StageAction | null>).detail);
+    element.addEventListener('world-target', targeted);
+    return () => {
+      element.removeEventListener('webglcontextlost', lost);
+      element.removeEventListener('world-target', targeted);
+    };
+  }, [gl, onFailure, onTarget]);
   useEffect(() => {
     const element = gl.domElement;
-    const down = () => {
+    let lastX = 0,
+      lastY = 0;
+    const down = (event: PointerEvent) => {
       drag.current = true;
+      lastX = event.clientX;
+      lastY = event.clientY;
     };
     const up = () => {
       drag.current = false;
     };
     const move = (event: PointerEvent) => {
-      if (!drag.current || paused || reduced) return;
+      if (!drag.current || paused) return;
+      const dx = event.clientX - lastX,
+        dy = event.clientY - lastY;
+      lastX = event.clientX;
+      lastY = event.clientY;
       pointer.current.x = Math.max(
-        -0.65,
-        Math.min(0.65, pointer.current.x + event.movementX * 0.003),
+        -2.1,
+        Math.min(2.1, pointer.current.x + dx * 0.008),
       );
       pointer.current.y = Math.max(
-        -0.25,
-        Math.min(0.25, pointer.current.y - event.movementY * 0.003),
+        -0.9,
+        Math.min(0.9, pointer.current.y - dy * 0.006),
       );
       invalidate();
     };

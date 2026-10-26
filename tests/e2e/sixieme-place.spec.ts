@@ -29,6 +29,9 @@ for (const route of ['public', 'observe', 'private'] as const)
     await choose('aider');
     await page.getByRole('button', { name: 'Continuer', exact: true }).click();
     await page
+      .getByRole('button', { name: 'Accès aux objets au clavier', exact: true })
+      .click();
+    await page
       .getByRole('navigation', { name: 'Explorer le lieu' })
       .getByRole('button', { name: 'Examiner la sixième place' })
       .click();
