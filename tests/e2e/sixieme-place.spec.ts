@@ -14,7 +14,9 @@ for (const route of ['public', 'observe', 'private'] as const)
       if (message.type() === 'error') errors.push(message.text());
     });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/jouer/sixieme-place');
+    // Netlify's injected collaboration drawer conflicts with the game's CSP.
+    // Its documented opt-out preserves strict console assertions on previews.
+    await page.goto('/jouer/sixieme-place?ntl-drawer-state=hidden');
     const choose = async (id: string) => {
       const button = page
         .getByRole('list', { name: 'Actions disponibles' })
