@@ -6,6 +6,7 @@ import { contentT2 } from '../src/content/t2';
 import { contentT3 } from '../src/content/t3';
 import { rebirthContent } from '../src/content/rebirth';
 import { tribunalContent } from '../src/content/tribunal';
+import { familyContent } from '../src/content/sixieme-place';
 import { contentContracts, registryDrift } from '../src/engine';
 
 for (const group of [
@@ -16,7 +17,7 @@ for (const group of [
   { file: '../src/content/rebirth-contracts.json', contents: [rebirthContent] },
   {
     file: '../src/content/tribunal-contracts.json',
-    contents: [tribunalContent],
+    contents: [tribunalContent, familyContent],
   },
 ]) {
   const path = new URL(group.file, import.meta.url);

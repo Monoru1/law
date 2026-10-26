@@ -1,4 +1,16 @@
-# THE LAW: REBIRTH — État réel au 26 octobre 2026 (mise à jour)
+# Opération Halloween — audit du 26 octobre 2026
+
+- Source préservée : `backup/claude-26-octobre`, `2b2491b`. Intégration sur `codex/halloween-integration`, issue de `origin/main` (`9b287fd`), sans conflit. PR #4 et #5 confirmées fusionnées sur GitHub ; aucun de leurs changements n'est réintroduit séparément.
+- Périmètre : ouverture du Tribunal puis premier chapitre de La Sixième Place (trois scènes, trois postures à table, exploration, FAM-01/FAM-02 et conséquences différenciées). L'enquête complète, la cassette, la lettre, la confrontation avec Henri et le retour narratif au Tribunal restent à produire. Ce lot ne livre pas le jeu Halloween complet.
+- Corrections d'audit : dépendances React du contenu explicites ; registre `/ma-loi` corrigé pour annoncer et ouvrir le premier chapitre disponible. Contrats historiques inchangés, trois contrats ajoutés ; journal du dossier séparé de l'audience, de Gabriel et des éditions historiques. Aucun changement de schéma de sauvegarde.
+- Validation locale : installation figée, formatage, lint sans avertissement, TypeScript, build de production, contrats et validation des contenus réussis (2 000 parcours historiques, 500 REBIRTH, 500 Tribunal, 500 dossier). Tests unitaires : 117/117 lors de la relance isolée ; premier lancement concurrent avec build et simulations : un timeout de 5 s du test du prologue, sans modification de son seuil ni de ses assertions.
+- E2E : 29/29 sur build de production ; puis 7/7 du dossier après renforcement de l'audio. Transition Tribunal → dossier, trois branches complètes, conséquences persistées, carnet et focus clavier, reprise exacte, passage sans preuve inventée, absence d'erreurs console. Audio : deux sources effectivement démarrées, volume persistant, mute et appareil indisponible. Captures `test-results/**/hall-public.png` et `house-mobile.png` inspectées : desktop et mobile 360 px lisibles ; captures générées exclues de Git, reproductibles avec les tests.
+- Particularité Windows : le lancement E2E avec serveur géré a affiché ses 24 résultats mais n'a pas rendu son bilan de fermeture. Les relances concluantes utilisent un serveur `pnpm start --hostname 127.0.0.1 --port 3001` indépendant puis `$env:LAW_BASE_URL='http://127.0.0.1:3001'; pnpm test:e2e --workers=2`.
+- La fusion reste conditionnée à la CI de la PR d'intégration. Aucun secret, capture ou fichier temporaire inclus. Sauvegarde Claude intacte ; aucun force push.
+
+---
+
+# THE LAW: REBIRTH — État réel au 26 octobre 2026 (historique avant intégration)
 
 ## Ce qui est vrai aujourd'hui
 

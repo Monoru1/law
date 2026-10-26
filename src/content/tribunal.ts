@@ -226,5 +226,5 @@ export const campaign = {
   subtitle: 'Vous avez été convoqué. Chaque choix laisse une trace.',
   warning:
     'Fiction originale. Horreur psychologique humaine, sans surnaturel. Deuil, responsabilité, violence domestique rare mais marquante. Tu peux quitter ou passer une scène à tout moment.',
-  next: 'Un dossier est scellé : LA SIXIÈME PLACE. Son instruction n’est pas encore jouable — voir le registre.',
+  next: 'LA SIXIÈME PLACE est ouverte. Premier chapitre jouable : le retour à la maison, le repas et les premières découvertes. L’enquête complète reste à instruire.',
 };
