@@ -156,10 +156,157 @@
   align-self: flex-start;
   min-height: 62px;
   padding: 0.75rem 1.5rem;
-  background: #8e302d;
+  background: var(--law-surface, #241315);
   color: #e6ded3;
   border: none;
   font-size: 1rem;
+}
+
+.house {
+  --house-ink: var(--law-text, #e6ded3);
+}
+.house .hud {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.house .hud nav {
+  flex-wrap: wrap;
+}
+.stage {
+  position: relative;
+  width: min(100%, 1600px);
+  margin: 0 auto;
+  aspect-ratio: 5 / 3;
+  overflow: hidden;
+  background: var(--law-bg, #090809);
+}
+.houseArt,
+.vignette,
+.hotspots {
+  position: absolute;
+  inset: 0;
+}
+.houseArt svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+.houseArt {
+  animation: room-arrives 700ms ease-out;
+}
+.vignette {
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 40%, transparent 35%, rgba(9, 8, 9, 0.7)),
+    linear-gradient(0deg, rgba(9, 8, 9, 0.8), transparent 20%);
+}
+.hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  max-width: 200px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--house-ink);
+  background: rgba(9, 8, 9, 0.88);
+  color: var(--house-ink);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  font-size: 0.85rem;
+  text-align: left;
+}
+.hotspot::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border: 1px solid currentColor;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+.hotspot:hover,
+.hotspot:focus-visible {
+  background: var(--law-surface, #241315);
+  outline: 2px solid var(--house-ink);
+  outline-offset: 4px;
+}
+.house .story {
+  max-width: 1040px;
+  justify-content: flex-start;
+  padding-top: 20px;
+}
+.house .story h1 {
+  font-size: clamp(1.7rem, 4vw, 2.8rem);
+}
+.house .dialogue {
+  min-height: 0;
+  max-width: 780px;
+}
+.house .replies {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.house .reply {
+  height: 100%;
+}
+.house[data-text='large'] .dialogue,
+.house[data-text='large'] .reply {
+  font-size: 1.2rem;
+}
+.house[data-text='small'] .dialogue {
+  font-size: 0.9rem;
+}
+.soundCaption {
+  color: var(--law-muted, #b9a18c);
+  font-size: 0.8rem;
+  border-top: 1px solid rgba(230, 222, 211, 0.2);
+  padding-top: 12px;
+}
+.ledger {
+  display: grid;
+  gap: 16px;
+  padding: 24px 0 24px 24px;
+}
+.ledger small {
+  color: var(--law-muted, #b9a18c);
+}
+@keyframes room-arrives {
+  from {
+    opacity: 0.3;
+    transform: scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 700px) {
+  .house .replies {
+    grid-template-columns: 1fr;
+  }
+  .stage {
+    aspect-ratio: 5 / 4;
+  }
+  /* The same native controls remain below the image when labels cannot fit spatially. */
+  .hotspots {
+    display: none;
+  }
+  .house .hud {
+    padding: 16px;
+  }
+  .house .hud nav {
+    gap: 8px;
+  }
+  .house .hud button,
+  .house .hud a {
+    letter-spacing: normal;
+  }
+}
+.house[data-reduced='true'] .houseArt {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .houseArt {
+    animation: none;
+  }
 }
 
 .localSave {

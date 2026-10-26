@@ -1,5 +1,6 @@
 'use client';
 import { tribunalContent } from '../content/tribunal';
+import { familyContent } from '../content/sixieme-place';
 import { replay } from '../engine';
 import { createLocalStorageAdapter } from '../persistence/localStorageAdapter';
 import type { SaveGame } from '../persistence/SaveAdapter';
@@ -18,3 +19,10 @@ export const useTribunalGameStore = createGameStore(
 );
 export const selectTribunalGame = (save: SaveGame | null) =>
   replay(save?.events ?? [], tribunalContent);
+
+// A completed opening remains immutable. The dossier continues in its own journal.
+export const FAMILY_SAVE_KEY = 'thelaw:tribunal:family-save-t0';
+export const useFamilyGameStore = createGameStore(
+  createLocalStorageAdapter(FAMILY_SAVE_KEY, familyContent),
+  familyContent,
+);

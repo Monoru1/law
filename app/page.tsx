@@ -58,7 +58,11 @@ export default function Home() {
           <li>
             <span className="mono">Dossier I</span>
             <h3>La Sixième Place</h3>
-            <p>À l’instruction. Non jouable aujourd’hui.</p>
+            <p>
+              Premier chapitre jouable : la maison, le repas et les premières
+              découvertes. Dossier incomplet.
+            </p>
+            <Link href="/jouer/sixieme-place">Ouvrir le premier chapitre</Link>
           </li>
           <li>
             <span className="mono">Dossier II</span>

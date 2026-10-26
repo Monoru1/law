@@ -1,6 +1,6 @@
 // Asset-based local sound design. AudioContext is created only by start(),
 // called directly from the player's sound button. No global listeners.
-export type AudioPlace = 'apartment' | 'school' | 'silence';
+export type AudioPlace = 'apartment' | 'school' | 'house' | 'silence';
 export type SoundCue =
   | 'paper'
   | 'door'
