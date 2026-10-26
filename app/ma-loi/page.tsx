@@ -91,7 +91,13 @@ export default function TribunalNotebook() {
           </section>
           <section>
             <h2 className="serif">Les dossiers</h2>
-            <p>Dossier I — La Sixième Place : en préparation.</p>
+            <p>
+              Dossier I — La Sixième Place : premier chapitre jouable. La suite
+              de l’enquête reste en préparation.
+            </p>
+            <Link className="law-button" href="/jouer/sixieme-place">
+              Ouvrir La Sixième Place
+            </Link>
             <p>Dossiers II et III : en préparation.</p>
             <p>Le procès final sera ouvert après l’instruction des dossiers.</p>
           </section>

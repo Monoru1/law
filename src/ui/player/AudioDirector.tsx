@@ -6,10 +6,15 @@ import {
   type SoundCue,
 } from '../../audio/AudioManager';
 import { useT0GameStore } from '../../store/gameStoreT0';
+import type { GameStore } from '../../store/createGameStore';
+import type { StoreApi, UseBoundStore } from 'zustand';
 
-export function useInvestigationAudio(place: AudioPlace) {
-  const settings = useT0GameStore((state) => state.save?.settings);
-  const update = useT0GameStore((state) => state.settings);
+export function useInvestigationAudio(
+  place: AudioPlace,
+  store: UseBoundStore<StoreApi<GameStore>> = useT0GameStore,
+) {
+  const settings = store((state) => state.save?.settings);
+  const update = store((state) => state.settings);
   const engine = useMemo(() => createInvestigationAudio(), []);
   const [started, setStarted] = useState(false);
   const [error, setError] = useState('');

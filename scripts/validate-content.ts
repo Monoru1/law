@@ -1,5 +1,6 @@
 import { rebirthContent, documents } from '../src/content/rebirth';
 import { tribunalContent } from '../src/content/tribunal';
+import { familyContent } from '../src/content/sixieme-place';
 import tribunalRegistry from '../src/content/tribunal-contracts.json';
 import { auditContent } from '../src/engine';
 import rebirthRegistry from '../src/content/rebirth-contracts.json';
@@ -402,6 +403,39 @@ for (let seed = 1; seed <= 500; seed++) {
     tribunalContent,
   );
 }
+const familyDrift = registryDrift(tribunalRegistry, [familyContent]);
+if (familyDrift.changed.length || familyDrift.missing.length)
+  fail('La Sixième Place contracts are not registered.');
+const familyProblems = auditContent(familyContent);
+if (familyProblems.length) fail(familyProblems.join('\n'));
+familyContent.scenes.forEach((scene) => sceneSchema.parse(scene));
+for (let seed = 1; seed <= 500; seed++) {
+  const run = simulateTalkRun(
+    familyContent,
+    seeded(seed),
+    { at: 0 },
+    { skipRate: seed % 3 === 0 ? 0.3 : 0 },
+  );
+  if (!run.state.completed)
+    fail(`La Sixième Place did not finish for seed ${seed}`);
+  migrateSave(
+    {
+      schemaVersion: 5,
+      timelineId: 't0',
+      contentVersion: familyContent.version,
+      runId: `family-${seed}`,
+      createdAt: 0,
+      updatedAt: 1,
+      settings: defaultSettings,
+      events: run.events,
+    },
+    familyContent,
+  );
+}
+console.log(
+  `LA SIXIÈME PLACE: ${familyContent.scenes.length} scenes, 500 validated journeys.`,
+);
+
 console.log(
   `TRIBUNAL: ${tribunalContent.scenes.length} scenes, 500 validated journeys.`,
 );

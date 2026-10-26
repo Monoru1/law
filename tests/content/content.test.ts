@@ -4,6 +4,7 @@ import {
   prologueConclusion,
 } from '../../src/content/rebirth';
 import { tribunalContent } from '../../src/content/tribunal';
+import { familyContent } from '../../src/content/sixieme-place';
 import { auditContent, replay } from '../../src/engine';
 import { simulateTalkRun } from '../../scripts/simulation-talk';
 import { seeded } from '../../scripts/simulation';
@@ -131,6 +132,44 @@ it('the tribunal opening has isolated scene IDs and a resolvable, deterministic 
   // actually reachable across seeded runs, each recorded as its own fact —
   // never interpreted into a profile.
   expect([...stances].sort()).toEqual(['question', 'refusal', 'silence']);
+});
+
+it('La Sixième Place (chapter one) is resolvable, deterministic and isolated from the Tribunal opening', () => {
+  expect(auditContent(familyContent)).toEqual([]);
+  familyContent.scenes.forEach((scene) =>
+    expect(sceneSchema.safeParse(scene).success).toBe(true),
+  );
+  // Both campaigns share the tribunal.t0.* namespace (see
+  // src/content/sixieme-place.ts and src/content/tribunal.ts) and the same
+  // contract registry file; nothing here may collide with the opening's own
+  // scene IDs.
+  const openingIds = new Set(tribunalContent.scenes.map((s) => s.id));
+  expect(familyContent.scenes.some((scene) => openingIds.has(scene.id))).toBe(
+    false,
+  );
+  for (let seed = 1; seed <= 150; seed++) {
+    const run = simulateTalkRun(
+      familyContent,
+      seeded(seed),
+      { at: 0 },
+      { skipRate: seed % 7 === 0 ? 0.3 : 0 },
+    );
+    const save = migrateSave(
+      {
+        schemaVersion: 5,
+        timelineId: 't0',
+        contentVersion: familyContent.version,
+        runId: `fam-${seed}`,
+        createdAt: 0,
+        updatedAt: 1,
+        settings: defaultSettings,
+        events: run.events,
+      },
+      familyContent,
+    );
+    expect(replay(save.events, familyContent)).toEqual(run.state);
+    expect(run.state.completed).toBe(true);
+  }
 });
 
 it('ships distinct visible environments and non-silent, locally authored sound assets', () => {

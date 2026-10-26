@@ -71,6 +71,19 @@ test('the Tribunal opening is reachable, keyboard-operable, records silence and 
   await expect(
     page.getByRole('heading', { name: 'L’audience est suspendue.' }),
   ).toBeVisible();
+  const opening = await page.evaluate(
+    (key) => localStorage.getItem(key),
+    TRIBUNAL_KEY,
+  );
+  await page
+    .getByRole('link', { name: 'Ouvrir La Sixième Place', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'La maison Delcourt' }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), TRIBUNAL_KEY),
+  ).toBe(opening);
 });
 
 for (const [width, height] of [

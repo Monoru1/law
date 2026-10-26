@@ -107,14 +107,18 @@ export function HorrorAudio() {
     }
   });
   const [error, setError] = useState(false);
-  // Excludes /jouer/t0 (Les Archives du silence): that campaign already
-  // mounts its own dedicated audio engine with its own "Activer le son"
-  // control (src/ui/player/AudioDirector.tsx) — two independent sound
+  // Excludes any route whose own player already mounts a dedicated audio
+  // engine and its own "Activer le son" control
+  // (src/ui/player/AudioDirector.tsx's useInvestigationAudio): /jouer/t0
+  // (Les Archives du silence) and /jouer/sixieme-place (La Sixième Place,
+  // via ScenePlayerTribunal's `dossier` mode). Two independent sound
   // toggles on the same screen would be a real, confusing duplicate, not a
   // cosmetic one.
+  const ownAudioRoutes = ['/jouer/t0', '/jouer/sixieme-place'];
   const isGame =
     pathname === '/' ||
-    (pathname.startsWith('/jouer/') && !pathname.startsWith('/jouer/t0'));
+    (pathname.startsWith('/jouer/') &&
+      !ownAudioRoutes.some((route) => pathname.startsWith(route)));
   // Whether this is a real client render yet, without a setState-in-effect:
   // the subscription never fires (nothing external changes), so this only
   // ever flips the SSR snapshot (false) to the client one (true) on the
