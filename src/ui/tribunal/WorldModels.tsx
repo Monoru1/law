@@ -635,6 +635,77 @@ function Tableware(props: ModelProps) {
   );
 }
 
+
+// Five restrained, low-cost human presences. The sixth chair remains empty.
+// They deliberately do not receive raycasts: the sixth plate stays clickable.
+function DinnerGuest({
+  at,
+  facing,
+  index,
+  reduced,
+  paused,
+}: {
+  at: Vec3;
+  facing: number;
+  index: number;
+  reduced: boolean;
+  paused: boolean;
+}) {
+  const body = useRef<Group>(null);
+  const gaze = useRef<Group>(null);
+  useFrame(({ clock }, delta) => {
+    if (paused || !body.current || !gaze.current) return;
+    const t = clock.elapsedTime;
+    body.current.position.y = reduced ? 0 : Math.sin(t * 1.05 + index * 1.8) * 0.008;
+    const target = reduced ? 0 : Math.sin(t * 0.23 + index * 1.7) * 0.075;
+    gaze.current.rotation.y += (target - gaze.current.rotation.y) * Math.min(1, delta * 1.4);
+  });
+  const jackets = ['#33363b', '#574039', '#46454a', '#28353a', '#494034'];
+  const skins = ['#a5785e', '#d4a184', '#825b47', '#b98a69', '#6c4939'];
+  return (
+    <group position={at} rotation={[0, facing, 0]}>
+      <group ref={body}>
+        <mesh position={[0, 1.01, 0.12]} castShadow>
+          <capsuleGeometry args={[0.29, 0.46, 5, 10]} />
+          <meshStandardMaterial color={jackets[index]} roughness={0.98} />
+        </mesh>
+        <mesh position={[0, 1.43, 0.05]} castShadow>
+          <cylinderGeometry args={[0.095, 0.11, 0.19, 12]} />
+          <meshStandardMaterial color={skins[index]} roughness={0.96} />
+        </mesh>
+        <group ref={gaze} position={[0, 1.64, 0.035]}>
+          <mesh castShadow scale={[0.87, 1.06, 0.81]}>
+            <sphereGeometry args={[0.21, 18, 12]} />
+            <meshStandardMaterial color={skins[index]} roughness={0.91} />
+          </mesh>
+          <mesh position={[0, 0.13, -0.01]} scale={[0.98, 0.43, 0.93]} castShadow>
+            <sphereGeometry args={[0.21, 14, 10]} />
+            <meshStandardMaterial color={index % 2 ? '#29221f' : '#201c1c'} roughness={1} />
+          </mesh>
+          {[-0.078, 0.078].map(x => (
+            <mesh key={x} position={[x, 0.018, 0.17]}>
+              <sphereGeometry args={[0.018, 8, 8]} />
+              <meshStandardMaterial color="#211a19" roughness={0.35} />
+            </mesh>
+          ))}
+        </group>
+        {[-1, 1].map(side => (
+          <group key={side}>
+            <mesh position={[side * 0.34, 1.05, 0.23]} rotation={[0, 0, side * 0.24]} castShadow>
+              <capsuleGeometry args={[0.105, 0.31, 4, 8]} />
+              <meshStandardMaterial color={jackets[index]} roughness={1} />
+            </mesh>
+            <mesh position={[side * 0.34, 0.84, 0.38]} castShadow>
+              <sphereGeometry args={[0.095, 10, 8]} />
+              <meshStandardMaterial color={skins[index]} roughness={1} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    </group>
+  );
+}
+
 function DiningRoom(props: ModelProps) {
   const {
     materials: { wood },
@@ -686,6 +757,23 @@ function DiningRoom(props: ModelProps) {
             />
           ),
         ),
+      )}
+      {/* Five guests, six place settings. The sixth place is intentionally vacant. */}
+      {[-1.55, -0.3, 1].flatMap((z, row) =>
+        [-1.48, 1.48].flatMap((x, side) => {
+          if (row === 2 && side === 1) return [];
+          const index = row * 2 + side;
+          return [
+            <DinnerGuest
+              key={`guest-${index}`}
+              at={[x, 0, z]}
+              facing={x < 0 ? Math.PI / 2 : -Math.PI / 2}
+              index={index}
+              reduced={props.reduced}
+              paused={props.paused}
+            />,
+          ];
+        }),
       )}
       <Lamp at={[0, 2.65, -0.5]} hanging />
       <Window at={[-4.78, 2.05, -1.1]} turn={Math.PI / 2} />
