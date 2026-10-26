@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { OfflineStatus } from './offline-status';
+import { HorrorAudio } from '../src/ui/audio/HorrorAudio';
 import './globals.css';
 const display = localFont({
   src: '../node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2',
@@ -71,6 +72,7 @@ export default function RootLayout({
     >
       <body>
         <OfflineStatus />
+        <HorrorAudio />
         {children}
       </body>
     </html>
