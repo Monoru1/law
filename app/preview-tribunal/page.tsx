@@ -2,7 +2,6 @@
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import * as THREE from 'three';
 
 type Choice = 'rise' | 'question' | 'sit' | 'object' | 'proof' | 'silent';
 const replies: Record<Choice,string> = {
@@ -66,7 +65,7 @@ export default function TribunalPreview(){
  function choose(c:Choice){setChosen(c);setStep(step===2?3:4)}
  const button={background:'#201719',border:'1px solid #a36b70',color:'#f3e5df',padding:'13px 18px',cursor:'pointer',font:'inherit',minHeight:46} as const;
  return <main style={{minHeight:'100dvh',background:'#080709',color:'#efe5df',fontFamily:'Georgia,serif'}}>
- <header style={{display:'flex',justifyContent:'space-between',gap:12,padding:'14px 20px',alignItems:'center',fontFamily:'monospace',fontSize:12,letterSpacing:2,flexWrap:'wrap'}}><Link href="/" style={{color:'inherit'}}>THE LAW: REBIRTH</Link><span>PROTOTYPE DU TRIBUNAL · NON CANONIQUE</span><button style={button} onClick={()=>{setMuted(!muted);if(audio.current)audio.current.gain.gain.gain.value=muted?0.1:0}}>{muted?'Réactiver le son':'Couper le son'}</button></header>
+ <header style={{display:'flex',justifyContent:'space-between',gap:12,padding:'14px 20px',alignItems:'center',fontFamily:'monospace',fontSize:12,letterSpacing:2,flexWrap:'wrap'}}><Link href="/" style={{color:'inherit'}}>THE LAW: REBIRTH</Link><span>PROTOTYPE DU TRIBUNAL · NON CANONIQUE</span><button style={button} onClick={()=>{setMuted(!muted);if(audio.current)audio.current.gain.gain.value=muted?0.1:0}}>{muted?'Réactiver le son':'Couper le son'}</button></header>
  <div style={{position:'relative',height:'min(65dvh,680px)',minHeight:320,overflow:'hidden',borderTop:'1px solid #512329',borderBottom:'1px solid #512329'}}>
  <Court view={view}/>
  <div style={{position:'absolute',inset:0,pointerEvents:'none',background:'linear-gradient(0deg,rgba(4,3,4,.82),transparent 42%,rgba(4,3,4,.4))'}}/>
