@@ -23,7 +23,9 @@ it('physical interactions expose only replies already allowed by the engine', ()
       [{ id: 'assiette', label: 'Examiner', next: 'place' }],
       false,
     ),
-  ).toEqual([{ id: 'sixth-plate', label: 'Examiner', replyId: 'assiette' }]);
+  ).toMatchObject([
+    { id: 'sixth-plate', label: 'Examiner', replyId: 'assiette' },
+  ]);
   expect(
     stageActions('tribunal', [], false).some((action) => action.href),
   ).toBe(false);

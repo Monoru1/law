@@ -1,5 +1,11 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  familyContinuationContent,
+  continuationCampaign,
+  continuationStaging,
+  continuationCopy,
+} from '../../content/sixieme-place-suite';
 import Link from 'next/link';
 import {
   campaign as tribunalCampaign,
@@ -14,6 +20,7 @@ import {
 } from '../../content/sixieme-place';
 import {
   nextScene,
+  buildMemory,
   replay,
   renderText,
   talkNode,
@@ -27,24 +34,48 @@ import {
   useTribunalGameStore,
   useFamilyGameStore,
   FAMILY_SAVE_KEY,
+  FAMILY_CONTINUATION_KEY,
+  useFamilyContinuationStore,
 } from '../../store/gameStoreTribunal';
 import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
 import { Settings } from '../screens/Settings';
 import styles from './tribunal.module.css';
 import { EnvironmentStage } from './EnvironmentStage';
-import { environmentCopy, stageActions } from '../../content/environments';
+import {
+  environmentCopy,
+  stageActions,
+  voiceSequence,
+} from '../../content/environments';
 import { useInvestigationAudio } from '../player/AudioDirector';
 
 export function ScenePlayerTribunal({
   dossier = false,
+  continuation = false,
 }: {
   dossier?: boolean;
+  continuation?: boolean;
 }) {
-  const content = dossier ? familyContent : tribunalContent;
-  const campaign = dossier ? familyCampaign : tribunalCampaign;
-  const speakers = dossier ? familySpeakers : tribunalSpeakers;
-  const useStore = dossier ? useFamilyGameStore : useTribunalGameStore;
+  const content = continuation
+    ? familyContinuationContent
+    : dossier
+      ? familyContent
+      : tribunalContent;
+  const campaign = continuation
+    ? continuationCampaign
+    : dossier
+      ? familyCampaign
+      : tribunalCampaign;
+  const speakers = continuation
+    ? { ...familySpeakers, ...tribunalSpeakers, lucie: continuationCopy.lucie }
+    : dossier
+      ? familySpeakers
+      : tribunalSpeakers;
+  const useStore = continuation
+    ? useFamilyContinuationStore
+    : dossier
+      ? useFamilyGameStore
+      : useTribunalGameStore;
   const { save, loaded, error, hydrate, start, append } = useStore();
   const state = useMemo(
     () => replay(save?.events ?? [], content),
@@ -58,6 +89,7 @@ export function ScenePlayerTribunal({
   const [settings, setSettings] = useState(false);
   const [busy, setBusy] = useState(false);
   const [ledger, setLedger] = useState(false);
+  const [sourceError, setSourceError] = useState('');
   const working = useRef(false);
   const focus = useRef<HTMLHeadingElement>(null);
   const started = useRef(false);
@@ -71,7 +103,16 @@ export function ScenePlayerTribunal({
   // darkness (scene `tribunal.ouverture`, node `noir`). A reload during that
   // first beat stays dark; anything past it is lit.
   const lit = !!node && node.id !== 'noir';
-  const staging = dossier ? familyStaging(scene?.id, node?.id) : null;
+  const staging = continuation
+    ? continuationStaging(scene?.id, node?.id, state)
+    : dossier
+      ? familyStaging(scene?.id, node?.id)
+      : null;
+  const tribunalReturn =
+    continuation &&
+    'tribunal' in (staging ?? {}) &&
+    (staging as { tribunal?: boolean }).tribunal;
+  const room = tribunalReturn ? 'tribunal' : (staging?.room ?? 'tribunal');
   const tableDisturbed =
     dossier &&
     scene?.id.endsWith('maison-table') === true &&
@@ -82,13 +123,24 @@ export function ScenePlayerTribunal({
   const audio = useInvestigationAudio(
     pause || settings || ledger || state.completed
       ? 'silence'
-      : dossier
+      : dossier && !tribunalReturn
         ? 'house'
         : 'tribunal',
     useStore,
     tableDisturbed,
   );
   const cue = staging?.cue;
+  useEffect(() => {
+    if (!audio.enabled || pause || settings || ledger) return;
+    const controller = new AbortController();
+    void audio.voiceSequence(voiceSequence(scene, state), controller.signal);
+    return () => {
+      controller.abort();
+      audio.stopVoice();
+    };
+    // A spoken sequence belongs to one resolved conversation turn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene?.id, node?.id, audio.enabled, pause, settings, ledger]);
   useEffect(() => {
     if (cue && !pause && !settings && !ledger) void audio.cue(cue);
     return () => audio.stopVoice();
@@ -108,10 +160,32 @@ export function ScenePlayerTribunal({
   useEffect(() => {
     if (!loaded || save || error || started.current) return;
     started.current = true;
-    void start({ reportingConsent: false }).catch(() => {
+    const begin = async () => {
+      if (continuation) {
+        await useFamilyGameStore.getState().hydrate();
+        const source = useFamilyGameStore.getState().save;
+        const sourceState = replay(source?.events ?? [], familyContent);
+        if (!source || !sourceState.completed) {
+          setSourceError(continuationCopy.missingSource);
+          return;
+        }
+        await start({
+          reportingConsent: false,
+          inherited: {
+            fromRunId: source.runId,
+            memory: buildMemory(
+              sourceState,
+              familyContent,
+              'la maison Delcourt',
+            ),
+          },
+        });
+      } else await start({ reportingConsent: false });
+    };
+    void begin().catch(() => {
       started.current = false;
     });
-  }, [loaded, save, error, start]);
+  }, [loaded, save, error, start, continuation]);
   useEffect(() => {
     if (!save || state.currentSceneId || state.completed || entering.current)
       return;
@@ -131,12 +205,19 @@ export function ScenePlayerTribunal({
   }, [save, state, append, content]);
   useEffect(() => {
     const follow = (event: StorageEvent) => {
-      if (event.key === (dossier ? FAMILY_SAVE_KEY : TRIBUNAL_SAVE_KEY))
+      if (
+        event.key ===
+        (continuation
+          ? FAMILY_CONTINUATION_KEY
+          : dossier
+            ? FAMILY_SAVE_KEY
+            : TRIBUNAL_SAVE_KEY)
+      )
         void hydrate();
     };
     window.addEventListener('storage', follow);
     return () => window.removeEventListener('storage', follow);
-  }, [hydrate, dossier]);
+  }, [hydrate, dossier, continuation]);
   useEffect(() => {
     if (!pause && !settings && !ledger) focus.current?.focus();
   }, [scene?.id, node?.id, pause, settings, ledger]);
@@ -245,16 +326,12 @@ export function ScenePlayerTribunal({
         focusId={
           !dossier && (state.completed || !!track?.end) ? 'dossier' : undefined
         }
-        room={staging?.room ?? 'tribunal'}
+        room={room}
         lit={dossier || lit || state.completed}
         reduced={save?.settings.reducedMotion === 'on'}
         paused={pause || settings || ledger}
         reaction={tableDisturbed}
-        actions={stageActions(
-          staging?.room ?? 'tribunal',
-          replies,
-          state.completed,
-        )}
+        actions={stageActions(room, replies, state.completed, scene?.id)}
         disabled={busy || pause || settings || ledger || !loaded}
         onReply={(id) => {
           const reply = replies.find((item) => item.id === id);
@@ -265,9 +342,11 @@ export function ScenePlayerTribunal({
         <section className={styles.story} aria-busy={busy || !loaded}>
           <h1 ref={focus} tabIndex={-1}>
             {state.completed
-              ? dossier
-                ? 'Le dossier reste ouvert.'
-                : 'L’audience est suspendue.'
+              ? continuation
+                ? continuationCopy.completed
+                : dossier
+                  ? 'Le dossier reste ouvert.'
+                  : 'L’audience est suspendue.'
               : (scene?.title ?? 'Le Tribunal')}
           </h1>
           {error && (
@@ -283,14 +362,35 @@ export function ScenePlayerTribunal({
             </div>
           )}
           {!loaded && <p>Ouverture de l’audience…</p>}
+          {sourceError && (
+            <p role="alert">
+              {sourceError}{' '}
+              <Link href="/jouer/sixieme-place">
+                {continuationCopy.resumeSource}
+              </Link>
+            </p>
+          )}
           {audio.error && <p role="status">{audio.error}</p>}
           {state.completed ? (
             <>
               <p>{campaign.next}</p>
               {dossier ? (
-                <button className="law-button" onClick={() => setLedger(true)}>
-                  Relire les traces du chapitre
-                </button>
+                <>
+                  <button
+                    className="law-button"
+                    onClick={() => setLedger(true)}
+                  >
+                    Relire les traces du chapitre
+                  </button>
+                  {!continuation && (
+                    <Link
+                      className="law-button"
+                      href="/jouer/sixieme-place/suite"
+                    >
+                      {continuationCopy.continueNight}
+                    </Link>
+                  )}
+                </>
               ) : (
                 <Link className="law-button" href="/jouer/sixieme-place">
                   Ouvrir La Sixième Place

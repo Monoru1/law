@@ -409,6 +409,24 @@
 .worldCanvas canvas[data-target] {
   cursor: pointer;
 }
+.viewpoints {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 3;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: 90%;
+}
+.viewpoints button {
+  padding: 10px;
+  min-height: 44px;
+  border: 1px solid #7a877c;
+  color: #dcd6c3;
+  background: #111b1cdd;
+  font-size: 0.78rem;
+}
 .cinematic .inspection {
   position: absolute;
   top: 8%;
@@ -501,7 +519,7 @@
   inset: 0;
 }
 .worldCanvas canvas {
-  touch-action: pan-y;
+  touch-action: none;
   outline-offset: -4px;
 }
 .worldCanvas canvas:focus-visible {

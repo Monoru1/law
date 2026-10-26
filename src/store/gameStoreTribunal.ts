@@ -1,6 +1,7 @@
 'use client';
 import { tribunalContent } from '../content/tribunal';
 import { familyContent } from '../content/sixieme-place';
+import { familyContinuationContent } from '../content/sixieme-place-suite';
 import { replay } from '../engine';
 import { createLocalStorageAdapter } from '../persistence/localStorageAdapter';
 import type { SaveGame } from '../persistence/SaveAdapter';
@@ -25,4 +26,9 @@ export const FAMILY_SAVE_KEY = 'thelaw:tribunal:family-save-t0';
 export const useFamilyGameStore = createGameStore(
   createLocalStorageAdapter(FAMILY_SAVE_KEY, familyContent),
   familyContent,
+);
+export const FAMILY_CONTINUATION_KEY = 'thelaw:tribunal:family-continuation-t0';
+export const useFamilyContinuationStore = createGameStore(
+  createLocalStorageAdapter(FAMILY_CONTINUATION_KEY, familyContinuationContent),
+  familyContinuationContent,
 );

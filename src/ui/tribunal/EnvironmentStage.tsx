@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'next/navigation';
 import {
   environmentCopy as copy,
+  stageViews,
   type EnvironmentRoom,
   type EnvironmentQuality,
   type StageAction,
@@ -73,6 +74,7 @@ export function EnvironmentStage(
   const [lookVersion, setLookVersion] = useState(0);
   const [accessible, setAccessible] = useState(false);
   const [interfaceHidden, setInterfaceHidden] = useState(false);
+  const [view, setView] = useState<string>();
   const systemReduced = useSyncExternalStore(
     (notify) => {
       const media = matchMedia('(prefers-reduced-motion: reduce)');
@@ -119,7 +121,10 @@ export function EnvironmentStage(
         </button>
         <button
           type="button"
-          onClick={() => setLookVersion((value) => value + 1)}
+          onClick={() => {
+            setLookVersion((value) => value + 1);
+            setView(undefined);
+          }}
         >
           {copy.reset}
         </button>
@@ -160,6 +165,18 @@ export function EnvironmentStage(
         data-lit={props.lit}
         data-reduced={props.reduced || systemReduced}
       >
+        <nav className={styles.viewpoints} aria-label="Points de vue">
+          {stageViews(props.room).map((point) => (
+            <button
+              type="button"
+              key={point.id}
+              disabled={props.disabled || !props.lit}
+              onClick={() => setView(point.id)}
+            >
+              {point.label}
+            </button>
+          ))}
+        </nav>
         {flat || failed ? (
           fallback
         ) : (
@@ -168,7 +185,7 @@ export function EnvironmentStage(
               {...props}
               onTarget={setTarget}
               lookVersion={lookVersion}
-              focusId={detail ? inspected : props.focusId}
+              focusId={detail ? inspected : (view ?? props.focusId)}
               reduced={props.reduced || systemReduced}
               quality={quality}
               onAction={activate}

@@ -53,6 +53,11 @@ export const objectPositions: Record<string, Vec3> = {
   car: [2.8, 0.7, 4.5],
   photograph: [-0.35, 0.88, 0.1],
   negative: [0.4, 0.9, -0.1],
+  cassette: [-1.5, 0.95, -0.55],
+  letter: [-1.85, 0.94, -0.65],
+  maintenance: [-1.7, 0.94, -0.9],
+  phone: [-1.4, 0.95, -0.85],
+  rug: [0.3, 0.03, -3.6],
 };
 
 function woodTexture() {
@@ -98,6 +103,7 @@ export function Interactive({
 }) {
   const { scene, raycaster, gl } = useThree();
   const action = actions.find((item) => item.id === id);
+  const touchStart = useRef<[number, number] | null>(null);
   const [hovered, setHovered] = useState(false);
   const clear = () => {
     setHovered(false);
@@ -128,10 +134,42 @@ export function Interactive({
   return (
     <group
       name={id}
+      onPointerDown={
+        action
+          ? (event) => {
+              if (event.pointerType === 'touch')
+                touchStart.current = [event.clientX, event.clientY];
+            }
+          : undefined
+      }
+      onPointerUp={
+        action
+          ? (event) => {
+              const start = touchStart.current;
+              touchStart.current = null;
+              if (
+                event.pointerType === 'touch' &&
+                start &&
+                Math.hypot(event.clientX - start[0], event.clientY - start[1]) <
+                  8 &&
+                unobstructed()
+              ) {
+                event.stopPropagation();
+                clear();
+                onAction(action);
+              }
+            }
+          : undefined
+      }
       onClick={
         action
           ? (event: ThreeEvent<MouseEvent>) => {
               event.stopPropagation();
+              if (
+                'pointerType' in event.nativeEvent &&
+                event.nativeEvent.pointerType === 'touch'
+              )
+                return;
               if (event.delta < 8 && unobstructed()) {
                 clear();
                 onAction(action);
@@ -257,15 +295,25 @@ function CameraRig({
         : room === 'outside'
           ? { eye: [4.2, 2.6, 8] as Vec3, aim: [0, 1.4, -0.8] as Vec3 }
           : room === 'table'
-            ? reaction
+            ? reaction || focusId === 'sixth-plate'
               ? { eye: [1.6, 1.6, 2.7] as Vec3, aim: [0.65, 0.89, 1] as Vec3 }
               : { eye: [2.9, 2.65, 4.7] as Vec3, aim: [0, 0.85, -0.4] as Vec3 }
             : room === 'album'
               ? { eye: [1.25, 2.5, 1.8] as Vec3, aim: [0, 0.82, 0] as Vec3 }
-              : {
-                  eye: [1.3, 1.7, 3.5] as Vec3,
-                  aim: [-0.7, 1.25, -2.7] as Vec3,
-                },
+              : focusId === 'door'
+                ? {
+                    eye: [0.15, 1.65, -2.8] as Vec3,
+                    aim: [0, 1.3, -6.2] as Vec3,
+                  }
+                : focusId === 'album'
+                  ? {
+                      eye: [-0.6, 1.55, 1] as Vec3,
+                      aim: [-1.7, 0.9, -0.7] as Vec3,
+                    }
+                  : {
+                      eye: [1.3, 1.7, 3.5] as Vec3,
+                      aim: [-0.7, 1.25, -2.7] as Vec3,
+                    },
     [room, reaction, focusId],
   );
   const eye = useMemo(() => new Vector3(...preset.eye), [preset]);
@@ -362,11 +410,13 @@ function CameraRig({
     };
     element.addEventListener('pointerdown', down);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
     element.addEventListener('pointermove', move);
     element.addEventListener('keydown', key);
     return () => {
       element.removeEventListener('pointerdown', down);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
       element.removeEventListener('pointermove', move);
       element.removeEventListener('keydown', key);
     };
@@ -380,6 +430,7 @@ function CameraRig({
     camera.position.lerp(eye, factor);
     target.current.lerp(wanted, factor);
     camera.lookAt(target.current);
+    camera.updateMatrixWorld();
     if (
       camera.position.distanceToSquared(eye) > 0.000001 ||
       target.current.distanceToSquared(wanted) > 0.000001

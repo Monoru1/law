@@ -617,7 +617,7 @@ const scenes = [
         ),
         line(
           'narrator',
-          'Fin du premier chapitre jouable. L’enquête, la cassette, la lettre et la confrontation avec Henri ne sont pas encore disponibles. Le dossier n’est pas clos.',
+          'La première partie de la soirée est consignée. Tu peux poursuivre la nuit et les questions laissées ouvertes. Le dossier n’est pas clos.',
         ),
       ],
       end: 'suite',
@@ -645,7 +645,7 @@ export const familyCampaign = {
   subtitle: 'La maison Delcourt · Premier chapitre',
   warning:
     'Deuil et secret familial. Tu peux quitter ou passer une scène à tout moment.',
-  next: 'Premier chapitre consigné. Le dossier reste ouvert. La suite de l’enquête et la confrontation avec Henri ne sont pas encore jouables.',
+  next: 'Premier chapitre consigné. Le dossier reste ouvert. Tu peux poursuivre la nuit avec les traces que tu as réellement recueillies.',
 };
 export const familySpeakers: Record<string, string> = {
   alex: 'Alex',

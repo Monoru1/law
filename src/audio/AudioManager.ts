@@ -44,7 +44,9 @@ export function createInvestigationAudio() {
     const ctx = context;
     let pending = buffers.get(name);
     if (!pending) {
-      pending = fetch(`/rebirth/${name}.wav`)
+      pending = fetch(
+        name.startsWith('/voices/') ? name : `/rebirth/${name}.wav`,
+      )
         .then((response) => {
           if (!response.ok) throw new Error('Audio asset unavailable');
           return response.arrayBuffer();
@@ -231,6 +233,43 @@ export function createInvestigationAudio() {
           filter.disconnect();
           gain.disconnect();
           panner?.disconnect();
+        };
+        source.start();
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    async recording(clip: {
+      src: string;
+      position: [number, number, number];
+    }): Promise<boolean> {
+      if (
+        !/^\/voices\/[a-zA-Z0-9/_-]+\.(wav|ogg|mp3)$/.test(clip.src) ||
+        !context ||
+        !master ||
+        muted ||
+        place === 'silence'
+      )
+        return false;
+      const ctx = context,
+        token = cueRevision;
+      try {
+        const buffer = await load(clip.src);
+        if (!alive || muted || token !== cueRevision || ctx.state !== 'running')
+          return false;
+        const source = ctx.createBufferSource();
+        const gain = ctx.createGain();
+        const panner = spatial(ctx, clip.position);
+        source.buffer = buffer;
+        gain.gain.value = 0.85;
+        source.connect(gain).connect(panner).connect(master);
+        oneShots.add(source);
+        source.onended = () => {
+          oneShots.delete(source);
+          source.disconnect();
+          gain.disconnect();
+          panner.disconnect();
         };
         source.start();
         return true;

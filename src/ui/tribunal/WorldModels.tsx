@@ -315,6 +315,15 @@ function Window({ at, turn = 0 }: { at: Vec3; turn?: number }) {
   return (
     <group position={at} rotation={[0, turn, 0]}>
       <Block at={[0, 0, 0]} size={[2.5, 2.1, 0.11]} color="#182b37" />
+      <Repeated
+        positions={[-1.52, -1.45, -1.38, 1.38, 1.45, 1.52].map((x) => [
+          x,
+          -0.05,
+          0.2,
+        ])}
+        geometry={<cylinderGeometry args={[0.055, 0.07, 2.5, 10]} />}
+        material={<meshStandardMaterial color="#555b58" roughness={1} />}
+      />
       <mesh position={[0, 0, 0.065]}>
         <planeGeometry args={[2.3, 1.95]} />
         <meshStandardMaterial
@@ -671,6 +680,11 @@ function DiningRoom(props: ModelProps) {
         )),
       )}
       <Tableware {...props} />
+      <HenriHands
+        resting={props.reaction}
+        reduced={props.reduced}
+        paused={props.paused}
+      />
       {[-1.55, -0.3, 1].flatMap((z, index) =>
         [-1.48, 1.48].map((x) =>
           index === 2 && x > 0 ? (
@@ -733,6 +747,60 @@ function DiningRoom(props: ModelProps) {
       />
       {/* The family remains just outside the shot; no expressionless human stand-ins. */}
     </>
+  );
+}
+
+// Only the wrists and hands enter the shot; there is no expressionless body rig.
+function HenriHands({
+  resting,
+  reduced,
+  paused,
+}: {
+  resting: boolean;
+  reduced: boolean;
+  paused: boolean;
+}) {
+  const group = useRef<Group>(null);
+  useFrame((state, delta) => {
+    if (!group.current || paused) return;
+    const target = resting ? -0.1 : 0.03;
+    const previous = group.current.rotation.y;
+    group.current.rotation.y +=
+      (target - previous) * (reduced ? 1 : 1 - Math.exp(-delta * 3));
+    if (Math.abs(target - previous) > 0.001) state.invalidate();
+  });
+  return (
+    <group
+      ref={group}
+      position={[-1.15, 0.98, -1.55]}
+      rotation={[0, 0.03, 0.08]}
+    >
+      <mesh position={[-0.13, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <capsuleGeometry args={[0.068, 0.3, 6, 20]} />
+        <meshStandardMaterial color="#555b55" roughness={1} />
+      </mesh>
+      <mesh position={[0.06, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <capsuleGeometry args={[0.045, 0.12, 6, 20]} />
+        <meshStandardMaterial color="#9b8270" roughness={0.9} />
+      </mesh>
+      <mesh position={[0.16, -0.005, 0]} scale={[1, 0.45, 0.85]} castShadow>
+        <sphereGeometry args={[0.075, 24, 16]} />
+        <meshStandardMaterial color="#a28b75" roughness={0.88} />
+      </mesh>
+      {[-0.045, -0.015, 0.015, 0.045].map((z, index) => (
+        <mesh
+          key={z}
+          position={[0.23, -0.012, z]}
+          rotation={[0, 0, 1.45]}
+          castShadow
+        >
+          <capsuleGeometry
+            args={[0.013, 0.065 - Math.abs(index - 1.5) * 0.008, 4, 12]}
+          />
+          <meshStandardMaterial color="#a28b75" roughness={0.9} />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
@@ -842,6 +910,66 @@ function Hall(props: ModelProps) {
         />
       </Interactive>
       <Lamp at={[-2, 0.84, -0.7]} />
+      {actions
+        .filter((action) =>
+          ['cassette', 'letter', 'maintenance', 'phone'].includes(action.id),
+        )
+        .map((action) => (
+          <Interactive
+            key={action.id}
+            id={action.id}
+            actions={actions}
+            onAction={onAction}
+          >
+            <Block
+              at={
+                action.id === 'cassette'
+                  ? [-1.5, 0.94, -0.55]
+                  : action.id === 'letter'
+                    ? [-1.85, 0.93, -0.65]
+                    : action.id === 'phone'
+                      ? [-1.4, 0.94, -0.85]
+                      : [-1.7, 0.93, -0.9]
+              }
+              size={
+                action.id === 'phone'
+                  ? [0.16, 0.035, 0.23]
+                  : action.id === 'cassette'
+                    ? [0.25, 0.045, 0.15]
+                    : [0.23, 0.008, 0.14]
+              }
+              color={
+                action.id === 'cassette'
+                  ? '#363a37'
+                  : action.id === 'phone'
+                    ? '#1e2728'
+                    : '#c6bc9f'
+              }
+            />
+          </Interactive>
+        ))}
+      <Interactive id="rug" actions={actions} onAction={onAction}>
+        <Block
+          at={[0.3, 0.02, -3.6]}
+          size={[1.05, 0.02, 1.5]}
+          color="#59564a"
+        />
+      </Interactive>
+      <Block at={[2.18, 1.2, -1.2]} size={[0.04, 0.13, 0.09]} color="#bbb9a3" />
+      <Block
+        at={[-2.18, 0.28, -2.8]}
+        size={[0.04, 0.1, 0.15]}
+        color="#aba994"
+      />
+      <Repeated
+        positions={Array.from({ length: 7 }, (_, i) => [
+          -2.13,
+          1.7,
+          -3.2 + i * 0.085,
+        ])}
+        geometry={<boxGeometry args={[0.08, 0.5, 0.05]} />}
+        material={<meshStandardMaterial color="#6f6550" roughness={0.9} />}
+      />
       <Interactive id="photographs" actions={actions} onAction={onAction}>
         {[-2.4, -1.4, -0.4].map((z, index) => (
           <group key={z}>

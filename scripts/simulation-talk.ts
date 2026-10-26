@@ -14,6 +14,7 @@ import {
   type Content,
   type GameEvent,
   type GameState,
+  type Memory,
 } from '../src/engine';
 import type { Rand } from './simulation';
 
@@ -54,7 +55,7 @@ export function simulateTalkRun(
     seen?: Set<string>;
     // Chance that a scene is left through the pause menu instead of played.
     skipRate?: number;
-    inherit?: { timelineId: string; memory: never };
+    inherit?: { timelineId: string; memory: Memory };
   } = {},
 ): TalkRun {
   const events: GameEvent[] = [];
@@ -72,6 +73,13 @@ export function simulateTalkRun(
   const pick = <T>(list: T[]) => list[Math.floor(rand() * list.length)]!;
   const nodes = new Set<string>();
   push({ type: 'run_started', contentVersion: content.version });
+  if (options.inherit)
+    push({
+      type: 'memory_inherited',
+      fromTimelineId: options.inherit.timelineId,
+      fromRunId: 'source',
+      memory: options.inherit.memory,
+    });
   for (let scenes = 0; scenes < 80; scenes++) {
     const scene = nextScene(state, content);
     if (!scene) break;

@@ -1,6 +1,8 @@
 import { rebirthContent, documents } from '../src/content/rebirth';
 import { tribunalContent } from '../src/content/tribunal';
 import { familyContent } from '../src/content/sixieme-place';
+import { familyContinuationContent } from '../src/content/sixieme-place-suite';
+import { buildMemory } from '../src/engine';
 import tribunalRegistry from '../src/content/tribunal-contracts.json';
 import { auditContent } from '../src/engine';
 import rebirthRegistry from '../src/content/rebirth-contracts.json';
@@ -438,4 +440,48 @@ console.log(
 
 console.log(
   `TRIBUNAL: ${tribunalContent.scenes.length} scenes, 500 validated journeys.`,
+);
+const continuationDrift = registryDrift(tribunalRegistry, [
+  familyContinuationContent,
+]);
+if (continuationDrift.changed.length || continuationDrift.missing.length)
+  fail('Continuation contracts are not registered.');
+const continuationProblems = auditContent(familyContinuationContent, [
+  familyContent,
+]);
+if (continuationProblems.length) fail(continuationProblems.join('\n'));
+familyContinuationContent.scenes.forEach((scene) => sceneSchema.parse(scene));
+for (let seed = 1; seed <= 500; seed++) {
+  const clock = { at: 0 };
+  const first = simulateTalkRun(familyContent, seeded(seed), clock);
+  const run = simulateTalkRun(
+    familyContinuationContent,
+    seeded(seed + 1000),
+    clock,
+    {
+      inherit: {
+        timelineId: 't0',
+        memory: buildMemory(first.state, familyContent, 'la maison'),
+      },
+      skipRate: seed % 3 === 0 ? 0.2 : 0,
+    },
+  );
+  if (!run.state.completed)
+    fail(`Continuation did not finish for seed ${seed}`);
+  migrateSave(
+    {
+      schemaVersion: 5,
+      timelineId: 't0',
+      contentVersion: familyContinuationContent.version,
+      runId: `continuation-${seed}`,
+      createdAt: 0,
+      updatedAt: clock.at,
+      settings: defaultSettings,
+      events: run.events,
+    },
+    familyContinuationContent,
+  );
+}
+console.log(
+  'LA SIXIÈME PLACE: 10 continuation scenes, 500 inherited journeys and return to Tribunal.',
 );

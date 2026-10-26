@@ -79,6 +79,32 @@ export function useInvestigationAudio(
       return engine.cue(name);
     },
     stopVoice: engine.stopVoice,
+    async voiceSequence(
+      clips: {
+        src: string;
+        durationMs: number;
+        position: [number, number, number];
+      }[],
+      signal: AbortSignal,
+    ) {
+      for (const clip of clips) {
+        if (signal.aborted) return;
+        const playing = await engine.recording(clip);
+        if (!playing || signal.aborted) continue;
+        await new Promise<void>((resolve) => {
+          const done = () => {
+            clearTimeout(timer);
+            signal.removeEventListener('abort', done);
+            resolve();
+          };
+          const timer = setTimeout(
+            done,
+            Math.max(0, Math.min(30000, clip.durationMs)),
+          );
+          signal.addEventListener('abort', done, { once: true });
+        });
+      }
+    },
     listener: engine.listener,
   };
 }
