@@ -32,7 +32,8 @@ import { Button } from '../primitives/Button';
 import { Dialog } from '../primitives/Dialog';
 import { Settings } from '../screens/Settings';
 import styles from './tribunal.module.css';
-import { HouseStage } from './HouseStage';
+import { EnvironmentStage } from './EnvironmentStage';
+import { environmentCopy, stageActions } from '../../content/environments';
 import { useInvestigationAudio } from '../player/AudioDirector';
 
 export function ScenePlayerTribunal({
@@ -72,9 +73,11 @@ export function ScenePlayerTribunal({
   const lit = !!node && node.id !== 'noir';
   const staging = dossier ? familyStaging(scene?.id, node?.id) : null;
   const audio = useInvestigationAudio(
-    pause || settings || ledger || state.completed || !dossier
+    pause || settings || ledger || state.completed
       ? 'silence'
-      : 'house',
+      : dossier
+        ? 'house'
+        : 'tribunal',
     useStore,
   );
   const cue = staging?.cue;
@@ -200,14 +203,11 @@ export function ScenePlayerTribunal({
 
   return (
     <main
-      className={`${styles.frame} ${dossier ? styles.house : ''}`}
+      className={`${styles.frame} ${styles.cinematic} ${dossier ? styles.house : ''}`}
       aria-label={campaign.title}
       data-reduced={save?.settings.reducedMotion === 'on'}
       data-text={save?.settings.textSize}
     >
-      {!dossier && (
-        <div className={styles.room} data-lit={lit ? 'true' : 'false'} />
-      )}
       <header className={styles.hud}>
         <Link href="/" className={styles.brand}>
           THE LAW: REBIRTH
@@ -218,48 +218,48 @@ export function ScenePlayerTribunal({
               <button type="button" onClick={() => setLedger(true)}>
                 Carnet
               </button>
-              <button
-                type="button"
-                aria-pressed={audio.enabled}
-                onClick={() => void audio.toggle()}
-              >
-                {audio.enabled ? 'Couper le son' : 'Activer le son'}
-              </button>
             </>
           )}
+          <button
+            type="button"
+            aria-pressed={audio.enabled}
+            onClick={() => void audio.toggle()}
+          >
+            {audio.enabled ? 'Couper le son' : 'Activer le son'}
+          </button>
           <button type="button" onClick={() => setPause(true)}>
             Pause
           </button>
           <Link href="/">Quitter</Link>
         </nav>
       </header>
-      {staging && (
-        <div
-          className={styles.stage}
-          aria-label={`Lieu exploré : ${staging.room === 'table' ? 'salle à manger' : staging.room === 'outside' ? 'devant la maison' : staging.room === 'album' ? 'album familial' : 'couloir'}`}
-        >
-          <HouseStage room={staging.room} />
-          {staging.anchors && (
-            <nav className={styles.hotspots} aria-label="Explorer le lieu">
-              {replies.map((reply) => {
-                const anchor = staging.anchors?.[reply.id];
-                return anchor ? (
-                  <button
-                    key={reply.id}
-                    type="button"
-                    className={styles.hotspot}
-                    style={{ left: `${anchor[0]}%`, top: `${anchor[1]}%` }}
-                    disabled={busy || pause || settings || ledger}
-                    onClick={() => say(reply)}
-                  >
-                    {reply.label}
-                  </button>
-                ) : null;
-              })}
-            </nav>
-          )}
-        </div>
-      )}
+      <EnvironmentStage
+        room={staging?.room ?? 'tribunal'}
+        lit={dossier || lit || state.completed}
+        reduced={save?.settings.reducedMotion === 'on'}
+        paused={pause || settings || ledger}
+        reaction={
+          dossier &&
+          scene?.id.endsWith('maison-table') === true &&
+          (node?.id === 'place' ||
+            !!state.flags.find((flag) =>
+              ['family.public', 'family.private', 'family.observe'].includes(
+                flag,
+              ),
+            ))
+        }
+        actions={stageActions(
+          staging?.room ?? 'tribunal',
+          replies,
+          state.completed,
+        )}
+        disabled={busy || pause || settings || ledger || !loaded}
+        onReply={(id) => {
+          const reply = replies.find((item) => item.id === id);
+          if (reply) say(reply);
+        }}
+        onCamera={audio.listener}
+      />
       <section className={styles.story} aria-busy={busy || !loaded}>
         <h1 ref={focus} tabIndex={-1}>
           {state.completed
@@ -281,7 +281,7 @@ export function ScenePlayerTribunal({
           </div>
         )}
         {!loaded && <p>Ouverture de l’audience…</p>}
-        {audio.error && dossier && <p role="status">{audio.error}</p>}
+        {audio.error && <p role="status">{audio.error}</p>}
         {state.completed ? (
           <>
             <p>{campaign.next}</p>
@@ -368,6 +368,9 @@ export function ScenePlayerTribunal({
           <p className={styles.soundCaption}>
             {staging.caption} Tous les indices restent lisibles sans audio.
           </p>
+        )}
+        {!dossier && (
+          <p className={styles.soundCaption}>{environmentCopy.chair}</p>
         )}
       </section>
       {pause && !settings && (

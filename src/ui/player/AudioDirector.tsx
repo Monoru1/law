@@ -70,5 +70,6 @@ export function useInvestigationAudio(
       return engine.cue(name);
     },
     stopVoice: engine.stopVoice,
+    listener: engine.listener,
   };
 }

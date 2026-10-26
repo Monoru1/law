@@ -14,6 +14,24 @@ import { readFileSync } from 'node:fs';
 import { it, expect } from 'vitest';
 import { content } from '../../src/content';
 import { sceneSchema } from '../../src/engine/schema';
+import { stageActions } from '../../src/content/environments';
+it('physical interactions expose only replies already allowed by the engine', () => {
+  expect(stageActions('table', [], false)).toEqual([]);
+  expect(
+    stageActions(
+      'table',
+      [{ id: 'assiette', label: 'Examiner', next: 'place' }],
+      false,
+    ),
+  ).toEqual([{ id: 'sixth-plate', label: 'Examiner', replyId: 'assiette' }]);
+  expect(
+    stageActions('tribunal', [], false).some((action) => action.href),
+  ).toBe(false);
+  expect(
+    stageActions('tribunal', [], true).find((action) => action.id === 'dossier')
+      ?.href,
+  ).toBe('/jouer/sixieme-place');
+});
 it('validates all scene contracts and stable IDs', () => {
   expect(new Set(content.scenes.map((s) => s.id)).size).toBe(
     content.scenes.length,

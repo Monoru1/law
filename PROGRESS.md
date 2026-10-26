@@ -1,3 +1,17 @@
+# Immersion 3D — 26 octobre 2026, branche de travail
+
+## Lot A — Fondation et scènes initiales
+
+- Branche `feat/real-3d-horror-environments` depuis `main` à `b14004d`. Aucun travail préexistant, aucune PR ouverte à l'audit. `HouseStage.tsx` (SVG) et le décor CSS du Tribunal simulaient la profondeur ; ils restent disponibles en repli.
+- Three.js 0.186.1 et Fiber 9.8.2 (peer React >=19 <19.4, compatible React 19.3) ; pas de Drei car caméra et géométrie maîtrisées sans cette dépendance. Import dynamique client, aucun WebGL serveur. Modèles originaux procéduraux, textures de grain déterministes de 256 px, aucun asset tiers, aucun GLB inutile. Architecture et arbitrage : le rendu consomme des actions déjà résolues ; seul le lecteur écrit les événements existants.
+- `EnvironmentStage.tsx` : qualités élevée/standard/économique, repli volontaire et automatique, délai d'initialisation borné, garde de contexte perdu, accès HTML au clavier. `WorldCanvas.tsx` : caméra bornée, réglage système et utilisateur de mouvement réduit, pause/hors écran, rendu à la demande et réduction automatique du coût. `WorldModels.tsx` : première salle d'audience fermée, maison, table, six couverts, couloir et album. `src/content/environments.ts` : correspondance objets/réponses et textes d'inspection sans nouvelles preuves.
+- Validation : build initial, lint et TypeScript réussis ; 118/118 tests unitaires ; 98 contrats inchangés. Cinq tests navigateur 3D réussis : vrai raycast sur le dossier et l'assiette, conséquence privée persistée, trois qualités, clavier, retour 2D/3D, WebGL absent et contexte perdu, mobile. Images et vidéos réelles dans `test-results/environment3d-*`, exclues de Git, générées par `pnpm test:e2e tests/e2e/environment3d.spec.ts --workers=1` contre le serveur indiqué par `LAW_BASE_URL`.
+- Correctif de cycle de vie : la destruction volontaire du renderer n'est plus considérée comme une panne GPU. Les objets inaccessibles au moteur n'ont pas de handler narratif. Aucun changement des scènes, des contrats ou des sauvegardes historiques.
+- Limites de cette étape : rendu encore à raffiner et mesures sur GPU logiciel Chromium ; aucune promesse de FPS matériel. Pas de personnages réalistes ni de voix humaine enregistrée. La lettre et la suite de l'enquête ne sont pas écrites dans le chapitre existant : aucune interaction ne les révèle artificiellement. Ne pas fusionner avant la passe qualité complète.
+- Générateur Next : normalisation automatique du titre du bloc d'instructions dans `AGENTS.md` conservée. Les imports temporaires `.next/dev` de `next-env.d.ts` seront remplacés par le build de production avant commit.
+
+---
+
 # Opération Halloween — audit du 26 octobre 2026
 
 - Source préservée : `backup/claude-26-octobre`, `2b2491b`. Intégration sur `codex/halloween-integration`, issue de `origin/main` (`9b287fd`), sans conflit. PR #4 et #5 confirmées fusionnées sur GitHub ; aucun de leurs changements n'est réintroduit séparément.
