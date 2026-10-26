@@ -318,8 +318,17 @@
 /* Cinematic blood-red opening, exclusive to the public landing page. */
 .homeOpening .room {
   background:
-    radial-gradient(\n      ellipse 56% 48% at 50% 31%,\n      rgba(183, 18, 32, 0.36) 0%,\n      rgba(102, 5, 18, 0.16) 39%,\n      transparent 76%\n    ),
-    radial-gradient(\n      ellipse 70% 58% at 55% 90%,\n      rgba(90, 5, 12, 0.48),\n      transparent 72%\n    ),
+    radial-gradient(
+      ellipse 56% 48% at 50% 31%,
+      rgba(183, 18, 32, 0.36) 0%,
+      rgba(102, 5, 18, 0.16) 39%,
+      transparent 76%
+    ),
+    radial-gradient(
+      ellipse 70% 58% at 55% 90%,
+      rgba(90, 5, 12, 0.48),
+      transparent 72%
+    ),
     linear-gradient(180deg, #180409 0%, #0b0306 61%, #050204 100%);
 }
 .homeOpening .room::before {
@@ -327,7 +336,12 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(\n    105deg,\n    transparent 18%,\n    rgba(226, 22, 42, 0.07) 50%,\n    transparent 78%\n  );
+  background: linear-gradient(
+    105deg,
+    transparent 18%,
+    rgba(226, 22, 42, 0.07) 50%,
+    transparent 78%
+  );
 }
 .homeOpening .room::after {
   content: '';
@@ -355,5 +369,149 @@
   border-color: #f15b64;
 }
 @media (prefers-reduced-motion: reduce) {
-  .homeOpening .room {\n    transition: none;\n  }
+  .homeOpening .room {
+    transition: none;
+  }
+}
+
+.cinematic .hud {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cinematic .hud nav {
+  flex-wrap: wrap;
+}
+.environment {
+  position: relative;
+  width: 100%;
+  background: #101215;
+}
+.renderControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px clamp(16px, 3vw, 32px);
+  color: #b9b4a6;
+  font-size: 0.78rem;
+}
+.renderControls select,
+.renderControls button,
+.objectBar button,
+.inspection button {
+  background: #1c201f;
+  border: 1px solid #666b62;
+  color: #e6ded3;
+  min-height: 44px;
+  padding: 8px 12px;
+}
+.renderControls label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.viewport {
+  position: relative;
+  height: min(68svh, 760px);
+  min-height: 340px;
+  overflow: hidden;
+}
+.viewport::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #020203;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.6s ease-out;
+}
+.viewport[data-lit='false']::after {
+  opacity: 1;
+}
+.viewport[data-reduced='true']::after {
+  transition: none;
+}
+.worldCanvas {
+  position: absolute;
+  inset: 0;
+}
+.worldCanvas canvas {
+  touch-action: pan-y;
+  outline-offset: -4px;
+}
+.worldCanvas canvas:focus-visible {
+  outline: 2px solid #ded1b1;
+}
+.tribunalFallback {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, #53514a, #131416 65%);
+}
+.tribunalFallback[data-lit='false'] {
+  background: #020203;
+}
+.renderMessage {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  padding: 12px;
+  background: #141718;
+  color: #ddd8cb;
+}
+.renderNotice,
+.renderHelp {
+  padding: 8px clamp(16px, 3vw, 32px);
+  color: #bab7aa;
+  font-size: 0.78rem;
+}
+.objectBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px clamp(16px, 3vw, 32px);
+  background: #171b1b;
+}
+.objectBar button {
+  text-align: left;
+  border-color: #575d55;
+  background: transparent;
+}
+.objectBar button:hover,
+.objectBar button:focus-visible,
+.renderControls button:focus-visible {
+  outline: 2px solid #ded1b1;
+  outline-offset: 2px;
+  background: #30362e;
+}
+.inspection {
+  padding: 16px clamp(16px, 3vw, 32px);
+  border-top: 1px solid #666b62;
+  color: #d9d2be;
+}
+.inspection p {
+  margin-bottom: 12px;
+}
+.cinematic .story {
+  justify-content: flex-start;
+  max-width: 1100px;
+  padding-top: 24px;
+}
+@media (max-width: 700px) {
+  .viewport {
+    height: 48svh;
+    min-height: 280px;
+  }
+  .cinematic .hud {
+    padding: 16px;
+  }
+  .cinematic .hud nav {
+    gap: 8px;
+  }
+  .renderControls {
+    font-size: 0.72rem;
+  }
+  .objectBar button {
+    flex: 1 1 45%;
+  }
 }

@@ -184,9 +184,9 @@ test('dossier audio activates, mutes and fails without blocking play', async ({
   await page
     .getByRole('button', { name: 'Activer le son', exact: true })
     .click();
-  await expect(page.getByRole('status')).toContainText(
-    'Le son est indisponible',
-  );
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Le son est indisponible' }),
+  ).toContainText('Le son est indisponible');
   await page
     .getByRole('list', { name: 'Actions disponibles' })
     .getByRole('button', { name: 'Traverser le gravier et entrer' })
