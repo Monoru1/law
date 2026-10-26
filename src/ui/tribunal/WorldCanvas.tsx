@@ -42,12 +42,12 @@ export const objectPositions: Record<string, Vec3> = {
   'sixth-plate': [0.7, 0.9, 1],
   bread: [-0.65, 0.95, -0.35],
   soup: [0, 1, -0.65],
-  album: [-2.5, 0.92, -0.7],
-  photographs: [-3.91, 1.85, -1.4],
-  door: [0, 1.2, -4.85],
-  kitchen: [3.9, 1.2, -2.2],
+  album: [-1.7, 0.92, -0.7],
+  photographs: [-2.18, 1.85, -1.4],
+  door: [0, 1.2, -6.1],
+  kitchen: [2.16, 1.2, -2.2],
   threshold: [1.5, 1.2, 3],
-  vestibule: [-2.5, 1.2, 2.8],
+  vestibule: [-1.7, 1.2, 2.8],
   entrance: [0, 1.2, -0.2],
   window: [2.6, 1.9, -0.1],
   car: [2.8, 0.7, 4.5],
@@ -203,6 +203,9 @@ function CameraRig({
   const ready = useRef(false);
   const frames = useRef<number[]>([]);
   const lastReport = useRef(0);
+  useEffect(() => {
+    gl.domElement.setAttribute('data-quality', quality);
+  }, [gl, quality]);
   const preset = useMemo(
     () =>
       room === 'tribunal'
@@ -337,7 +340,8 @@ function CameraRig({
     if (delta < 0.3 && delta > 0) frames.current.push(delta * 1000);
     if (state.clock.elapsedTime - lastReport.current > 1) {
       lastReport.current = state.clock.elapsedTime;
-      const samples = frames.current.splice(0).sort((a, b) => a - b);
+      frames.current = frames.current.slice(-40);
+      const samples = [...frames.current].sort((a, b) => a - b);
       gl.domElement.setAttribute(
         'data-frame-ms',
         String(samples[Math.floor(samples.length / 2)] ?? 0),
@@ -353,7 +357,7 @@ function CameraRig({
       );
       if (
         quality !== 'economy' &&
-        samples.length > 20 &&
+        samples.length >= 8 &&
         samples[Math.floor(samples.length * 0.8)]! > 45
       ) {
         gl.setPixelRatio(0.75);

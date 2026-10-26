@@ -12,6 +12,7 @@ import type { StoreApi, UseBoundStore } from 'zustand';
 export function useInvestigationAudio(
   place: AudioPlace,
   store: UseBoundStore<StoreApi<GameStore>> = useT0GameStore,
+  duck = false,
 ) {
   const settings = store((state) => state.save?.settings);
   const update = store((state) => state.settings);
@@ -22,13 +23,21 @@ export function useInvestigationAudio(
     engine.configure({
       place,
       muted: !settings?.sound,
-      volume: settings?.volume ?? 0.65,
+      volume: (settings?.volume ?? 0.65) * (duck ? 0.42 : 1),
     });
-  }, [engine, place, settings?.sound, settings?.volume]);
+  }, [engine, place, settings?.sound, settings?.volume, duck]);
   useEffect(() => () => engine.dispose(), [engine]);
   useEffect(() => {
-    if (!started || !settings?.sound || place !== 'apartment') return;
-    const timer = setInterval(() => void engine.cue('clock'), 2400);
+    if (
+      !started ||
+      !settings?.sound ||
+      !['apartment', 'tribunal'].includes(place)
+    )
+      return;
+    const timer = setInterval(
+      () => void engine.cue('clock'),
+      place === 'tribunal' ? 6500 : 2400,
+    );
     return () => clearInterval(timer);
   }, [engine, started, settings?.sound, place]);
   return {

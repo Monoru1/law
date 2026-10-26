@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { familyContent } from '../../src/content/sixieme-place';
 import { replay } from '../../src/engine';
+import { writeFile } from 'node:fs/promises';
 
 test.use({ video: 'on' });
 const key = 'thelaw:tribunal:family-save-t0';
@@ -229,5 +230,88 @@ test('mobile 3D has accessible controls and records actual rendering costs', asy
     body: JSON.stringify(metrics, null, 2),
     contentType: 'application/json',
   });
+  await writeFile(
+    info.outputPath('render-metrics.json'),
+    JSON.stringify(metrics, null, 2),
+  );
   expect(Number(metrics.calls)).toBeLessThan(350);
+  expect(Number(metrics.calls)).toBeGreaterThan(0);
+});
+
+test('spatial ambience stays opt-in and follows the real camera', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    let listener: AudioListener | undefined;
+    const state = {
+      contexts: 0,
+      panners: 0,
+      get x() {
+        return listener?.positionX.value ?? 0;
+      },
+    };
+    (window as unknown as { spatialAudio: typeof state }).spatialAudio = state;
+    const Original = window.AudioContext;
+    window.AudioContext = class extends Original {
+      constructor() {
+        super();
+        listener = this.listener;
+        state.contexts++;
+      }
+      createPanner() {
+        state.panners++;
+        return super.createPanner();
+      }
+    };
+  });
+  await page.goto('/jouer/sixieme-place');
+  await expect(page.locator('[data-ready="true"]')).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { spatialAudio: { contexts: number } })
+          .spatialAudio.contexts,
+    ),
+  ).toBe(0);
+  await page
+    .getByRole('button', { name: 'Activer le son', exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { spatialAudio: { panners: number } })
+            .spatialAudio.panners,
+      ),
+    )
+    .toBeGreaterThan(0);
+  await page.locator('canvas').scrollIntoViewIfNeeded();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { spatialAudio: { x: number } }).spatialAudio.x,
+      ),
+    )
+    .toBeGreaterThan(3);
+  await choose(page, 'entrer');
+  await expect(page.getByText('Alex. Tu as trouvé la route.')).toBeVisible();
+  await page.locator('canvas').scrollIntoViewIfNeeded();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { spatialAudio: { x: number } }).spatialAudio.x,
+      ),
+    )
+    .toBeLessThan(2);
+  await page
+    .getByRole('button', { name: 'Couper le son', exact: true })
+    .click();
+  expect(
+    await page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key)!).settings.sound,
+      key,
+    ),
+  ).toBe(false);
 });

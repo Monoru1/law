@@ -160,15 +160,16 @@ function Chair({
 function RoomShell({
   wood,
   tribunal = false,
+  half = 5,
 }: {
   wood: Texture;
   tribunal?: boolean;
+  half?: number;
 }) {
-  const boards: Vec3[] = Array.from({ length: 26 }, (_, i) => [
-    -4.8 + i * 0.38,
-    -0.045,
-    -0.7,
-  ]);
+  const boards: Vec3[] = Array.from(
+    { length: Math.floor((half * 2) / 0.38) },
+    (_, i) => [-half + 0.2 + i * 0.38, -0.045, -0.7],
+  );
   return (
     <>
       <Repeated
@@ -182,31 +183,31 @@ function RoomShell({
           />
         }
       />
-      <Block at={[0, 3.8, -0.7]} size={[10, 0.2, 12]} color="#403f39" />
-      <Block at={[0, 1.9, -6.6]} size={[10, 3.8, 0.2]} color="#5e605a" />
-      <Block at={[-5, 1.9, -0.7]} size={[0.2, 3.8, 12]} color="#5b5d56" />
-      <Block at={[5, 1.9, -0.7]} size={[0.2, 3.8, 12]} color="#5a574d" />
-      <Block at={[0, 1.9, 5.2]} size={[10, 3.8, 0.2]} color="#55564e" />
+      <Block at={[0, 3.8, -0.7]} size={[half * 2, 0.2, 12]} color="#403f39" />
+      <Block at={[0, 1.9, -6.6]} size={[half * 2, 3.8, 0.2]} color="#5e605a" />
+      <Block at={[-half, 1.9, -0.7]} size={[0.2, 3.8, 12]} color="#5b5d56" />
+      <Block at={[half, 1.9, -0.7]} size={[0.2, 3.8, 12]} color="#5a574d" />
+      <Block at={[0, 1.9, 5.2]} size={[half * 2, 3.8, 0.2]} color="#55564e" />
       <Block
-        at={[-4.85, 0.58, -0.7]}
+        at={[-half + 0.15, 0.58, -0.7]}
         size={[0.12, 1.12, 12]}
         wood={wood}
         color="#5a4331"
       />
       <Block
-        at={[4.85, 0.58, -0.7]}
+        at={[half - 0.15, 0.58, -0.7]}
         size={[0.12, 1.12, 12]}
         wood={wood}
         color="#5a4331"
       />
       <Block
         at={[0, 0.58, -6.42]}
-        size={[10, 1.12, 0.12]}
+        size={[half * 2, 1.12, 0.12]}
         wood={wood}
         color="#5a4331"
       />
-      <Block at={[0, 3.55, -6.4]} size={[10, 0.12, 0.12]} wood={wood} />
-      {[-4.7, 4.7].map((x) => (
+      <Block at={[0, 3.55, -6.4]} size={[half * 2, 0.12, 0.12]} wood={wood} />
+      {[-half + 0.3, half - 0.3].map((x) => (
         <Block
           key={x}
           at={[x, 1.2, -0.7]}
@@ -808,19 +809,19 @@ function Hall(props: ModelProps) {
   return (
     <>
       <Interactive id="door" actions={actions} onAction={onAction}>
-        <Door at={[0, 0, -4.9]} wood={wood} />
+        <Door at={[0, 0, -6.25]} wood={wood} />
       </Interactive>
       <Interactive id="kitchen" actions={actions} onAction={onAction}>
-        <Door at={[4.7, 0, -2.2]} wood={wood} turn={-Math.PI / 2} />
+        <Door at={[2.16, 0, -2.2]} wood={wood} turn={-Math.PI / 2} />
       </Interactive>
       <Interactive id="album" actions={actions} onAction={onAction}>
         <Block
-          at={[-2.5, 0.78, -0.7]}
-          size={[1.4, 0.1, 0.55]}
+          at={[-1.7, 0.78, -0.7]}
+          size={[1, 0.1, 0.55]}
           wood={wood}
           color="#7c6042"
         />
-        {[-3.1, -1.9].map((x) => (
+        {[-2.1, -1.3].map((x) => (
           <Block
             key={x}
             at={[x, 0.38, -0.7]}
@@ -829,27 +830,27 @@ function Hall(props: ModelProps) {
           />
         ))}
         <Block
-          at={[-2.5, 0.85, -0.7]}
+          at={[-1.7, 0.85, -0.7]}
           size={[0.55, 0.07, 0.4]}
           color="#44332a"
         />
         <Label
           text={environmentCopy.labels.album}
-          at={[-2.5, 0.89, -0.7]}
+          at={[-1.7, 0.89, -0.7]}
           width={0.3}
           height={0.12}
         />
       </Interactive>
-      <Lamp at={[-3, 0.84, -0.7]} />
+      <Lamp at={[-2, 0.84, -0.7]} />
       <Interactive id="photographs" actions={actions} onAction={onAction}>
         {[-2.4, -1.4, -0.4].map((z, index) => (
           <group key={z}>
             <Block
-              at={[-4.78, 1.85, z]}
+              at={[-2.2, 1.85, z]}
               size={[0.015, 0.7 + index * 0.04, 0.48]}
               color="#888777"
             />
-            <mesh position={[-4.75, 2.3, z]} rotation={[0, 0, Math.PI / 2]}>
+            <mesh position={[-2.18, 2.3, z]} rotation={[0, 0, Math.PI / 2]}>
               <cylinderGeometry args={[0.008, 0.008, 0.03, 8]} />
               <meshStandardMaterial color={brass} />
             </mesh>
@@ -860,17 +861,17 @@ function Hall(props: ModelProps) {
         <Block at={[1.5, 0.025, 3]} size={[1.2, 0.05, 0.45]} wood={wood} />
       </Interactive>
       <Interactive id="vestibule" actions={actions} onAction={onAction}>
-        <Block at={[-2.5, 1.25, 2.8]} size={[0.09, 2.5, 0.09]} wood={wood} />
-        <Block at={[-2.5, 2.15, 2.8]} size={[0.9, 0.06, 0.06]} wood={wood} />
+        <Block at={[-1.7, 1.25, 2.8]} size={[0.09, 2.5, 0.09]} wood={wood} />
+        <Block at={[-1.7, 2.15, 2.8]} size={[0.9, 0.06, 0.06]} wood={wood} />
       </Interactive>
-      <Block at={[2.65, 0.5, -4.9]} size={[1.9, 1, 1.5]} color="#3d352d" />
+      <Block at={[1.5, 0.5, -4.9]} size={[1.4, 1, 1.5]} color="#3d352d" />
       <Repeated
         positions={Array.from({ length: 6 }, (_, i) => [
-          2.65,
+          1.5,
           0.12 + i * 0.18,
           -3.6 - i * 0.29,
         ])}
-        geometry={<boxGeometry args={[1.9, 0.12, 0.3]} />}
+        geometry={<boxGeometry args={[1.4, 0.12, 0.3]} />}
         material={
           <meshStandardMaterial color="#6c5740" map={wood} roughness={0.85} />
         }
@@ -951,9 +952,12 @@ export function FamilyHouse(props: ModelProps) {
   if (props.room === 'outside') return <Exterior {...props} />;
   return (
     <>
-      <RoomShell wood={props.materials.wood} />
+      <RoomShell
+        wood={props.materials.wood}
+        half={props.room === 'hall' ? 2.35 : 5}
+      />
       <spotLight
-        position={props.room === 'table' ? [0, 2.6, -0.5] : [-2.5, 2.8, -0.7]}
+        position={props.room === 'table' ? [0, 2.6, -0.5] : [-1.7, 2.8, -0.7]}
         angle={1.05}
         penumbra={0.85}
         intensity={props.reaction ? 22 : 32}

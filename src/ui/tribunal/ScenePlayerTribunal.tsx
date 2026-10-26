@@ -72,6 +72,13 @@ export function ScenePlayerTribunal({
   // first beat stays dark; anything past it is lit.
   const lit = !!node && node.id !== 'noir';
   const staging = dossier ? familyStaging(scene?.id, node?.id) : null;
+  const tableDisturbed =
+    dossier &&
+    scene?.id.endsWith('maison-table') === true &&
+    (node?.id === 'place' ||
+      state.flags.some((flag) =>
+        ['family.public', 'family.private', 'family.observe'].includes(flag),
+      ));
   const audio = useInvestigationAudio(
     pause || settings || ledger || state.completed
       ? 'silence'
@@ -79,6 +86,7 @@ export function ScenePlayerTribunal({
         ? 'house'
         : 'tribunal',
     useStore,
+    tableDisturbed,
   );
   const cue = staging?.cue;
   useEffect(() => {
@@ -241,16 +249,7 @@ export function ScenePlayerTribunal({
         lit={dossier || lit || state.completed}
         reduced={save?.settings.reducedMotion === 'on'}
         paused={pause || settings || ledger}
-        reaction={
-          dossier &&
-          scene?.id.endsWith('maison-table') === true &&
-          (node?.id === 'place' ||
-            !!state.flags.find((flag) =>
-              ['family.public', 'family.private', 'family.observe'].includes(
-                flag,
-              ),
-            ))
-        }
+        reaction={tableDisturbed}
         actions={stageActions(
           staging?.room ?? 'tribunal',
           replies,
