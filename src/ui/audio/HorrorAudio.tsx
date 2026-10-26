@@ -114,7 +114,11 @@ export function HorrorAudio() {
   // via ScenePlayerTribunal's `dossier` mode). Two independent sound
   // toggles on the same screen would be a real, confusing duplicate, not a
   // cosmetic one.
-  const ownAudioRoutes = ['/jouer/t0', '/jouer/sixieme-place'];
+  const ownAudioRoutes = [
+    '/jouer/t0',
+    '/jouer/sixieme-place',
+    '/jouer/tribunal',
+  ];
   const isGame =
     pathname === '/' ||
     (pathname.startsWith('/jouer/') &&

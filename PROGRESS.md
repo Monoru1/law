@@ -1,3 +1,76 @@
+# Immersion 3D — 26 octobre 2026, branche de travail
+
+## Relais Claude — état à reprendre
+
+**Décision : NO-GO pour une publication 3D définitive.** Le socle jouable est vérifié, mais la direction artistique reste une première passe. Aucun merge sur `main`, aucune modification du déploiement public stable `b14004d`. Tous les changements sont sur `feat/real-3d-horror-environments`. Commits précédents : fondation `1770a57`, Tribunal `b048718` ; le commit contenant cette section clôt le lot maison/audio. Reprendre cette branche, sans cherry-pick des deux premiers commits : ils sont déjà dans son historique. La sauvegarde Claude `backup/claude-26-octobre` reste intacte.
+
+### Fonctionnalités terminées dans ce lot C/D
+
+- Extérieur/entrée, salle d'audience, couloir resserré, table familiale, album, photographie et négatif en géométrie réelle. Six assiettes, verres, couverts, chaises, lampe, portes, plafond, murs, parquet et mobilier. Raycasts sur les objets disponibles, contrôles équivalents au clavier, cadrage rapproché sur dossier et sixième assiette, inspection du banc/de la lampe. Noir et révélation de la salle, regard limité par glissement ou flèches ; le mode réduit supprime les déplacements automatiques.
+- La sélection de l'assiette déclenche la réplique d'Henri via `line_chosen`, rapproche la caméra, déplace légèrement la chaise vide et atténue l'ambiance. Les trois décisions à table et leurs conséquences continuent à être journalisées et reprises sans changement de schéma.
+- Pluie et bruitages localisés par `PannerNode` HRTF ; écouteur synchronisé avec la vraie caméra, musique non spatialisée, horloge du Tribunal, volume/mute conservés et aucun contexte audio avant activation. Annulation des bruitages en attente lors de la pause ou d'une destruction.
+- Qualités élevée/standard/économique, baisse automatique de qualité si les images mesurées sont coûteuses, rendu à la demande suspendu hors vue/pause. Résolution économique 0,75 ; instancing du parquet, couverts, verres et autres répétitions. Retour au SVG existant si WebGL échoue/perd son contexte ; retour volontaire 2D/3D testé sans toucher au journal. Géométries, textures et contexte libérés au démontage.
+
+### Résultats vérifiés avant handoff
+
+- `pnpm install --frozen-lockfile`, `pnpm format:check`, `pnpm lint` (aucun avertissement), `pnpm typecheck`, `pnpm contracts`, `pnpm build` : réussis. Installation figée relancée dans le même environnement pnpm que l'installation initiale : le sandbox utilisait un autre store et refusait une réinstallation sans TTY. Types Three alignés sur 0.186.0.
+- `pnpm test` : **118/118**, 13 fichiers. `pnpm validate:content` : **2 000 parcours historiques + 500 REBIRTH + 500 Tribunal + 500 dossier**, tous réussis. **98 contrats inchangés** (86 + 7 + 5).
+- Suite entière sur le dernier build de production local : **35/35 E2E** en 47,8 s, un worker. Après ajout de l'export des mesures : nouvelle passe **6/6 E2E 3D** en 20,7 s. Vrais clics de canvas sur banc, dossier et assiette ; transition Tribunal → maison, réaction persistée après reload, GPU absent/perdu, mobile 390 px, trois qualités, clavier, opt-in audio et écouteur suivant effectivement la caméra. Les parcours historiques, sauvegardes isolées, carnet, décisions et contrôle console restent couverts par la suite.
+- Captures réelles inspectées : `test-results/environment3d-real-raycast-*/tribunal.png`, `six-settings.png`, `test-results/environment3d-keyboard-*/hall.png`, `test-results/environment3d-mobile-*/mobile-3d.png`. Vidéos WebM des six tests 3D dans leurs répertoires. Ces preuves sont locales, ignorées par Git et reproductibles ; une nouvelle invocation Playwright remplace le répertoire `test-results`.
+- Mesure exacte conservée dans `test-results/environment3d-mobile-*/render-metrics.json` : extérieur à 390 × 844, qualité économique, framebuffer **292 × 303**, **45 draw calls**, **12 776 triangles**, **45 géométries**, médiane des intervalles des frames rendues **22 ms** sur **SwiftShader (GPU logiciel Chromium)**. Ce n'est ni un benchmark de tout le dossier, ni une mesure sur téléphone réel, ni une garantie de FPS. Le premier relevé Tribunal standard, avant finitions et adaptation, était beaucoup plus lent (~196 ms) ; vérifier le matériel réel reste nécessaire.
+- CI du lot B `b048718` : réussie, run `40319087355`. **La CI du commit final doit être contrôlée après push** ; un résultat antérieur ne valide pas le nouveau SHA. Aucun contournement, force push ou fusion autorisé par cette note.
+
+### Limites visuelles et priorités pour Claude
+
+1. **Direction artistique en premier** : mobilier procédural encore très sobre, pièces peu habitées, surfaces trop uniformes, extérieur et voiture schématiques. Le couloir a de meilleures proportions, mais boiseries, enduits, tissus, lumière de fenêtre et composition demandent un vrai passage artistique. Les images prouvent la 3D, pas le niveau de réalisme final demandé. Revoir le cadrage mobile, où la voiture occupe trop le premier plan.
+2. **Présence humaine et son** : aucun humain 3D convaincant, geste de main ou voix humaine enregistrée ; le Greffier est seulement transcrit. La chaise bouge, pas un personnage. Pluie visuelle statique, pas de simulation météo. Les sons locaux existants sont réutilisés ; pas de nouveau comédien, grincement de chaise dédié ou doublage. Ne pas présenter ces éléments comme livrés.
+3. **Contenu** : la lettre, la cassette, la confrontation et le retour narratif au Tribunal ne sont pas écrits dans le chapitre actuel. Ne pas créer d'objet qui révèle ces informations en contournant le graphe. Les inspections de décor n'ajoutent aucune pièce au journal.
+4. **Qualité matérielle** : tester desktop avec GPU et téléphone réel, vérifier confort du regard, contraste et écoute au casque ; profiler Tribunal/table sur chaque qualité, temps de chargement et mémoire après changements de pièce. Pas de test physique iPhone/Android ni validation artistique humaine dans ce lot. Fiber utilise encore `THREE.Clock`, déprécié par Three depuis r183 : avertissement amont identifié, aucun filtre console ajouté pour le masquer. Les ombres utilisent explicitement `PCFShadowMap` pour éviter l'ancienne constante supprimée.
+5. **Avant toute publication** : direction artistique validée, CI complète du SHA final verte, puis E2E sur prévisualisation et contrôle visuel. Prévisualisation Netlify : utiliser `?ntl-drawer-state=hidden` pour éviter le panneau collaboratif bloqué par la CSP, sans affaiblir cette CSP.
+
+### Reprise sans conflit
+
+```powershell
+git status -sb
+git fetch origin --prune
+git switch feat/real-3d-horror-environments
+git pull --ff-only
+pnpm install --frozen-lockfile
+pnpm build
+pnpm start --hostname 127.0.0.1 --port 3103
+# Dans un second terminal :
+$env:LAW_BASE_URL='http://127.0.0.1:3103'
+pnpm test:e2e --workers=1
+```
+
+- Claude peut concentrer ses changements artistiques dans `src/ui/tribunal/WorldModels.tsx` (géométrie/matériaux), `WorldCanvas.tsx` (caméra/lumière/performance) et `tribunal.module.css` (composition). Les textes, légendes et correspondances des objets restent dans `src/content/environments.ts` ; le lecteur conserve la responsabilité d'appeler le store. Tout nouvel asset doit être original ou avoir sa licence documentée.
+- Conserver `EnvironmentStage.tsx` comme frontière client/repli/accessibilité et les callbacks d'actions résolues. Ne pas modifier le moteur, les IDs, les contrats et les clés de sauvegarde pour une modification artistique. Ne pas lancer `contracts --write` pour une simple finition de décor.
+- Les serveurs de développement/prototypes sur 3100 et 3102 ont été arrêtés ; le serveur de contrôle de production utilise 3103 pendant cette session. Ne pas confondre un serveur lancé avant rebuild avec le dernier build. Sous Windows, préférer ce serveur indépendant au serveur géré par Playwright (fermeture parfois bloquée).
+
+---
+
+## Lot A — Fondation et scènes initiales
+
+Commit sauvegardé et poussé : `1770a57`.
+
+- Branche `feat/real-3d-horror-environments` depuis `main` à `b14004d`. Aucun travail préexistant, aucune PR ouverte à l'audit. `HouseStage.tsx` (SVG) et le décor CSS du Tribunal simulaient la profondeur ; ils restent disponibles en repli.
+- Three.js 0.186.1 et Fiber 9.8.2 (peer React >=19 <19.4, compatible React 19.3) ; pas de Drei car caméra et géométrie maîtrisées sans cette dépendance. Import dynamique client, aucun WebGL serveur. Modèles originaux procéduraux, textures de grain déterministes de 256 px, aucun asset tiers, aucun GLB inutile. Architecture et arbitrage : le rendu consomme des actions déjà résolues ; seul le lecteur écrit les événements existants.
+- `EnvironmentStage.tsx` : qualités élevée/standard/économique, repli volontaire et automatique, délai d'initialisation borné, garde de contexte perdu, accès HTML au clavier. `WorldCanvas.tsx` : caméra bornée, réglage système et utilisateur de mouvement réduit, pause/hors écran, rendu à la demande et réduction automatique du coût. `WorldModels.tsx` : première salle d'audience fermée, maison, table, six couverts, couloir et album. `src/content/environments.ts` : correspondance objets/réponses et textes d'inspection sans nouvelles preuves.
+- Validation : build initial, lint et TypeScript réussis ; 118/118 tests unitaires ; 98 contrats inchangés. Cinq tests navigateur 3D réussis : vrai raycast sur le dossier et l'assiette, conséquence privée persistée, trois qualités, clavier, retour 2D/3D, WebGL absent et contexte perdu, mobile. Images et vidéos réelles dans `test-results/environment3d-*`, exclues de Git, générées par `pnpm test:e2e tests/e2e/environment3d.spec.ts --workers=1` contre le serveur indiqué par `LAW_BASE_URL`.
+- Correctif de cycle de vie : la destruction volontaire du renderer n'est plus considérée comme une panne GPU. Les objets inaccessibles au moteur n'ont pas de handler narratif. Aucun changement des scènes, des contrats ou des sauvegardes historiques.
+- Limites de cette étape : rendu encore à raffiner et mesures sur GPU logiciel Chromium ; aucune promesse de FPS matériel. Pas de personnages réalistes ni de voix humaine enregistrée. La lettre et la suite de l'enquête ne sont pas écrites dans le chapitre existant : aucune interaction ne les révèle artificiellement. Ne pas fusionner avant la passe qualité complète.
+- Générateur Next : normalisation automatique du titre du bloc d'instructions dans `AGENTS.md` conservée. Les imports temporaires `.next/dev` de `next-env.d.ts` seront remplacés par le build de production avant commit.
+
+---
+
+## Lot B — Réalisation du Tribunal
+
+- Inspection réelle du banc, de la lampe et des dossiers ; cadrages rapprochés bornés puis retour au plan d'ensemble. Le dossier devient ouvrable uniquement après l'audience terminée. Le moteur reste seul responsable de cette progression. Transition de noir à lumière sans mouvement forcé en mode réduit.
+- Test raycast du banc puis du dossier, transition réelle vers la maison, assiette et reprise : réussi. Captures `tribunal.png` et vidéo `test-results/environment3d-real-raycast-*/video.webm` reproductibles. Fichiers : `EnvironmentStage.tsx`, `WorldCanvas.tsx`, `ScenePlayerTribunal.tsx` et libellés dans `src/content/environments.ts`/`WorldModels.tsx`.
+- Limite conservée : aucun enregistrement humain du Greffier. Le texte n'est jamais présenté comme une voix livrée. Étape suivante : cadrage domestique et matériaux.
+
+---
+
 # Opération Halloween — audit du 26 octobre 2026
 
 - Source préservée : `backup/claude-26-octobre`, `2b2491b`. Intégration sur `codex/halloween-integration`, issue de `origin/main` (`9b287fd`), sans conflit. PR #4 et #5 confirmées fusionnées sur GitHub ; aucun de leurs changements n'est réintroduit séparément.
