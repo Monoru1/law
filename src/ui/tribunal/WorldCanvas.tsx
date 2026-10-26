@@ -194,6 +194,7 @@ function CameraRig({
   onReady,
   onDegrade,
   onFailure,
+  focusId,
 }: WorldProps) {
   const { camera, gl, invalidate, scene } = useThree();
   const target = useRef(new Vector3());
@@ -205,7 +206,13 @@ function CameraRig({
   const preset = useMemo(
     () =>
       room === 'tribunal'
-        ? { eye: [0, 1.65, 4] as Vec3, aim: [0, 1.05, -2.3] as Vec3 }
+        ? focusId === 'dossier'
+          ? { eye: [0.15, 1.85, 0.2] as Vec3, aim: [0, 1.07, -2.05] as Vec3 }
+          : focusId === 'bench'
+            ? { eye: [-0.9, 1.65, 2.1] as Vec3, aim: [-2.6, 0.65, 0.2] as Vec3 }
+            : focusId === 'lamp'
+              ? { eye: [1.8, 1.8, 0.1] as Vec3, aim: [1.2, 1.45, -2.3] as Vec3 }
+              : { eye: [0, 1.65, 4] as Vec3, aim: [0, 1.05, -2.3] as Vec3 }
         : room === 'outside'
           ? { eye: [4.2, 2.6, 8] as Vec3, aim: [0, 1.4, -0.8] as Vec3 }
           : room === 'table'
@@ -218,7 +225,7 @@ function CameraRig({
                   eye: [1.3, 1.7, 3.5] as Vec3,
                   aim: [-0.7, 1.25, -2.7] as Vec3,
                 },
-    [room, reaction],
+    [room, reaction, focusId],
   );
   const eye = useMemo(() => new Vector3(...preset.eye), [preset]);
   const aim = useMemo(() => new Vector3(...preset.aim), [preset]);

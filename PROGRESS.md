@@ -2,6 +2,8 @@
 
 ## Lot A — Fondation et scènes initiales
 
+Commit sauvegardé et poussé : `1770a57`.
+
 - Branche `feat/real-3d-horror-environments` depuis `main` à `b14004d`. Aucun travail préexistant, aucune PR ouverte à l'audit. `HouseStage.tsx` (SVG) et le décor CSS du Tribunal simulaient la profondeur ; ils restent disponibles en repli.
 - Three.js 0.186.1 et Fiber 9.8.2 (peer React >=19 <19.4, compatible React 19.3) ; pas de Drei car caméra et géométrie maîtrisées sans cette dépendance. Import dynamique client, aucun WebGL serveur. Modèles originaux procéduraux, textures de grain déterministes de 256 px, aucun asset tiers, aucun GLB inutile. Architecture et arbitrage : le rendu consomme des actions déjà résolues ; seul le lecteur écrit les événements existants.
 - `EnvironmentStage.tsx` : qualités élevée/standard/économique, repli volontaire et automatique, délai d'initialisation borné, garde de contexte perdu, accès HTML au clavier. `WorldCanvas.tsx` : caméra bornée, réglage système et utilisateur de mouvement réduit, pause/hors écran, rendu à la demande et réduction automatique du coût. `WorldModels.tsx` : première salle d'audience fermée, maison, table, six couverts, couloir et album. `src/content/environments.ts` : correspondance objets/réponses et textes d'inspection sans nouvelles preuves.
@@ -9,6 +11,14 @@
 - Correctif de cycle de vie : la destruction volontaire du renderer n'est plus considérée comme une panne GPU. Les objets inaccessibles au moteur n'ont pas de handler narratif. Aucun changement des scènes, des contrats ou des sauvegardes historiques.
 - Limites de cette étape : rendu encore à raffiner et mesures sur GPU logiciel Chromium ; aucune promesse de FPS matériel. Pas de personnages réalistes ni de voix humaine enregistrée. La lettre et la suite de l'enquête ne sont pas écrites dans le chapitre existant : aucune interaction ne les révèle artificiellement. Ne pas fusionner avant la passe qualité complète.
 - Générateur Next : normalisation automatique du titre du bloc d'instructions dans `AGENTS.md` conservée. Les imports temporaires `.next/dev` de `next-env.d.ts` seront remplacés par le build de production avant commit.
+
+---
+
+## Lot B — Réalisation du Tribunal
+
+- Inspection réelle du banc, de la lampe et des dossiers ; cadrages rapprochés bornés puis retour au plan d'ensemble. Le dossier devient ouvrable uniquement après l'audience terminée. Le moteur reste seul responsable de cette progression. Transition de noir à lumière sans mouvement forcé en mode réduit.
+- Test raycast du banc puis du dossier, transition réelle vers la maison, assiette et reprise : réussi. Captures `tribunal.png` et vidéo `test-results/environment3d-real-raycast-*/video.webm` reproductibles. Fichiers : `EnvironmentStage.tsx`, `WorldCanvas.tsx`, `ScenePlayerTribunal.tsx` et libellés dans `src/content/environments.ts`/`WorldModels.tsx`.
+- Limite conservée : aucun enregistrement humain du Greffier. Le texte n'est jamais présenté comme une voix livrée. Étape suivante : cadrage domestique et matériaux.
 
 ---
 

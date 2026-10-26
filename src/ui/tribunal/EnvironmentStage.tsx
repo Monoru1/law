@@ -24,6 +24,7 @@ export type WorldProps = {
   reduced: boolean;
   paused: boolean;
   reaction: boolean;
+  focusId?: string;
   actions: StageAction[];
   onAction: (action: StageAction) => void;
   onFailure: () => void;
@@ -64,6 +65,7 @@ export function EnvironmentStage(
   const [ready, setReady] = useState(false);
   const [quality, setQuality] = useState<EnvironmentQuality>('standard');
   const [detail, setDetail] = useState('');
+  const [inspected, setInspected] = useState<string>();
   const systemReduced = useSyncExternalStore(
     (notify) => {
       const media = matchMedia('(prefers-reduced-motion: reduce)');
@@ -88,7 +90,10 @@ export function EnvironmentStage(
     if (props.disabled) return;
     if (action.replyId) props.onReply(action.replyId);
     else if (action.href) router.push(action.href);
-    else setDetail(action.detail ?? '');
+    else {
+      setDetail(action.detail ?? '');
+      setInspected(action.id);
+    }
   };
   return (
     <section
@@ -134,6 +139,7 @@ export function EnvironmentStage(
           <RenderBoundary fallback={fallback} onFailure={() => setFailed(true)}>
             <World
               {...props}
+              focusId={detail ? inspected : props.focusId}
               reduced={props.reduced || systemReduced}
               quality={quality}
               onAction={activate}
@@ -171,7 +177,13 @@ export function EnvironmentStage(
       {detail && (
         <div className={styles.inspection} role="status">
           <p>{detail}</p>
-          <button type="button" onClick={() => setDetail('')}>
+          <button
+            type="button"
+            onClick={() => {
+              setDetail('');
+              setInspected(undefined);
+            }}
+          >
             {copy.back}
           </button>
         </div>

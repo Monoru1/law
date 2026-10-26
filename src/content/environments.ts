@@ -66,6 +66,11 @@ export function stageActions(
 }
 
 export const environmentCopy = {
+  labels: {
+    album: 'ALBUM',
+    dossier: 'LA SIXIÈME PLACE',
+    photograph: 'UN REPAS EN FAMILLE',
+  },
   quality: 'Qualité du décor',
   high: 'Élevée',
   standard: 'Standard',

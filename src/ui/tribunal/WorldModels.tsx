@@ -9,6 +9,7 @@ import {
 } from 'three';
 import { Interactive, Repeated, type Vec3 } from './WorldCanvas';
 import type { WorldProps } from './EnvironmentStage';
+import { environmentCopy } from '../../content/environments';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 export type SceneMaterials = { wood: Texture };
@@ -441,7 +442,7 @@ export function Courtroom(props: ModelProps) {
           <Block at={[0, 0.034, 0]} size={[0.8, 0.008, 0.53]} color="#af9670" />
           <Label
             at={[0, 0.04, 0.02]}
-            text="LA SIXIÈME PLACE"
+            text={environmentCopy.labels.dossier}
             width={0.65}
             height={0.2}
           />
@@ -723,7 +724,7 @@ function DiningRoom(props: ModelProps) {
         <meshStandardMaterial color="#b9b5a1" roughness={0.4} />
       </mesh>
       <Label
-        text="UN REPAS EN FAMILLE"
+        text={environmentCopy.labels.photograph}
         at={[3.9, 2.1, -6.28]}
         width={0.65}
         height={0.4}
@@ -832,7 +833,12 @@ function Hall(props: ModelProps) {
           size={[0.55, 0.07, 0.4]}
           color="#44332a"
         />
-        <Label text="ALBUM" at={[-2.5, 0.89, -0.7]} width={0.3} height={0.12} />
+        <Label
+          text={environmentCopy.labels.album}
+          at={[-2.5, 0.89, -0.7]}
+          width={0.3}
+          height={0.12}
+        />
       </Interactive>
       <Lamp at={[-3, 0.84, -0.7]} />
       <Interactive id="photographs" actions={actions} onAction={onAction}>

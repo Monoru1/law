@@ -234,6 +234,9 @@ export function ScenePlayerTribunal({
         </nav>
       </header>
       <EnvironmentStage
+        focusId={
+          !dossier && (state.completed || !!track?.end) ? 'dossier' : undefined
+        }
         room={staging?.room ?? 'tribunal'}
         lit={dossier || lit || state.completed}
         reduced={save?.settings.reducedMotion === 'on'}
