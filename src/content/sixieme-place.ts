@@ -4,7 +4,7 @@ import type { Content, Effect, Scene, TalkNode, TalkReply } from '../engine';
 const line = (who: string, text: string) => ({ who, text });
 const flag = (name: string): Effect => ({ setFlag: `family.${name}` });
 const note = (tag: string, text: string): Effect => ({
-  note: { kind: 'observation', status: 'fact', tags: [tag, 'family'], text },
+  note: { kind: 'quote', status: 'fact', tags: [tag, 'family'], text },
 });
 const reply = (
   id: string,
